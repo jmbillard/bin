@@ -2,22 +2,20 @@
 
 ---------------------------- info ----------------------------
 
-  title:   bin script
+  title:   bin
 
-  notes:   a simple binary conversor
+  notes:   a multi purpose tool to for development
+           1. binary converter;
+           2. shape layer definition;
+           3. expression string formatter;
 
   copy this file to 'ScriptUI Panels' folder
 
   author:  Jean-Marc Billard
-  version: 1.0
-  date:    06-04-2019
+  version: 2.0
+  date:    xx-xx-2022
 
 --------------------------------------------------------------
-
-  change log:
-
-  version: 1.0
-  > initial release
 
 */
 
@@ -34,16 +32,16 @@ function bin(thisObj) {
 
   var spacer = '\u0089PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x0E\x00\x00\x00-\b\x06\x00\x00\x00\u009EpZI\x00\x00\x00\tpHYs\x00\x00\x0B\x12\x00\x00\x0B\x12\x01\u00D2\u00DD~\u00FC\x00\x00\x003IDATH\u0089\u00ED\u00D6\u00B1\r\x000\f\x02A\u00F0\u00FE;\x13y\x05\u00E4.\u008FDy\r\x15N\u00A2&S)`\tmg\u00CB\u00AA@ \x10\b\u00BC\u0082|\u0080\u009F\u00A1\u00A4\x07\u0081u\bW\u00C1$\u0089E\x00\x00\x00\x00IEND\u00AEB`\u0082';
 
-  function convertFile(infile) {
+  function convertFile(inFile) {
 
-    infile.open('r');
-    infile.encoding = 'binary';
+    inFile.open('r');
+    inFile.encoding = 'binary';
 
-    var bin = infile.read();
+    var bin = inFile.read();
     var binStr = bin.toSource().toString();
 
     binStr = binStr.substring(12, binStr.length - 2);
-    infile.close();
+    inFile.close();
 
     return binStr;
   }
@@ -80,13 +78,127 @@ function bin(thisObj) {
     return trim(str);
   }
 
+  function expCode(exp) {
+
+    var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
+    exp = exp.replace(/\\/g, '\\\\');
+    exp = exp.replace(/\'|\"/g, '\\\'');
+    exp = exp.split(/\r\n/);
+    exp = tab.toString() + 'exp += \'' + exp.join('\\n\';\n' + tab.toString() + 'exp += \'') + '\';\n';
+
+    return exp;
+  }
+
+  function shapeCode(shpLayer) {
+
+    var root = shpLayer.property('ADBE Root Vectors Group');
+
+    var shpStr = '';
+    shpStr += 'function ' + shpLayer.name.toCamelCase() + '() {\n\n';
+    shpStr += '\tvar shp;\n';
+    shpStr += '\tvar exp;\n';
+    shpStr += '\tvar shpLayer = app.project.activeItem.layers.addShape();\n';
+    shpStr += "\tvar root = shpLayer.property('ADBE Root Vectors Group');\n";
+
+    function getShapeProperties(prop) {
+  
+      for (var i = 1; i <= prop.numProperties; i++) {
+        var currentProp = prop.property(i);
+        var parentProp = currentProp.parentProperty;
+        var D = prop.property(i).propertyDepth - 1;
+        var var2 = parentProp == root ? 'root' : parentProp.name.toCamelCase() + '_' + (D - 1);
+        var varN = parentProp.name;
+  
+        if (currentProp.numProperties > 0) {
+          var var1 = currentProp.name.toCamelCase() + '_' + D;
+  
+          if (parentProp.elided || parentProp == root) {
+            shpStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n';
+  
+            if (!currentProp.enabled) {
+              shpStr += var1 + '.enabled = false;\n';
+            }
+          } else {
+            if (currentProp.matchName == 'ADBE Vector Group') {
+              shpStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n\n';
+            } else {
+              shpStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + currentProp.matchName + '\');\n';
+            }
+            if (i == parentProp.numProperties) {
+              shpStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+            }
+          }
+          getShapeProperties(currentProp);
+        
+        } else {
+          
+          if (currentProp.matchName == 'ADBE Vector Shape') {
+            var vert = currentProp.value.vertices;
+            var inTang = currentProp.value.inTangents;
+            var outTang = currentProp.value.outTangents;
+  
+            shpStr += '\n\tshp = new Shape();\n';
+            shpStr += '\tshp.vertices = [';
+            
+            for (var v = 0; v < vert.length; v++) {
+              shpStr += '[' + vert[v].toString() + '],';
+            }
+            shpStr = shpStr.substring(0, shpStr.length - 1) + '];\n';
+            shpStr += '\tshp.inTangents = [';
+  
+            for (var iT = 0; iT < inTang.length; iT++) {
+              shpStr += '[' + inTang[iT].toString() + '],';
+            }
+            shpStr = shpStr.substring(0, shpStr.length - 1) + '];\n';
+            shpStr += '\tshp.outTangents = [';
+  
+            for (var oT = 0; oT < outTang.length; oT++) {
+              shpStr += '[' + outTang[oT].toString() + '],';
+            }
+            shpStr = shpStr.substring(0, shpStr.length - 1) + '];\n\n';
+            shpStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(shp);\n';
+          
+          } else {
+            
+            if (currentProp.isModified) {
+              var val = currentProp.value;
+              var exp = currentProp.expression;
+              val = val.length > 0 ? '[' + val.toString() + ']' : val.toString();
+              shpStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(' + val + ');\n';
+  
+              if (exp != '') {
+                shpStr += '\n\texp = \'\';\n' + expCode('\t' + exp);
+                shpStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
+              }
+            }
+          }
+          if (i == parentProp.numProperties) {
+
+            try {
+              parentProp.name = parentProp.name;
+              shpStr += '\t' + var2 + '.name = \'' + varN + '\';\n';
+
+            } catch (error) {}
+          }
+        }
+      }
+    }
+    getShapeProperties(root);
+    
+    shpStr += '\tshpLayer.name = \'' + shpLayer.name + '\';\n\n';
+    shpStr += '\treturn shpLayer;\n';
+    shpStr += '}\n\n';
+    shpStr += shpLayer.name.toCamelCase() + '();';
+  
+    return shpStr;
+  }
+
   function bin_ui() {
 
     var coolBlue = [0.23, 0.74, 1];
     var offWhite = [0.95, 0.95, 0.95];
     var fileArray = [];
     var codeArray = [];
-    var binData = false;
     var nameTxt;
     var codeTxt;
 
@@ -99,20 +211,26 @@ function bin(thisObj) {
     var prgBar = w.add('progressbar', [0, 0, 600, 5], 0, 100);
     var btnGrp = w.add('group');
     btnGrp.alignment = 'center';
-    var openBtn = btnGrp.add('iconbutton', undefined, importIcon, {style: 'toolbutton'});
-    openBtn.helpTip = 'import files';
+    var pickBtn = btnGrp.add('iconbutton', undefined, importIcon, {style: 'toolbutton'});
+    pickBtn.helpTip = 'pick files | selected layer';
 
     btnGrp.add('image', undefined, spacer);
-
+    
     var exportBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     exportBtn.helpTip = 'export data';
-    exportBtn.enabled = false;
+    
+    var evalBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
+    evalBtn.helpTip = 'run data';
+
+    // exportBtn.enabled = false;
     var radGrp = btnGrp.add('group');
-    radGrp.enabled = false;
-    var expRad01 = radGrp.add('radiobutton', undefined, 'single file');
-    expRad01.helpTip = 'all the data will be exported on a single file';
-    var expRad02 = radGrp.add('radiobutton', undefined, 'multiple files');
-    expRad02.helpTip = 'all the data will be exported on multiple files';
+    // radGrp.enabled = false;
+    var expRad01 = radGrp.add('radiobutton', undefined, 'binary');
+    expRad01.helpTip = 'binary converter';
+    var expRad02 = radGrp.add('radiobutton', undefined, 'shape');
+    expRad02.helpTip = 'shape layer definition';
+    var expRad03 = radGrp.add('radiobutton', undefined, 'exp. string');
+    expRad03.helpTip = 'format property expression string';
 
     var pType = stcTxt.graphics.PenType.SOLID_COLOR;
     var bType = w.graphics.BrushType.SOLID_COLOR;
@@ -141,88 +259,99 @@ function bin(thisObj) {
       w.layout.resize();
     };
 
-    openBtn.onClick = function() {
+    pickBtn.onClick = function() {
+
+      var aItem = app.project.activeItem;
+      var aLayer = aItem.selectedLayers[0];
 
       nameTxt = '';
       codeTxt = '';
-      fileArray = File.openDialog('open...', undefined, true);
 
-      prgBar.value = 0;
+      switch (true) {
+    
+        case expRad01.value:
+          fileArray = File.openDialog('open...', undefined, true);
+          prgBar.value = 0;
+    
+          if (fileArray != null) {
+    
+            for (i = 0; i < fileArray.length; i++) {
+              var fileObj = fileArray[i];
+              var fileName = fileObj.name;
+    
+              nameTxt += fileName + ' | ';
+              fileName = File.decode(fileName.substring(0, fileName.length - 4));
+              fileName = replaceSpcChar(fileName);
+              codeTxt += '\nvar ' + fileName + ' = ' + convertFile(fileObj) + ';\n';
+    
+              codeArray.push(convertFile(fileObj));
+              prgBar.value = (i + 1) / fileArray.length * 100;
+            }
+            nameTxt = File.decode(nameTxt.substring(0, nameTxt.length - 2));
+            stcTxt.helpTip = nameTxt;
+    
+            if (nameTxt.length > 120) {
+              nameTxt = nameTxt.substring(0, 120) + '...';
+            }
+            stcTxt.text = nameTxt;
+            edtText.text = codeTxt;
+            prgBar.value = 100;
+          
+          } else {
+            exportBtn.enabled = false;
+            radGrp.enabled = false;
+            expRad01.value = false;
+            expRad02.value = false;
+          }
+          break;
 
-      if (fileArray != null) {
-        binData = true;
-        exportBtn.enabled = true;
-        radGrp.enabled = true;
-        expRad01.value = true;
-        expRad02.value = false;
+        case expRad02.value:
+          stcTxt.text = aLayer.name;
+          edtText.text = shapeCode(aLayer);
+          break;
 
-        for (i = 0; i < fileArray.length; i++) {
+        case expRad03.value:
+          var aProp = aLayer.selectedProperties[0];
+          var exp = (aProp.expression == undefined) ? '' : aProp.expression;
 
-          var fileObj = fileArray[i];
-          var fileName = fileObj.name;
-
-          nameTxt += fileName + ' | ';
-          fileName = File.decode(fileName.substring(0, fileName.length - 4));
-          fileName = replaceSpcChar(fileName);
-          codeTxt += '\nvar ' + fileName + ' = ' + convertFile(fileObj) + ';\n';
-
-          codeArray.push(convertFile(fileObj));
-          prgBar.value = (i + 1) / fileArray.length * 100;
-        }
-        nameTxt = File.decode(nameTxt.substring(0, nameTxt.length - 2));
-        stcTxt.helpTip = nameTxt;
-
-        if (nameTxt.length > 120) {
-          nameTxt = nameTxt.substring(0, 120) + '...';
-        }
-        stcTxt.text = nameTxt;
-        edtText.text = codeTxt;
-        prgBar.value = 100;
-      } else {
-        binData = false;
-        exportBtn.enabled = false;
-        radGrp.enabled = false;
-        expRad01.value = false;
-        expRad02.value = false;
+          if (exp != '') {
+            exp = '\tvar exp = \'\';\n' + expCode(exp);
+            edtText.text = exp;
+          }
+          break;
       }
     };
 
+    var exp = 'var ll = \'ll\';\n';
+    exp += 'var rr = \'rr\';\n';
+    exp += '\n';
+    exp += '// partiu...\n';
+    exp += 'transform.position;';
+
     exportBtn.onClick = function() {
-
       var fileExpObj;
+      prgBar.value = 0;
 
-      if (binData == true) {
-        prgBar.value = 0;
+      if (edtText.text != '') {
+        var fileTypesArray = ['Text:*.txt', "Script:*.jsx"];
+        fileExpObj = File.saveDialog('export...', fileTypesArray);
 
-        if (expRad01.value == true && edtText.text != '') {
-          var fileTypesArray = ['Text:*.txt', "Script:*.jsx"];
-          fileExpObj = File.saveDialog('export...', fileTypesArray);
-
-          if (fileExpObj != null) {
-
-            exportFile(fileExpObj, codeTxt);
-          }
-        } else {
-
-          if (fileArray != null) {
-
-            for (i = 0; i < fileArray.length; i++) {
-              var fileName = fileArray[i].name;
-
-              fileName = fileName.substring(0, fileName.length - 4);
-              fileExpObj = new File(fileArray[i].path + '/' + fileName + '.txt');
-
-              exportFile(fileExpObj, codeArray[i]);
-              prgBar.value = (i + 1) / fileArray.length * 100;
-            }
-          }
+        if (fileExpObj != null) {
+          exportFile(fileExpObj, edtText.text);
         }
-        prgBar.value = 100;
+      }
+      prgBar.value = 100;
+    };
+
+    evalBtn.onClick = function() {
+    
+      if (edtText.text != '') {
+        eval(edtText.text);
       }
     };
 
     return w;
-  }
+  }  
 
   binWindow = bin_ui(thisObj);
 
@@ -232,3 +361,18 @@ function bin(thisObj) {
 }
 
 bin(this);
+
+/*
+
+---------------------------------------------------------------
+> prototype functions
+---------------------------------------------------------------
+
+*/
+
+String.prototype.toCamelCase = function () {
+  return this.toLowerCase()
+    .replace(/\s(.)/g, function ($1) {return $1.toUpperCase();})
+    .replace(/\s/g, '')
+    .replace(/^(.)/, function ($1) {return $1.toLowerCase();});
+};
