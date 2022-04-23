@@ -23,7 +23,6 @@
 //  jshint -W061
 //  jscs:disable maximumLineLength
 
-
 function bin(thisObj) {
 
   /* cSpell:disable */
@@ -87,7 +86,7 @@ function bin(thisObj) {
     return exp;
   }
 
-  function shapeCode(layer) {
+  function layerCode(layer) {
 
     var layerStr = '';
 
@@ -158,7 +157,7 @@ function bin(thisObj) {
 
               try {
                 currentProp.setValue(val);
-                alert(typeof val == 'object');
+                //alert(typeof val == 'object');
                 //alert(currentProp.name + ': ' + val.toString() + ' (' + (typeof val).toString() + ')');
                 if (val.length > 0) {
                   val = '[' + val.toString() + ']';
@@ -166,7 +165,7 @@ function bin(thisObj) {
                 } else {
                   
                   if (typeof val == 'object') {
-                    val = '\'' + val.toString() + '\'';
+                    val = 'textDocVal';
 
                   } else {
                     val = val.toString();
@@ -191,6 +190,7 @@ function bin(thisObj) {
           }
         }
       }
+      return layerStr;
     }
     var transform = layer.property('ADBE Transform Group');
     var effects = layer.property('ADBE Effect Parade');
@@ -210,23 +210,57 @@ function bin(thisObj) {
         getProperties(contents);
         break;
         
-        case layer instanceof TextLayer:
-          var text = layer.property('ADBE Text Properties');        
-          layerStr += '\n\t// text layer creation...\n';
-          layerStr += '\tvar layer = app.project.activeItem.layers.addText();\n';
-          layerStr += '\n\t// text content...\n';
-          layerStr += '\tvar text = layer.property(\'ADBE Text Properties\');\n';
-          getProperties(text);
-          break;
+      case layer instanceof TextLayer:
+        var text = layer.property('ADBE Text Properties');        
+        var textDoc = text.property('ADBE Text Document').value;
+        layerStr += '\n\t// text layer creation...\n';
+        layerStr += '\tvar layer = app.project.activeItem.layers.addText();\n';
+        layerStr += '\n\t// text document...\n';
+        layerStr += '\tvar text = layer.property(\'ADBE Text Properties\');\n';
+        layerStr += '\tvar textDoc = text.property(\'ADBE Text Document\');\n';
+        layerStr += '\tvar textDocVal = textDoc.value;\n';
+        layerStr += '\ttextDocVal.text = \'' + textDoc.text + '\';\n';
+        layerStr += '\ttextDocVal.font = \'' + textDoc.font + '\';\n';
+        layerStr += '\ttextDocVal.fontSize = ' + textDoc.fontSize + ';\n';
+        layerStr += '\ttextDocVal.applyStroke = ' + textDoc.applyStroke.toString() + ';\n';
+        layerStr += '\ttextDocVal.applyFill = ' + textDoc.applyFill.toString() + ';\n';
+        
+        if (textDoc.applyFill) {
+          layerStr += '\ttextDocVal.fillColor = [' + textDoc.fillColor.toString() + '];\n';
+        }
+        if (textDoc.strokeWidth) {
+          layerStr += '\ttextDocVal.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
+        }
+        layerStr += '\ttextDocVal.strokeWidth = ' + textDoc.strokeWidth + ';\n';
+        layerStr += '\ttextDocVal.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\n';
+        layerStr += '\ttextDocVal.tracking = ' + textDoc.tracking + ';\n';
+        layerStr += '\ttextDocVal.leading = ' + textDoc.leading + ';\n';
+        //layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';
+        //layerStr += '\ttextDocVal.allCaps = ' + textDoc.allCaps.toString() + ';\n';
+        //layerStr += '\ttextDocVal.smallCaps = ' + textDoc.smallCaps.toString() + ';\n';
+        //layerStr += '\ttextDocVal.subscript = ' + textDoc.subscript.toString() + ';\n';
+        //layerStr += '\ttextDocVal.superscript = ' + textDoc.superscript.toString() + ';\n';
+        //layerStr += '\ttextDocVal.fauxBold = ' + textDoc.fauxBold.toString() + ';\n';
+        //layerStr += '\ttextDocVal.fauxItalic = ' + textDoc.fauxItalic.toString() + ';\n';
+        //layerStr += '\ttextDoc.setValue(textDocVal);\n';
+        layerStr += '\n\t// text content...\n';
+        getProperties(text);
+        break;
     }
 
     layerStr += '\n\t// transformations...\n';
     layerStr += '\tvar transform = layer.property(\'ADBE Transform Group\');\n';
-    getProperties(transform);
+    var t1 = layerStr;
+    var t2 = getProperties(transform);
+    if (t1 == t2) {
+      layerStr = layerStr.substring(0, layerStr.length - 81);
+    }
   
-    layerStr += '\n\t// fx...\n';
-    layerStr += '\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
-    getProperties(effects);
+    if (effects.numProperties > 0) {
+      layerStr += '\n\t// fx...\n';
+      layerStr += '\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
+      getProperties(effects);
+    }
     
     layerStr += '\tlayer.name = \'' + layer.name + '\';\n\n';
     layerStr += '\treturn layer;\n';
@@ -264,28 +298,24 @@ function bin(thisObj) {
     
     var exportBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     exportBtn.helpTip = 'export data';
-    exportBtn.enabled = false;
     
     var evalBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     evalBtn.helpTip = 'run data';
-    evalBtn.enabled = false;
 
     var radGrp = btnGrp.add('group');
     var expRad01 = radGrp.add('radiobutton', undefined, 'binary');
     expRad01.helpTip = 'binary converter';
-    expRad01.value = true;
-    var expRad02 = radGrp.add('radiobutton', undefined, 'shape');
-    expRad02.helpTip = 'shape layer definition';
+    var expRad02 = radGrp.add('radiobutton', undefined, 'layer def.');
+    expRad02.helpTip = 'get selected layer definition';
     var expRad03 = radGrp.add('radiobutton', undefined, 'exp. string');
-    expRad03.helpTip = 'format property expression string';
-    expRad01.active = true;
+    expRad03.helpTip = 'format selected property expression string';
 
     var pType = stcTxt.graphics.PenType.SOLID_COLOR;
     var bType = w.graphics.BrushType.SOLID_COLOR;
 
     stcTxt.graphics.foregroundColor = stcTxt.graphics.newPen(pType, coolBlue, 1);
     w.graphics.backgroundColor = w.graphics.newBrush(bType, offWhite);
-
+    
     // eventos
     w.onShow = function() {
 
@@ -293,6 +323,10 @@ function bin(thisObj) {
       edtText.size.height = w.size.height - 120;
       prgBar.size.width = w.size.width - 20;
       btnGrp.layout.layout(true);
+      radGrp.children[0].value = true;
+      radGrp.children[0].active = true;
+      evalBtn.enabled = false;
+      exportBtn.enabled = false;
       w.layout.layout(true);
       w.layout.resize();
     };
@@ -311,7 +345,7 @@ function bin(thisObj) {
 
       hasData = (edtText.text.trim() != '');
       exportBtn.enabled = hasData;
-      evalBtn.enabled = hasData;
+      evalBtn.enabled = hasData && expRad02.value;
     };
 
     pickBtn.onClick = function() {
@@ -345,15 +379,9 @@ function bin(thisObj) {
             if (nameTxt.length > 120) {
               nameTxt = nameTxt.substring(0, 120) + '...';
             }
-            stcTxt.text = nameTxt;
+            stcTxt.text = 'file: ' + nameTxt;
             edtText.text = codeTxt;
             prgBar.value = 100;
-          
-          } else {
-            exportBtn.enabled = false;
-            radGrp.enabled = false;
-            expRad01.value = false;
-            expRad02.value = false;
           }
           break;
 
@@ -361,37 +389,32 @@ function bin(thisObj) {
           aItem = app.project.activeItem;
           aLayer = aItem.selectedLayers[0];
     
-          stcTxt.text = aLayer.name;
-          edtText.text = shapeCode(aLayer);
+          stcTxt.text = 'layer: ' + aLayer.name;
+          edtText.text = layerCode(aLayer);
           break;
-
+          
         case expRad03.value:
           var aProp = aLayer.selectedProperties[0];
           var exp = (aProp.expression == undefined) ? '' : aProp.expression;
-
+          
           if (exp != '') {
             exp = '\tvar exp = \'\';\n' + expCode(exp);
             edtText.text = exp;
           }
+          stcTxt.text = 'prop: ' + aProp.name;
           break;
       }
       hasData = (edtText.text.trim() != '');
       exportBtn.enabled = hasData;
-      evalBtn.enabled = hasData;
+      evalBtn.enabled = hasData && expRad02.value;
     };
-
-    var exp = 'var ll = \'ll\';\n';
-    exp += 'var rr = \'rr\';\n';
-    exp += '\n';
-    exp += '// partiu...\n';
-    exp += 'transform.position;';
 
     exportBtn.onClick = function() {
       var fileExpObj;
       prgBar.value = 0;
 
       if (edtText.text != '') {
-        var fileTypesArray = ['Text:*.txt', 'Script:*.jsx'];
+        var fileTypesArray = ['Script:*.jsx','Text:*.txt'];
         fileExpObj = File.saveDialog('export...', fileTypesArray);
 
         if (fileExpObj != null) {
@@ -402,11 +425,28 @@ function bin(thisObj) {
     };
 
     evalBtn.onClick = function() {
-    
-      if (edtText.text != '') {
-        eval(edtText.text);
+
+      if (expRad02.value) {
+
+        if (edtText.text != '') {
+          eval(edtText.text);
+        }          
       }
+    
     };
+
+    expRad01.onClick = function() {
+      
+      evalBtn.enabled = expRad02.value && hasData;
+    }
+    expRad02.onClick = function() {
+      
+      evalBtn.enabled = expRad02.value && hasData;
+    }
+    expRad03.onClick = function() {
+      
+      evalBtn.enabled = expRad02.value && hasData;
+    }
 
     return w;
   }  
