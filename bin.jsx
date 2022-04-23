@@ -99,6 +99,8 @@ function bin(thisObj) {
         var D = prop.property(i).propertyDepth - 1;
         var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentProp.parentProperty.name.toCamelCase() + (D - 1);
         var varN = parentProp.name;
+
+        //alert(currentProp.name + '(\'' + currentProp.matchName + '\')');
   
         if (currentProp.numProperties > 0) {
           var var1 = currentProp.name.toCamelCase() + '_' + parentName + D;
@@ -110,13 +112,16 @@ function bin(thisObj) {
               layerStr += var1 + '.enabled = false;\n';
             }
           } else {
-            if (currentProp.matchName == 'ADBE Vector Group') {
+            if (currentProp.matchName == 'ADBE Vector Group' || currentProp.matchName == 'ADBE Text Animator Properties') {
               layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n\n';
             } else {
               layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + currentProp.matchName + '\');\n';
             }
             if (i == parentProp.numProperties) {
-              layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+              try {
+                parentProp.name = parentProp.name;
+                layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+              } catch (error) {}
             }
           }
           getProperties(currentProp);
