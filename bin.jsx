@@ -112,11 +112,16 @@ function bin(thisObj) {
           } else {
             if (currentProp.matchName == 'ADBE Vector Group') {
               layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n\n';
+
             } else {
               layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + currentProp.matchName + '\');\n';
             }
             if (i == parentProp.numProperties) {
-              layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+              
+              try {
+                parentProp.name = parentProp.name;
+                layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+              } catch (error) {}
             }
           }
           getProperties(currentProp);
@@ -157,8 +162,6 @@ function bin(thisObj) {
 
               try {
                 currentProp.setValue(val);
-                //alert(typeof val == 'object');
-                //alert(currentProp.name + ': ' + val.toString() + ' (' + (typeof val).toString() + ')');
                 if (val.length > 0) {
                   val = '[' + val.toString() + ']';
                   
@@ -171,9 +174,13 @@ function bin(thisObj) {
                     val = val.toString();
                   }
                 }
+                if (parentProp.matchName == ('ADBE Text Animator Properties')) {
+                  layerStr += '\t' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n';
+                }
                 layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(' + val + ');\n';
-    
+
                 if (exp != '') {
+                  layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' expression...';
                   layerStr += '\n\texp = \'\';\n' + expCode('\t' + exp);
                   layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
                 }
@@ -228,14 +235,14 @@ function bin(thisObj) {
         if (textDoc.applyFill) {
           layerStr += '\ttextDocVal.fillColor = [' + textDoc.fillColor.toString() + '];\n';
         }
-        if (textDoc.strokeWidth) {
+        if (textDoc.applyStroke) {
           layerStr += '\ttextDocVal.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
         }
         layerStr += '\ttextDocVal.strokeWidth = ' + textDoc.strokeWidth + ';\n';
         layerStr += '\ttextDocVal.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\n';
         layerStr += '\ttextDocVal.tracking = ' + textDoc.tracking + ';\n';
         layerStr += '\ttextDocVal.leading = ' + textDoc.leading + ';\n';
-        //layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';
+        layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';
         //layerStr += '\ttextDocVal.allCaps = ' + textDoc.allCaps.toString() + ';\n';
         //layerStr += '\ttextDocVal.smallCaps = ' + textDoc.smallCaps.toString() + ';\n';
         //layerStr += '\ttextDocVal.subscript = ' + textDoc.subscript.toString() + ';\n';
@@ -435,18 +442,10 @@ function bin(thisObj) {
     
     };
 
-    expRad01.onClick = function() {
+    expRad01.onClick = expRad02.onClick = expRad03.onClick = function() {
       
       evalBtn.enabled = expRad02.value && hasData;
-    }
-    expRad02.onClick = function() {
-      
-      evalBtn.enabled = expRad02.value && hasData;
-    }
-    expRad03.onClick = function() {
-      
-      evalBtn.enabled = expRad02.value && hasData;
-    }
+    };
 
     return w;
   }  
