@@ -30,7 +30,7 @@ function bin(thisObj) {
 
   var exportIcon = "\u0089PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x1F\x00\x00\x00\x1F\b\x06\x00\x00\x00\x1F\u00AE\x169\x00\x00\x00\tpHYs\x00\x00\x0B\x12\x00\x00\x0B\x12\x01\u00D2\u00DD~\u00FC\x00\x00\x00kIDATH\u0089\u00ED\u0096Q\n\u00C0 \fC\u009B\u00E1\u00FD\u00AF\u009C}m\u008C:\u00EB\x14f\x07\u00CB\u00FB,\u00C2\u00C3X\u0082 iYlif\u00C9%\u0097|\x15\u00A5\u00E5\x01p\u00B6\x0FI\u00F8\u0099\u00E7\u00EE\u00CC1\u00FB\u00E4\u00CDS\u00EB\u00B5\x19\u00FB\u0095\u00A7O\u00D0\u008B\u00D9\u00A3\u00D8+F\u00B6v\x16\u00C5\x1E\x12mvT<\u00D6y2\u00C5^1\u00DB\u00ED#\u00FC7v\u00FDd$\u0097\u00FC}\u00CCl\x07H+:1\u0093\u00A1\x15`\x00\x00\x00\x00IEND\u00AEB`\u0082";
   
-  var pickIcon = "\u0089PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x1F\x00\x00\x00\x1F\b\x06\x00\x00\x00\x1F\u00AE\x169\x00\x00\x00\tpHYs\x00\x00\x0B\x12\x00\x00\x0B\x12\x01\u00D2\u00DD~\u00FC\x00\x00\x01\bIDATH\u0089\u00EDV\u00D1\r\u0083 \x14\u00BC\u00EB\x04\u008E\u00E2(t\x03Fq\x04Ga\x04\u00BB\u0081#8\u0082\x1B\u00BC\u00C6\u00F6\x11\u0089UA\x1BK?x\u00C9\u008B\x06\u00CEwp\u00DEC)\"\u00C8\x15\u00B7l\u00CC\u0085\u00BC\u0090\u00C7\u0082\u00A4%\u00E9H\x0E$Es\u00D01{\u0098}j\u00B5X\x02\u00A8\x01\u00F4\x13<\u0092\x13\u00A6N\u00A9\u00F9\u00AA\u009B@l\x03\u00C2\x11@\x13\x12\u00E8\u00C2\x1A\u009D\u00F38\u00FB5\u00B9\x16\u00F6\x05\x1D\u0080j\x07[)\u00C6\u00E3\u00A3\n\u00C4\u00C8\u00BD\u00D4.Y\u00CAy\x01\u00FDi\u00F2@\u00EEqo\u00C7\x1B\n\u008C)\u00F2\u00EF\u00B9\u00DD\u00E8\u00B5\x15\u00911\u009C iHv\u009A&\u009CSl\u00BB\u00A8q\u00CC\u00ED\x00\u0086\u00B5w\u00A7\x05\u0097\u00AE7\x1B^\x19\u00CE\u00CA.\u00EF\u00B5}\u008Cw\u0098\u00DB\u00CA{\u00A2K}>U\u00F6\u00EB#\u00A7\u00EC{;\u00EF\u00D7L#\"S+\u00DD\x01<4\u00EF:\x16\u0086Y\u00D48l\u00B8\u00CB[\u00ED?\x0F\x19\u00C9}\u00BCJ\u00CE\x0F\u00CB\u0082\u00E0\u00F7\u009F\u00D4\x15\x15\\\u00D0\u0086\u00A2\u00F7.u\u00B7a\u0096\u00FF\u00F6B^\u00C8\u00AF\x0F\x00O\u00E8m\u00FB\u00CE\u0083\u00A1W|\x00\x00\x00\x00IEND\u00AEB`\u0082";  
+  var pickIcon = '\u0089PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x1F\x00\x00\x00\x1F\b\x06\x00\x00\x00\x1F\u00AE\x169\x00\x00\x00\tpHYs\x00\x00\x0B\x12\x00\x00\x0B\x12\x01\u00D2\u00DD~\u00FC\x00\x00\x01\bIDATH\u0089\u00EDV\u00D1\r\u0083 \x14\u00BC\u00EB\x04\u008E\u00E2(t\x03Fq\x04Ga\x04\u00BB\u0081#8\u0082\x1B\u00BC\u00C6\u00F6\x11\u0089UA\x1BK?x\u00C9\u008B\x06\u00CEwp\u00DEC)\"\u00C8\x15\u00B7l\u00CC\u0085\u00BC\u0090\u00C7\u0082\u00A4%\u00E9H\x0E$Es\u00D01{\u0098}j\u00B5X\x02\u00A8\x01\u00F4\x13<\u0092\x13\u00A6N\u00A9\u00F9\u00AA\u009B@l\x03\u00C2\x11@\x13\x12\u00E8\u00C2\x1A\u009D\u00F38\u00FB5\u00B9\x16\u00F6\x05\x1D\u0080j\x07[)\u00C6\u00E3\u00A3\n\u00C4\u00C8\u00BD\u00D4.Y\u00CAy\x01\u00FDi\u00F2@\u00EEqo\u00C7\x1B\n\u008C)\u00F2\u00EF\u00B9\u00DD\u00E8\u00B5\x15\u00911\u009C iHv\u009A&\u009CSl\u00BB\u00A8q\u00CC\u00ED\x00\u0086\u00B5w\u00A7\x05\u0097\u00AE7\x1B^\x19\u00CE\u00CA.\u00EF\u00B5}\u008Cw\u0098\u00DB\u00CA{\u00A2K}>U\u00F6\u00EB#\u00A7\u00EC{;\u00EF\u00D7L#\"S+\u00DD\x01<4\u00EF:\x16\u0086Y\u00D48l\u00B8\u00CB[\u00ED?\x0F\x19\u00C9}\u00BCJ\u00CE\x0F\u00CB\u0082\u00E0\u00F7\u009F\u00D4\x15\x15\\\u00D0\u0086\u00A2\u00F7.u\u00B7a\u0096\u00FF\u00F6B^\u00C8\u00AF\x0F\x00O\u00E8m\u00FB\u00CE\u0083\u00A1W|\x00\x00\x00\x00IEND\u00AEB`\u0082';
   
   var spacer = '\u0089PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x0E\x00\x00\x00-\b\x06\x00\x00\x00\u009EpZI\x00\x00\x00\tpHYs\x00\x00\x0B\x12\x00\x00\x0B\x12\x01\u00D2\u00DD~\u00FC\x00\x00\x003IDATH\u0089\u00ED\u00D6\u00B1\r\x000\f\x02A\u00F0\u00FE;\x13y\x05\u00E4.\u008FDy\r\x15N\u00A2&S)`\tmg\u00CB\u00AA@ \x10\b\u00BC\u0082|\u0080\u009F\u00A1\u00A4\x07\u0081u\bW\u00C1$\u0089E\x00\x00\x00\x00IEND\u00AEB`\u0082';
   /* cSpell:enable */
@@ -46,7 +46,7 @@ function bin(thisObj) {
     binStr = binStr.substring(12, binStr.length - 2);
     inFile.close();
 
-    return binStr.replace(/\'/g, '\\\'');
+    return binStr.replace(/\'/g, '\\\'').replace(/^\"/, '\'').replace(/[\"]+$/, '\'');
   }
 
   function exportFile(outFile, strCode) {
@@ -105,7 +105,7 @@ function bin(thisObj) {
         if (currentProp.numProperties > 0) {
           var var1 = currentProp.name.toCamelCase() + '_' + parentName + D;
   
-          if (parentProp.elided || parentProp == contents || parentProp == effects) {
+          if (parentProp.elided || parentProp == contents || parentProp == effects || parentProp == masks) {
 
             if (parentProp == effects) {
               layerStr += '\t// ' + currentProp.name.toLowerCase() + ' effect...\n';
@@ -134,7 +134,7 @@ function bin(thisObj) {
         
         } else {
           
-          if (currentProp.matchName == 'ADBE Vector Shape') {
+          if (currentProp.matchName == 'ADBE Vector Shape' || currentProp.matchName == 'ADBE Mask Shape' ) {
             var vert = currentProp.value.vertices;
             var inTang = currentProp.value.inTangents;
             var outTang = currentProp.value.outTangents;
@@ -265,11 +265,13 @@ function bin(thisObj) {
     }
     var transform = layer.property('ADBE Transform Group');
     var effects = layer.property('ADBE Effect Parade');
+    var masks = layer.property('ADBE Mask Parade');
+    var marker = layer.property('ADBE Marker');
     
     layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase().replace(/\W/g, '')) + '() {\n\n';
-    layerStr += '\t// expressions variable...;\n';
+    layerStr += '\t// expressions variable...\n';
     layerStr += '\tvar exp;\n';
-    layerStr += '\t// keyframe ease objects variable...;\n';
+    layerStr += '\n\t// keyframe ease objects variable...\n';
     layerStr += '\tvar easeIn1;\n';
     layerStr += '\tvar easeIn2;\n';
     layerStr += '\tvar easeIn3;\n';
@@ -281,13 +283,16 @@ function bin(thisObj) {
       
       case layer instanceof ShapeLayer:
         var contents = layer.property('ADBE Root Vectors Group');        
-        layerStr += '\t// shape object variable...\n';
+        layerStr += '\n\t// shape object variable...\n';
         layerStr += '\tvar shp;\n';
         layerStr += '\n\t// shape layer creation...\n';
         layerStr += '\tvar layer = app.project.activeItem.layers.addShape();\n';
-        layerStr += '\n\t// vector content...\n';
-        layerStr += '\tvar contents = layer.property(\'ADBE Root Vectors Group\');\n';
-        getProperties(contents);
+
+        if (contents.numProperties > 0) {
+          layerStr += '\n\t// vector content...\n';
+          layerStr += '\tvar contents = layer.property(\'ADBE Root Vectors Group\');\n';
+          getProperties(contents);
+        }
         break;
         
       case layer instanceof TextLayer:
@@ -338,12 +343,38 @@ function bin(thisObj) {
       layerStr = layerStr.substring(0, layerStr.length - 81);
     }
   
+    if (masks.numProperties > 0) {
+      layerStr += '\n\t// masks...\n';
+      layerStr += '\tvar masks = layer.property(\'ADBE Mask Parade\');\n';
+      getProperties(masks);
+    }
+    
     if (effects.numProperties > 0) {
       layerStr += '\n\t// fx...\n';
       layerStr += '\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
       getProperties(effects);
     }
+    var i = 1;
     
+    while (i > 0) {
+      
+      try {
+        var t = marker.keyTime(i);
+        var comment = marker.keyValue(i).comment;
+        var l = marker.keyValue(i).label;
+        var dur = marker.keyValue(i).duration;
+        layerStr += '\n\t// layer marker ' + i + '...\n';
+        layerStr += '\tvar t' + i + ' = ' + t + ';\n';
+        layerStr += '\tvar marker' + i + ' = new MarkerValue(\'' + comment + '\');\n';
+        layerStr += '\tmarker' + i + '.label = ' + l + ';\n';
+        layerStr += '\tmarker' + i + '.duration = ' + dur + ';\n';
+        layerStr += '\tlayer.property(\'ADBE Marker\').setValueAtTime(t' + i + ', marker' + i + ');\n\n';
+        i += 1;          
+      
+      } catch (error) {
+        break;
+      }
+    }      
     layerStr += '\n\t// layer attributes...\n';
     layerStr += '\tlayer.autoOrient = ' + layer.autoOrient + ';\n';
     layerStr += '\tlayer.inPoint = ' + layer.inPoint + ';\n';
@@ -352,6 +383,7 @@ function bin(thisObj) {
     layerStr += '\tlayer.name = \'' + layer.name + '\';\n';
     layerStr += '\tlayer.label = ' + layer.label + ';\n';
     layerStr += '\tlayer.locked = ' + layer.locked + ';\n';
+    
     layerStr += '\n\treturn layer;\n';
     layerStr += '}\n\n';
     layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\W/g, '')) + '();';
