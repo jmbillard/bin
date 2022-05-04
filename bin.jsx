@@ -320,35 +320,24 @@ function bin(thisObj) {
         layerStr += '\ttextDocVal.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\n';
         layerStr += '\ttextDocVal.tracking = ' + textDoc.tracking + ';\n';
         layerStr += '\ttextDocVal.leading = ' + textDoc.leading + ';\n';
-        layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';
-        
-        // read-only properties...
-        //layerStr += '\ttextDocVal.allCaps = ' + textDoc.allCaps.toString() + ';\n';
-        //layerStr += '\ttextDocVal.smallCaps = ' + textDoc.smallCaps.toString() + ';\n';
-        //layerStr += '\ttextDocVal.subscript = ' + textDoc.subscript.toString() + ';\n';
-        //layerStr += '\ttextDocVal.superscript = ' + textDoc.superscript.toString() + ';\n';
-        //layerStr += '\ttextDocVal.fauxBold = ' + textDoc.fauxBold.toString() + ';\n';
-        //layerStr += '\ttextDocVal.fauxItalic = ' + textDoc.fauxItalic.toString() + ';\n';
-
+        layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';        
         layerStr += '\n\t// text content...\n';
         getProperties(text);
         break;
     }
-
     layerStr += '\n\t// transformations...\n';
     layerStr += '\tvar transform = layer.property(\'ADBE Transform Group\');\n';
     var t1 = layerStr;
     var t2 = getProperties(transform);
+
     if (t1 == t2) {
       layerStr = layerStr.substring(0, layerStr.length - 81);
     }
-  
     if (masks.numProperties > 0) {
       layerStr += '\n\t// masks...\n';
       layerStr += '\tvar masks = layer.property(\'ADBE Mask Parade\');\n';
       getProperties(masks);
     }
-    
     if (effects.numProperties > 0) {
       layerStr += '\n\t// fx...\n';
       layerStr += '\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
@@ -383,7 +372,6 @@ function bin(thisObj) {
     layerStr += '\tlayer.name = \'' + layer.name + '\';\n';
     layerStr += '\tlayer.label = ' + layer.label + ';\n';
     layerStr += '\tlayer.locked = ' + layer.locked + ';\n';
-    
     layerStr += '\n\treturn layer;\n';
     layerStr += '}\n\n';
     layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\W/g, '')) + '();';
@@ -402,7 +390,6 @@ function bin(thisObj) {
     var aItem;
     var aLayer;
     var hasData = false;
-
     var w = (thisObj instanceof Panel) ? thisObj : new Window('palette');
     w.alignChildren = 'fill';
 
