@@ -82,7 +82,7 @@ function bin(thisObj) {
     exp = exp.trim().replace(/\\/g, '\\\\');
     exp = exp.replace(/\'|\"/g, '\\\'');
     exp = exp.replace(/\t/g, '\\t');
-    exp = exp.split(/\r\n/);
+    exp = exp.split(/\r*\n+/);
     exp = tab.toString() + 'exp += \'' + exp.join('\\n\';\n' + tab.toString() + 'exp += \'') + '\';\n';
 
     return exp;
@@ -97,13 +97,13 @@ function bin(thisObj) {
       for (var i = 1; i <= prop.numProperties; i++) {
         var currentProp = prop.property(i);
         var parentProp = currentProp.parentProperty;
-        var parentName = parentProp.name.toCamelCase();
+        var parentName = parentProp.name.toCamelCase().replace(/\-/, '_');
         var D = prop.property(i).propertyDepth - 1;
-        var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentProp.parentProperty.name.toCamelCase() + (D - 1);
+        var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentProp.parentProperty.name.toCamelCase().replace(/\-/, '_') + (D - 1);
         var varN = parentProp.name;
   
         if (currentProp.numProperties > 0) {
-          var var1 = currentProp.name.toCamelCase() + '_' + parentName + D;
+          var var1 = currentProp.name.toCamelCase().replace(/\-/, '_') + '_' + parentName + D;
   
           if (parentProp.elided || parentProp == contents || parentProp == effects || parentProp == masks) {
 
@@ -268,7 +268,7 @@ function bin(thisObj) {
     var masks = layer.property('ADBE Mask Parade');
     var marker = layer.property('ADBE Marker');
     
-    layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase().replace(/\W/g, '')) + '() {\n\n';
+    layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase().replace(/\-/, '_').replace(/\W/g, '')) + '() {\n\n';
     layerStr += '\t// expressions variable...\n';
     layerStr += '\tvar exp;\n';
     layerStr += '\n\t// keyframe ease objects variable...\n';
@@ -374,7 +374,7 @@ function bin(thisObj) {
     layerStr += '\tlayer.locked = ' + layer.locked + ';\n';
     layerStr += '\n\treturn layer;\n';
     layerStr += '}\n\n';
-    layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\W/g, '')) + '();';
+    layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\-/, '_').replace(/\W/g, '')) + '();';
   
     return layerStr;
   }
@@ -506,7 +506,7 @@ function bin(thisObj) {
           var exp = (aProp.expression == undefined) ? '' : aProp.expression;
           
           if (exp != '') {
-            exp = '\tvar exp = \'\';\n' + expCode(exp);
+            exp = 'var exp = \'\';\n' + expCode(exp);
             edtText.text = exp;
           }
           stcTxt.text = 'prop: ' + aProp.name;
