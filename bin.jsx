@@ -502,14 +502,32 @@ function bin(thisObj) {
           break;
           
         case expRad03.value:
+          aItem = app.project.activeItem;
+          aLayer = aItem.selectedLayers[0];
           var aProp = aLayer.selectedProperties[0];
-          var exp = (aProp.expression == undefined) ? '' : aProp.expression;
-          
-          if (exp != '') {
-            exp = 'var exp = \'\';\n' + expCode(exp);
-            edtText.text = exp;
+          //alert(aProp.numProperties);
+          if (aProp.numProperties == undefined) {
+            var exp = (aProp.expression == undefined) ? '' : aProp.expression;
+            if (exp != '') {
+              exp = 'var exp = \'\';\n' + expCode(exp);
+              edtText.text = exp;
+            }
+            stcTxt.text = 'prop: ' + aProp.name;
+
+          } else {
+            for (var p = 1; p <= aProp.numProperties; p++) {
+              var sProp = aProp.property(p);
+
+              if (aProp.property(p).selected) {
+                var exp = (sProp.expression == undefined) ? '' : sProp.expression;
+                if (exp != '') {
+                  exp = 'var exp = \'\';\n' + expCode(exp);
+                  edtText.text = exp;
+                }
+                stcTxt.text = 'prop: ' + aProp.name;
+              }
+            }
           }
-          stcTxt.text = 'prop: ' + aProp.name;
           break;
       }
       hasData = (edtText.text.trim() != '');
@@ -540,7 +558,6 @@ function bin(thisObj) {
           eval(edtText.text);
         }          
       }
-    
     };
 
     expRad01.onClick = expRad02.onClick = expRad03.onClick = function() {
