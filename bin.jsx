@@ -83,7 +83,7 @@ function bin(thisObj) {
     exp = exp.replace(/\'|\"/g, '\\\'');
     exp = exp.replace(/\t/g, '\\t');
     exp = exp.split(/\r*\n+/);
-    exp = tab.toString() + 'exp += \'' + exp.join('\\n\';\n' + tab.toString() + 'exp += \'') + '\';\n';
+    exp = tab.toString() + exp.join('\\n\\\n' + tab.toString()) + '\';\n';
 
     return exp;
   }
@@ -189,7 +189,7 @@ function bin(thisObj) {
 
                 if (exp != '') {
                   layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' expression...';
-                  layerStr += '\n\texp = \'\';\n' + expCode('\t' + exp);
+                  layerStr += '\n\texp = \'' + expCode('\t' + exp);
                   layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
                 }
               } catch (error) {}              
@@ -505,11 +505,11 @@ function bin(thisObj) {
           aItem = app.project.activeItem;
           aLayer = aItem.selectedLayers[0];
           var aProp = aLayer.selectedProperties[0];
-          //alert(aProp.numProperties);
+          var exp;
           if (aProp.numProperties == undefined) {
-            var exp = (aProp.expression == undefined) ? '' : aProp.expression;
+            exp = (aProp.expression == undefined) ? '' : aProp.expression;
             if (exp != '') {
-              exp = 'var exp = \'\';\n' + expCode(exp);
+              exp = 'var exp = \'' + expCode(exp);
               edtText.text = exp;
             }
             stcTxt.text = 'prop: ' + aProp.name;
@@ -519,9 +519,9 @@ function bin(thisObj) {
               var sProp = aProp.property(p);
 
               if (aProp.property(p).selected) {
-                var exp = (sProp.expression == undefined) ? '' : sProp.expression;
+                exp = (sProp.expression == undefined) ? '' : sProp.expression;
                 if (exp != '') {
-                  exp = 'var exp = \'\';\n' + expCode(exp);
+                  exp = 'var exp = \'' + expCode(exp);
                   edtText.text = exp;
                 }
                 stcTxt.text = 'prop: ' + aProp.name;
