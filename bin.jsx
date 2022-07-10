@@ -81,9 +81,8 @@ function bin(thisObj) {
     var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
     exp = exp.trim().replace(/\\/g, '\\\\');
     exp = exp.replace(/\'|\"/g, '\\\'');
-    exp = exp.replace(/\t/g, '\\t');
     exp = exp.split(/\r*\n+/);
-    exp = tab.toString() + exp.join('\\n\\\n' + tab.toString()) + '\';\n';
+    exp = tab.toString() + exp.join('\\\n' + tab.toString()) + '\';';
 
     return exp;
   }
