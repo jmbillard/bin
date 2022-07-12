@@ -78,11 +78,12 @@ function bin(thisObj) {
 
   function expCode(exp) {
 
-    var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
+    //var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
     exp = exp.trim().replace(/\\/g, '\\\\');
     exp = exp.replace(/\'|\"/g, '\\\'');
     exp = exp.split(/\r*\n+/);
-    exp = tab.toString() + exp.join('\\\n' + tab.toString()) + '\';';
+    //exp = tab.toString() + exp.join('\\\n' + tab.toString()) + '\';\n';
+    exp = exp.join('\\\n') + '\';\n';
 
     return exp;
   }
@@ -95,14 +96,19 @@ function bin(thisObj) {
   
       for (var i = 1; i <= prop.numProperties; i++) {
         var currentProp = prop.property(i);
+        var D = currentProp.propertyDepth - 1;
         var parentProp = currentProp.parentProperty;
-        var parentName = parentProp.name.toCamelCase().replace(/\-/, '_');
-        var D = prop.property(i).propertyDepth - 1;
-        var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentProp.parentProperty.name.toCamelCase().replace(/\-/, '_') + (D - 1);
+        var parentName = parentProp.name.replace(/^[\d]+/, 'n');
+        parentName = parentName.toCamelCase().replace(/\-/, '_');
+        var parentName2 = parentProp.parentProperty.name.replace(/^[\d]+/, 'n');
+        parentName2 = parentName2.toCamelCase().replace(/\-/, '_') + (D - 1);
+        var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentName2;
         var varN = parentProp.name;
+        var exp;
   
         if (currentProp.numProperties > 0) {
-          var var1 = currentProp.name.toCamelCase().replace(/\-/, '_') + '_' + parentName + D;
+          var var1 = currentProp.name.replace(/^[\d]+/, 'n');
+          var1 = var1.toCamelCase().replace(/\-/, '_') + '_' + parentName + D;
   
           if (parentProp.elided || parentProp == contents || parentProp == effects || parentProp == masks) {
 
@@ -159,12 +165,20 @@ function bin(thisObj) {
             }
             layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n\n';
             layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(shp);\n';
+
+            exp = currentProp.expression;
+
+            if (exp != '') {
+              layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' expression...';
+              layerStr += '\n\texp = \'' + expCode('\t' + exp);
+              layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
+            }
             /* cSpell:enable */
           } else {
             
             if (currentProp.isModified) {
               var val = currentProp.value;
-              var exp = currentProp.expression;
+              exp = currentProp.expression;
 
               try {
                 currentProp.setValue(val);
