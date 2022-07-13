@@ -78,11 +78,11 @@ function bin(thisObj) {
 
   function expCode(exp) {
 
-    //var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
     exp = exp.trim().replace(/\\/g, '\\\\');
     exp = exp.replace(/\'|\"/g, '\\\'');
+    exp = exp.replace(/\t|[ ]{2}/g, '\\t');
+    //exp = exp.replace(/\s\s/g, '\\t');
     exp = exp.split(/\r*\n+/);
-    //exp = tab.toString() + exp.join('\\\n' + tab.toString()) + '\';\n';
     exp = exp.join('\\\n') + '\';\n';
 
     return exp;
@@ -187,7 +187,6 @@ function bin(thisObj) {
                   val = '[' + val.toString() + ']';
                   
                 } else {
-                  
                   if (typeof val == 'object') {
                     val = 'textDocVal';
 
@@ -317,7 +316,7 @@ function bin(thisObj) {
         layerStr += '\tvar text = layer.property(\'ADBE Text Properties\');\n';
         layerStr += '\tvar textDoc = text.property(\'ADBE Text Document\');\n';
         layerStr += '\tvar textDocVal = textDoc.value;\n';
-        layerStr += '\ttextDocVal.text = \'' + textDoc.text + '\';\n';
+        layerStr += '\ttextDocVal.text = \'' + textDoc.text.replace(/\n|\r/g, '\\n') + '\';\n';
         layerStr += '\ttextDocVal.font = \'' + textDoc.font + '\';\n';
         layerStr += '\ttextDocVal.fontSize = ' + textDoc.fontSize + ';\n';
         layerStr += '\ttextDocVal.applyStroke = ' + textDoc.applyStroke.toString() + ';\n';
