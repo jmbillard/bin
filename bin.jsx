@@ -143,25 +143,33 @@ function bin(thisObj) {
             var vert = currentProp.value.vertices;
             var inTang = currentProp.value.inTangents;
             var outTang = currentProp.value.outTangents;
+            var x;
+            var x;
 
             /* cSpell:disable */
             layerStr += '\n\tshp = new Shape();\n';
             layerStr += '\tshp.vertices = [';
             
             for (var v = 0; v < vert.length; v++) {
-              layerStr += '[' + vert[v].toString() + '],';
+              x = vert[v][0].toFixed(2);
+              y = vert[v][1].toFixed(2);
+              layerStr += '[' + x + ',' + y + '],';
             }
             layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n';
             layerStr += '\tshp.inTangents = [';
   
             for (var iT = 0; iT < inTang.length; iT++) {
-              layerStr += '[' + inTang[iT].toString() + '],';
+              x = inTang[iT][0].toFixed(2);
+              y = inTang[iT][1].toFixed(2);
+              layerStr += '[' + x + ',' + y + '],';
             }
             layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n';
             layerStr += '\tshp.outTangents = [';
   
             for (var oT = 0; oT < outTang.length; oT++) {
-              layerStr += '[' + outTang[oT].toString() + '],';
+              x = outTang[oT][0].toFixed(2);
+              y = outTang[oT][1].toFixed(2);
+              layerStr += '[' + x + ',' + y + '],';
             }
             layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n\n';
             layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(shp);\n';
@@ -184,6 +192,9 @@ function bin(thisObj) {
                 currentProp.setValue(val);
 
                 if (val.length > 0) {
+                  for (var v = 0; v < val.length; v++) {
+                      val[v] = val[v].toFixed(2);
+                  }
                   val = '[' + val.toString() + ']';
                   
                 } else {
