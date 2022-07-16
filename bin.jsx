@@ -144,7 +144,7 @@ function bin(thisObj) {
             var inTang = currentProp.value.inTangents;
             var outTang = currentProp.value.outTangents;
             var x;
-            var x;
+            var y;
 
             /* cSpell:disable */
             layerStr += '\n\tshp = new Shape();\n';
@@ -192,8 +192,8 @@ function bin(thisObj) {
                 currentProp.setValue(val);
 
                 if (val.length > 0) {
-                  for (var v = 0; v < val.length; v++) {
-                      val[v] = val[v].toFixed(2);
+                  for (var vl = 0; vl < val.length; vl++) {
+                      val[vl] = val[vl].toFixed(2);
                   }
                   val = '[' + val.toString() + ']';
                   
