@@ -237,8 +237,7 @@ function bin(thisObj) {
               layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
             }
             // path animation...
-            if (currentProp.numKeys > 0) {
-            }
+            if (currentProp.numKeys > 0) {}
             /* cSpell:enable */
           } else {
             
@@ -305,8 +304,16 @@ function bin(thisObj) {
                   layerStr += '\t// key ' + k + '...\n';
                   
                   for (var d = 0; d < tOutTArray.length; d++) {
-                    layerStr += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + tInTArray[d].speed + ', ' + tInTArray[d].influence + ');\n';
-                    layerStr += '\teaseOut' + (d + 1) + ' = new KeyframeEase(' + tOutTArray[d].speed + ', ' + tOutTArray[d].influence + ');\n';
+                    var inS = tInTArray[d].speed.toFixed(2);
+                    var outS = tOutTArray[d].speed.toFixed(2);
+                    var inI = tInTArray[d].influence;
+                    var outI = tOutTArray[d].influence;
+
+                    inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
+                    outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
+
+                    layerStr += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\n';
+                    layerStr += '\teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
 
                     if (d > 0) {
                       easeIn += ', easeIn' + (d + 1);
