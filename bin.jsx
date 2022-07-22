@@ -236,11 +236,14 @@ function bin(thisObj) {
               layerStr += '\n\texp = \'' + expCode('\t' + exp);
               layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
             }
-            //getKeyframes();
+            // path animation...
+            if (currentProp.numKeys > 0) {
+            }
             /* cSpell:enable */
           } else {
             
             if (currentProp.isModified) {
+
               var val = currentProp.value;
               exp = currentProp.expression;
 
@@ -272,7 +275,66 @@ function bin(thisObj) {
                   layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
                 }
               } catch (error) {}              
-              //getKeyframes();
+
+              if (currentProp.numKeys > 0) {
+                layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' animation...\n';
+                
+                for (var k = 1; k <= currentProp.numKeys; k++) {
+
+                  val = currentProp.keyValue(k);
+                  var t = currentProp.keyTime(k);
+                  var tInTArray = currentProp.keyInTemporalEase(k);
+                  var tOutTArray = currentProp.keyOutTemporalEase(k);
+                  var kInIType = currentProp.keyInInterpolationType(k);
+                  var kOutIType = currentProp.keyOutInterpolationType(k);
+                  var easeIn = '';
+                  var easeOut = '';
+
+                  if (val.length > 0) {
+                    val = '[' + val.toString() + ']';
+                  
+                  } else {
+                  
+                    if (typeof val == 'object') {
+                      val = 'text';
+
+                    } else {
+                      val = val.toString();
+                    }
+                  }
+                  layerStr += '\t// key ' + k + '...\n';
+                  
+                  for (var d = 0; d < tOutTArray.length; d++) {
+                    layerStr += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + tInTArray[d].speed + ', ' + tInTArray[d].influence + ');\n';
+                    layerStr += '\teaseOut' + (d + 1) + ' = new KeyframeEase(' + tOutTArray[d].speed + ', ' + tOutTArray[d].influence + ');\n';
+
+                    if (d > 0) {
+                      easeIn += ', easeIn' + (d + 1);
+                      easeOut += ', easeOut' + (d + 1);
+
+                    } else {
+                      easeIn += 'easeIn' + (d + 1);
+                      easeOut += 'easeOut' + (d + 1);
+                    }
+                  }
+                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValueAtTime(' + t + ', ' + val + ');\n';
+                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\n';
+                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
+                  
+                  try{
+
+                    if (currentProp.isSpatial) {
+                      var kInSArray = currentProp.keyInSpatialTangent(k).toString();
+                      var kOutSArray = currentProp.keyOutSpatialTangent(k).toString();
+                      var ct = currentProp.keySpatialContinuous(k).toString();
+                      
+                      layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
+                      layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
+                    }
+                  } catch (error) {}
+                }
+                layerStr += '\n';
+              }
             }
           }
           if (i == parentProp.numProperties) {
