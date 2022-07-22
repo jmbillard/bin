@@ -181,10 +181,14 @@ function bin(thisObj) {
               layerStr += '\n\texp = \'' + expCode('\t' + exp);
               layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
             }
+            // path animation...
+            if (currentProp.numKeys > 0) {
+            }
             /* cSpell:enable */
           } else {
             
             if (currentProp.isModified) {
+
               var val = currentProp.value;
               exp = currentProp.expression;
 
@@ -262,14 +266,17 @@ function bin(thisObj) {
                   layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\n';
                   layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
                   
-                  if (currentProp.isSpatial) {
-                    var kInSArray = currentProp.keyInSpatialTangent(k).toString();
-                    var kOutSArray = currentProp.keyOutSpatialTangent(k).toString();
-                    var ct = currentProp.keySpatialContinuous(k).toString();
-                  
-                    layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
-                    layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
-                  }
+                  try{
+
+                    if (currentProp.isSpatial) {
+                      var kInSArray = currentProp.keyInSpatialTangent(k).toString();
+                      var kOutSArray = currentProp.keyOutSpatialTangent(k).toString();
+                      var ct = currentProp.keySpatialContinuous(k).toString();
+                      
+                      layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
+                      layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
+                    }
+                  } catch (error) {}
                 }
                 layerStr += '\n';
               }
@@ -612,6 +619,7 @@ String.prototype.toCamelCase = function () {
   return this.toLowerCase()
     .replace(/\s(.)/g, function ($1) {return $1.toUpperCase();})
     .replace(/\s/g, '')
+    .replace(/\./g, 'dot')
     .replace(/^(.)/, function ($1) {return $1.toLowerCase();});
 };
 
