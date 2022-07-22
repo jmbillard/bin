@@ -643,6 +643,7 @@ function bin(thisObj) {
     };
 
     evalBtn.onClick = function() {
+      app.beginUndoGroup('run...');
 
       if (expRad02.value) {
 
@@ -650,6 +651,7 @@ function bin(thisObj) {
           eval(edtText.text);
         }          
       }
+      app.endUndoGroup();
     };
 
     expRad01.onClick = expRad02.onClick = expRad03.onClick = function() {
