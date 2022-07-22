@@ -6,7 +6,7 @@
 
   notes:   a multi purpose tool to for development
            1. binary converter;
-           2. shape layer definition;
+           2. layer definition;
            3. expression string formatter;
 
   copy this file to 'ScriptUI Panels' folder
@@ -128,7 +128,7 @@ function bin(thisObj) {
         var varN = pProp.name;
         var mn = cProp.matchName;
         var exp;
-  
+
         if (cProp.numProperties > 0) {
           var var1 = cProp.name.replace(/^[\d]+/, 'n')
             .toCamelCase()
@@ -160,9 +160,9 @@ function bin(thisObj) {
             }
           }
           getProperties(cProp);
-        
+
         } else {
-          
+
           if (mn == 'ADBE Vector Shape' || mn == 'ADBE Mask Shape' ) {
             var vert = cProp.value.vertices;
             var inTang = cProp.value.inTangents;
@@ -179,14 +179,14 @@ function bin(thisObj) {
               layerStr += '[' + x + ',' + y + '],';
             }
             layerStr = layerStr.pops() + '];\n\tshp.inTangents = [';
-  
+
             for (var iT = 0; iT < inTang.length; iT++) {
               x = inTang[iT][0].toFixed(2);
               y = inTang[iT][1].toFixed(2);
               layerStr += '[' + x + ',' + y + '],';
             }
             layerStr = layerStr.pops() + '];\n\tshp.outTangents = [';
-  
+
             for (var oT = 0; oT < outTang.length; oT++) {
               x = outTang[oT][0].toFixed(2);
               y = outTang[oT][1].toFixed(2);
@@ -205,7 +205,7 @@ function bin(thisObj) {
             }
             // path animation...
             if (cProp.numKeys > 0) {
-              
+
               for (var kv = 1; kv <= cProp.numKeys; kv++) {
                 alert(objCode(cProp.keyValue(kv), 'shp'));
               }
@@ -226,7 +226,7 @@ function bin(thisObj) {
                       val[vl] = val[vl].toFixed(2);
                   }
                   val = '[' + val.toString() + ']';
-                  
+
                 } else {
                   if (typeof val == 'object') {
                     val = 'textDocVal';
@@ -247,13 +247,13 @@ function bin(thisObj) {
 \n\texp = \'' + expCode(exp) + '\';\
 \t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
                 }
-              } catch (error) {}              
+              } catch (error) {}
 
               if (cProp.numKeys > 0) {
                 layerStr += '\n\t// ' + pProp.name
                   .toLowerCase() + ' ' + cProp.name
                   .toLowerCase() + ' animation...\n';
-                
+
                 for (var k = 1; k <= cProp.numKeys; k++) {
 
                   val = cProp.keyValue(k);
@@ -267,7 +267,7 @@ function bin(thisObj) {
 
                   if (val.length > 0) {
                     val = '[' + val.toString() + ']';
-                  
+
                   } else {
                   
                     if (typeof val == 'object') {
@@ -278,7 +278,7 @@ function bin(thisObj) {
                     }
                   }
                   layerStr += '\t// key ' + k + '...\n';
-                  
+
                   for (var d = 0; d < tOutTArray.length; d++) {
                     var inS = tInTArray[d].speed.toFixed(2);
                     var outS = tOutTArray[d].speed.toFixed(2);
@@ -303,7 +303,7 @@ function bin(thisObj) {
                   layerStr += '\t' + var2 + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\
 \t' + var2 + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
 \t' + var2 + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
-                  
+
                   try{
 
                     if (cProp.isSpatial) {
@@ -335,7 +335,7 @@ function bin(thisObj) {
     var effects = layer.property('ADBE Effect Parade');
     var masks = layer.property('ADBE Mask Parade');
     var marker = layer.property('ADBE Marker');
-    
+
     layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase()
       .replace(/\-/, '_')
       .replace(/\W/g, '')) + '() {\n\n';
@@ -348,9 +348,9 @@ function bin(thisObj) {
 \tvar easeOut1;\
 \tvar easeOut2;\
 \tvar easeOut3;\n';
-    
+
     switch (true) {
-      
+
       case layer instanceof ShapeLayer:
         var contents = layer.property('ADBE Root Vectors Group');        
         layerStr += '\n\t// shape object variable...\
@@ -364,7 +364,7 @@ function bin(thisObj) {
           getProperties(contents);
         }
         break;
-        
+
       case layer instanceof TextLayer:
         var text = layer.property('ADBE Text Properties');        
         var textDoc = text.property('ADBE Text Document').value;
@@ -379,7 +379,7 @@ function bin(thisObj) {
 \ttextDocVal.fontSize = ' + textDoc.fontSize + ';\
 \ttextDocVal.applyStroke = ' + textDoc.applyStroke.toString() + ';\
 \ttextDocVal.applyFill = ' + textDoc.applyFill.toString() + ';\n';
-        
+
         if (textDoc.applyFill) {
           layerStr += '\ttextDocVal.fillColor = [' + textDoc.fillColor.toString() + '];\n';
         }
@@ -414,9 +414,9 @@ function bin(thisObj) {
       getProperties(effects);
     }
     var i = 1;
-    
+
     while (i > 0) {
-      
+
       try {
         var t = marker.keyTime(i);
         var comment = marker.keyValue(i).comment;
@@ -428,12 +428,12 @@ function bin(thisObj) {
 \tmarker' + i + '.label = ' + l + ';\
 \tmarker' + i + '.duration = ' + dur + ';\
 \tlayer.property(\'ADBE Marker\').setValueAtTime(t' + i + ', marker' + i + ');\n\n';
-        i += 1;          
-      
+        i += 1;
+
       } catch (error) {
         break;
       }
-    }      
+    }
     layerStr += '\n\t// layer attributes...\
 \tlayer.autoOrient = ' + layer.autoOrient + ';\
 \tlayer.inPoint = ' + layer.inPoint + ';\
@@ -446,7 +446,7 @@ function bin(thisObj) {
 \n\treturn layer;\
 }\n\n';
     layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\-/, '_').replace(/\W/g, '')) + '();';
-  
+
     return layerStr;
   }
 
@@ -477,7 +477,7 @@ function bin(thisObj) {
     
     var exportBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     exportBtn.helpTip = 'export data';
-    
+
     var evalBtn = btnGrp.add('iconbutton', undefined, evalIcon, {style: 'toolbutton'});
     evalBtn.helpTip = 'run data';
 
@@ -494,7 +494,7 @@ function bin(thisObj) {
 
     stcTxt.graphics.foregroundColor = stcTxt.graphics.newPen(pType, coolBlue, 1);
     w.graphics.backgroundColor = w.graphics.newBrush(bType, offWhite);
-    
+
     // eventos
     w.onShow = function() {
 
@@ -531,30 +531,30 @@ function bin(thisObj) {
 
       nameTxt = '';
       codeTxt = '';
-      
+
       switch (true) {
-        
+
         case expRad01.value:
           prgBar.value = 0;
           fileArray = File.openDialog('open...', undefined, true);
-    
+
           if (fileArray != null) {
-    
+
             for (i = 0; i < fileArray.length; i++) {
               var fileObj = fileArray[i];
               var fileName = fileObj.name;
-    
+
               nameTxt += fileName + ' | ';
               fileName = File.decode(fileName.substring(0, fileName.length - 4));
               fileName = replaceSpcChar(fileName);
               codeTxt += '\nvar ' + fileName + ' = ' + convertFile(fileObj) + ';\n';
-    
+
               codeArray.push(convertFile(fileObj));
               prgBar.value = (i + 1) / fileArray.length * 100;
             }
             nameTxt = File.decode(nameTxt.substring(0, nameTxt.length - 2));
             stcTxt.helpTip = nameTxt;
-    
+
             if (nameTxt.length > 120) {
               nameTxt = nameTxt.substring(0, 120) + '...';
             }
@@ -567,7 +567,7 @@ function bin(thisObj) {
         case expRad02.value:
           aItem = app.project.activeItem;
           aLayer = aItem.selectedLayers[0];
-    
+
           stcTxt.text = 'layer: ' + aLayer.name;
           edtText.text = layerCode(aLayer);
           break;
@@ -628,18 +628,18 @@ function bin(thisObj) {
 
         if (edtText.text != '') {
           eval(edtText.text);
-        }          
+        }
       }
       app.endUndoGroup();
     };
 
     expRad01.onClick = expRad02.onClick = expRad03.onClick = function() {
-      
+
       evalBtn.enabled = expRad02.value && hasData;
     };
 
     return w;
-  }  
+  }
 
   binWindow = bin_ui(thisObj);
 
