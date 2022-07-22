@@ -92,14 +92,14 @@ function bin(thisObj) {
   }
 
   // formats the object property names and values...
-  function objCode(obj) {
+  function objCode(obj, objName) {
     
-    var keys = [];
+    var keys = '';
 
     for (var o in obj) {
       
-      if (boy.hasOwnProperty(o)) {
-        keys.push("'" + o + "': " + boy[o]);
+      if (obj.hasOwnProperty(o)) {
+        keys += objName + '.' + o.toString() + ': ' + obj[o].toString() + '\n';
       }
     }
 
@@ -204,7 +204,12 @@ function bin(thisObj) {
 \t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
             }
             // path animation...
-            if (cProp.numKeys > 0) {}
+            if (cProp.numKeys > 0) {
+              
+              for (var kv = 1; kv <= cProp.numKeys; kv++) {
+                alert(objCode(cProp.keyValue(kv), 'shp'));
+              }
+            }
             /* cSpell:enable */
           } else {
             
