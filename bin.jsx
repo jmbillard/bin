@@ -99,11 +99,138 @@ function bin(thisObj) {
     for (var o in obj) {
       
       if (obj.hasOwnProperty(o)) {
-        keys += objName + '.' + o.toString() + ': ' + obj[o].toString() + '\n';
+        var objVal = obj[o];
+        var kN = o.toString();
+        var kVal = objVal.toString();
+
+        if (kVal != '') {
+
+          if (objVal.length > 0) {
+            kVal = '[';
+
+            for (var o1 = 0; o1 < objVal.length; o1++) {
+
+              if (objVal[o1].length > 0) {
+
+                var oS = '';
+
+                for (var o2 = 0; o2 < objVal[o1].length; o2++) {
+                  oS += objVal[o1][o2].toFixed(2) + ',';
+                }
+                kVal += '[' + oS.pops() + '],';
+              }
+            }
+            kVal = kVal.pops() +']';
+          }
+          keys += '\t' + objName + '.' + kN + '= ' + kVal + ';\n';
+        }
       }
     }
 
-    return keys;
+    return keys + '\n';
+  }
+
+  function valueCode(prop, varName) {
+
+    var propValue = '';
+    var mn = prop.matchName;
+    var val = prop.value;
+      
+    if (val.length > 0) {
+      val = '[' + val.toString() + ']';
+      
+    } else {
+      if (typeof val == 'object') {
+        // case for txt objects...
+        
+        val = 'shp';
+        propValue += '\n\t' + val + ' = new Shape();\n' + objCode(prop.value, val);
+        
+      } else {
+        val = val.toString();
+      }
+    }
+    propValue += '\t' + varName + '.property(\'' + mn + '\').setValue(' + val + ');\n';
+
+    return propValue;
+  }
+
+  function animCode(prop, varName) {
+
+    var anim = '';
+    var mn = prop.matchName;
+    var val = prop.value;
+
+    anim += '\n\t// ' + prop.parentProperty.name
+    .toLowerCase() + ' ' + prop.name
+    .toLowerCase() + ' animation...';
+
+    for (var k = 1; k <= prop.numKeys; k++) {
+      
+      val = prop.keyValue(k);
+      var t = prop.keyTime(k);
+      var tInTArray = prop.keyInTemporalEase(k);
+      var tOutTArray = prop.keyOutTemporalEase(k);
+      var kInIType = prop.keyInInterpolationType(k);
+      var kOutIType = prop.keyOutInterpolationType(k);
+      var easeIn = '';
+      var easeOut = '';
+      
+      if (val.length > 0) {
+        val = '[' + val.toString() + ']';
+        
+      } else {
+        if (typeof val == 'object') {
+          // case for txt objects...
+          
+          val = 'shp';
+          anim += '\n\t' + val + ' = new Shape();\n' + objCode(prop.keyValue(k), val);
+          
+        } else {
+          val = val.toString();
+        }
+      }
+      anim += '\n\t// key ' + k + '...\n';
+
+      for (var d = 0; d < tOutTArray.length; d++) {
+        var inS = tInTArray[d].speed.toFixed(2);
+        var outS = tOutTArray[d].speed.toFixed(2);
+        var inI = tInTArray[d].influence;
+        var outI = tOutTArray[d].influence;
+
+        inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
+        outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
+
+        anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
+\teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
+
+        if (d > 0) {
+          easeIn += ', easeIn' + (d + 1);
+          easeOut += ', easeOut' + (d + 1);
+
+        } else {
+          easeIn += 'easeIn' + (d + 1);
+          easeOut += 'easeOut' + (d + 1);
+        }
+      }
+      anim += '\t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\
+\t' + varName + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
+\t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
+
+      try{
+
+        if (prop.isSpatial) {
+          var kInSArray = prop.keyInSpatialTangent(k).toString();
+          var kOutSArray = prop.keyOutSpatialTangent(k).toString();
+          var ct = prop.keySpatialContinuous(k).toString();
+          
+          anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
+          anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
+        }
+      } catch (error) {}
+    }
+
+    return anim;
   }
 
   function layerCode(layer) {
@@ -162,37 +289,9 @@ function bin(thisObj) {
           getProperties(cProp);
 
         } else {
-
+          /* cSpell:disable */
           if (mn == 'ADBE Vector Shape' || mn == 'ADBE Mask Shape' ) {
-            var vert = cProp.value.vertices;
-            var inTang = cProp.value.inTangents;
-            var outTang = cProp.value.outTangents;
-            var x;
-            var y;
-
-            /* cSpell:disable */
-            layerStr += '\n\tshp = new Shape();\n\tshp.vertices = [';
-            
-            for (var v = 0; v < vert.length; v++) {
-              x = vert[v][0].toFixed(2);
-              y = vert[v][1].toFixed(2);
-              layerStr += '[' + x + ',' + y + '],';
-            }
-            layerStr = layerStr.pops() + '];\n\tshp.inTangents = [';
-
-            for (var iT = 0; iT < inTang.length; iT++) {
-              x = inTang[iT][0].toFixed(2);
-              y = inTang[iT][1].toFixed(2);
-              layerStr += '[' + x + ',' + y + '],';
-            }
-            layerStr = layerStr.pops() + '];\n\tshp.outTangents = [';
-
-            for (var oT = 0; oT < outTang.length; oT++) {
-              x = outTang[oT][0].toFixed(2);
-              y = outTang[oT][1].toFixed(2);
-              layerStr += '[' + x + ',' + y + '],';
-            }
-            layerStr = layerStr.pops() + '];\n\n\t' + var2 + '.property(\'' + mn + '\').setValue(shp);\n';
+            layerStr += valueCode(cProp, var2);
 
             exp = cProp.expression;
 
@@ -205,10 +304,7 @@ function bin(thisObj) {
             }
             // path animation...
             if (cProp.numKeys > 0) {
-
-              for (var kv = 1; kv <= cProp.numKeys; kv++) {
-                alert(objCode(cProp.keyValue(kv), 'shp'));
-              }
+              layerStr += animCode(cProp, var2);
             }
             /* cSpell:enable */
           } else {
@@ -220,25 +316,7 @@ function bin(thisObj) {
 
               try {
                 cProp.setValue(val);
-
-                if (val.length > 0) {
-                  for (var vl = 0; vl < val.length; vl++) {
-                      val[vl] = val[vl].toFixed(2);
-                  }
-                  val = '[' + val.toString() + ']';
-
-                } else {
-                  if (typeof val == 'object') {
-                    val = 'textDocVal';
-
-                  } else {
-                    val = val.toString();
-                  }
-                }
-                if (pProp.matchName == ('ADBE Text Animator Properties')) {
-                  layerStr += '\t' + var2 + '.addProperty(\'' + mn + '\');\n';
-                }
-                layerStr += '\t' + var2 + '.property(\'' + mn + '\').setValue(' + val + ');\n';
+                layerStr += valueCode(cProp, var2);
 
                 if (exp != '') {
                   layerStr += '\n\t// ' + pProp.name
@@ -250,73 +328,7 @@ function bin(thisObj) {
               } catch (error) {}
 
               if (cProp.numKeys > 0) {
-                layerStr += '\n\t// ' + pProp.name
-                  .toLowerCase() + ' ' + cProp.name
-                  .toLowerCase() + ' animation...\n';
-
-                for (var k = 1; k <= cProp.numKeys; k++) {
-
-                  val = cProp.keyValue(k);
-                  var t = cProp.keyTime(k);
-                  var tInTArray = cProp.keyInTemporalEase(k);
-                  var tOutTArray = cProp.keyOutTemporalEase(k);
-                  var kInIType = cProp.keyInInterpolationType(k);
-                  var kOutIType = cProp.keyOutInterpolationType(k);
-                  var easeIn = '';
-                  var easeOut = '';
-
-                  if (val.length > 0) {
-                    val = '[' + val.toString() + ']';
-
-                  } else {
-                  
-                    if (typeof val == 'object') {
-                      val = 'text';
-
-                    } else {
-                      val = val.toString();
-                    }
-                  }
-                  layerStr += '\t// key ' + k + '...\n';
-
-                  for (var d = 0; d < tOutTArray.length; d++) {
-                    var inS = tInTArray[d].speed.toFixed(2);
-                    var outS = tOutTArray[d].speed.toFixed(2);
-                    var inI = tInTArray[d].influence;
-                    var outI = tOutTArray[d].influence;
-
-                    inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
-                    outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
-
-                    layerStr += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
-\teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
-
-                    if (d > 0) {
-                      easeIn += ', easeIn' + (d + 1);
-                      easeOut += ', easeOut' + (d + 1);
-
-                    } else {
-                      easeIn += 'easeIn' + (d + 1);
-                      easeOut += 'easeOut' + (d + 1);
-                    }
-                  }
-                  layerStr += '\t' + var2 + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\
-\t' + var2 + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
-\t' + var2 + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
-
-                  try{
-
-                    if (cProp.isSpatial) {
-                      var kInSArray = cProp.keyInSpatialTangent(k).toString();
-                      var kOutSArray = cProp.keyOutSpatialTangent(k).toString();
-                      var ct = cProp.keySpatialContinuous(k).toString();
-                      
-                      layerStr += '\t' + var2 + '.property(\'' + mn + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
-                      layerStr += '\t' + var2 + '.property(\'' + mn + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
-                    }
-                  } catch (error) {}
-                }
-                layerStr += '\n';
+                layerStr += animCode(cProp, var2);
               }
             }
           }
