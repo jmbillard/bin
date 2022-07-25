@@ -105,18 +105,18 @@ function bin(thisObj) {
             var keyVal = obj[o];
             var keyName = o.toString();
             var keyStrVal = keyVal.toString();
-            
+
             if (keyStrVal != '') {
               
               if (Array.isArray(keyVal)) {
                 keyStrVal = '[';
-    
+
                 for (var v = 0; v < keyVal.length; v++) {
                   var kv = keyVal[v];
-    
+
                   if (Array.isArray(kv)) {
                     keyStrVal += '[';
-    
+
                     for (var d = 0; d < kv.length; d++) {
                       keyStrVal += kv[d].toFixed(2) + ',';
                     }
@@ -163,10 +163,10 @@ function bin(thisObj) {
     var propValue = '';
     var mn = prop.matchName;
     var val = prop.value;
-      
+
     if (Array.isArray(val)) {
       val = '[' + val.toString() + ']';
-      
+
     } else {
 
       if (typeof val == 'object') {
@@ -193,7 +193,7 @@ function bin(thisObj) {
     .toLowerCase() + ' animation...\n';
 
     for (var k = 1; k <= prop.numKeys; k++) {
-      
+
       val = prop.keyValue(k);
       var t = prop.keyTime(k);
       var tInTArray = prop.keyInTemporalEase(k);
@@ -202,16 +202,16 @@ function bin(thisObj) {
       var kOutIType = prop.keyOutInterpolationType(k);
       var easeIn = '';
       var easeOut = '';
-      
+
       if (Array.isArray(val)) {
         val = '[' + val.toString() + ']';
         
       } else {
-  
+
         if (typeof val == 'object') {
           val = objCode(prop.keyValue(k))[1];
           anim += objCode(prop.keyValue(k))[0];
-    
+
         } else {
           val = val.toString();
         }
@@ -228,17 +228,17 @@ function bin(thisObj) {
           var outS = tOutTArray[d].speed.toFixed(2);
           var inI = tInTArray[d].influence;
           var outI = tOutTArray[d].influence;
-  
+
           inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
           outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
-  
+
           anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
   \teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
-  
+
           if (d > 0) {
             easeIn += ', easeIn' + (d + 1);
             easeOut += ', easeOut' + (d + 1);
-  
+
           } else {
             easeIn += 'easeIn' + (d + 1);
             easeOut += 'easeOut' + (d + 1);
@@ -248,7 +248,7 @@ function bin(thisObj) {
   \t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
 
       } catch (error) {}  
-  
+
       try{
 
         if (prop.isSpatial) {
@@ -270,7 +270,7 @@ function bin(thisObj) {
     var layerStr = '';
 
     function getProperties(prop) {
-  
+
       for (var i = 1; i <= prop.numProperties; i++) {
         var cProp = prop.property(i);
         var D = cProp.propertyDepth - 1;
@@ -292,14 +292,14 @@ function bin(thisObj) {
           .replace(/\-/, '_') + '_' + pName + D;
 
         if (cProp.numProperties > 0) {
-  
+
           if (pProp.canAddProperty(mn)) {
 
             if (pProp == effects) {
               layerStr += '\t// ' + cProp.name.toLowerCase() + ' effect...\n';
             }
             layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
-  
+
             if (!cProp.enabled) {
               layerStr += var1 + '.enabled = false;\n';
             }
@@ -307,7 +307,7 @@ function bin(thisObj) {
             layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
 
             if (i == pProp.numProperties) {
-              
+
               try {
                 pProp.name = pProp.name;
                 layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
@@ -317,7 +317,7 @@ function bin(thisObj) {
           getProperties(cProp);
 
         } else {
-          
+
           if (cProp.isModified) {
 
             if (pProp.canAddProperty(mn)) {
@@ -375,7 +375,7 @@ function bin(thisObj) {
     switch (true) {
 
       case layer instanceof ShapeLayer:
-        var contents = layer.property('ADBE Root Vectors Group');        
+        var contents = layer.property('ADBE Root Vectors Group');
         layerStr += '\n\t// shape object variable...\
 \tvar shp;\
 \n\t// shape layer creation...\
