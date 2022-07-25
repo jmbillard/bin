@@ -92,42 +92,70 @@ function bin(thisObj) {
   }
 
   // formats the object property names and values...
-  function objCode(obj, objName) {
+  function objCode(obj) {
     
-    var keys = '';
+    var objValue = '';
+    switch (obj.toString()) {
+      case '[object Shape]':            
+        valName = 'shp';
 
-    for (var o in obj) {
+        for (var o in obj) {
       
-      if (obj.hasOwnProperty(o)) {
-        var objVal = obj[o];
-        var kN = o.toString();
-        var kVal = objVal.toString();
-
-        if (kVal != '') {
-
-          if (objVal.length > 0) {
-            kVal = '[';
-
-            for (var o1 = 0; o1 < objVal.length; o1++) {
-
-              if (objVal[o1].length > 0) {
-
-                var oS = '';
-
-                for (var o2 = 0; o2 < objVal[o1].length; o2++) {
-                  oS += objVal[o1][o2].toFixed(2) + ',';
+          if (obj.hasOwnProperty(o)) {
+            var keyVal = obj[o];
+            var keyName = o.toString();
+            var keyStrVal = keyVal.toString();
+            
+            if (keyStrVal != '') {
+              
+              if (Array.isArray(keyVal)) {
+                keyStrVal = '[';
+    
+                for (var v = 0; v < keyVal.length; v++) {
+                  var kv = keyVal[v];
+    
+                  if (Array.isArray(kv)) {
+                    keyStrVal += '[';
+    
+                    for (var d = 0; d < kv.length; d++) {
+                      keyStrVal += kv[d].toFixed(2) + ',';
+                    }
+                    keyStrVal = keyStrVal.pops() + '],';
+                  }
                 }
-                kVal += '[' + oS.pops() + '],';
+                keyStrVal = keyStrVal.pops() +']';
               }
+              objValue += '\t' + valName + '.' + keyName + '= ' + keyStrVal + ';\n';
             }
-            kVal = kVal.pops() +']';
           }
-          keys += '\t' + objName + '.' + kN + '= ' + kVal + ';\n';
         }
-      }
-    }
+        objValue = '\n\t' + valName + ' = new Shape();\n' + objValue;
+        break;
+        
+      default: 
+        valName = 'textDoc';
+        var textDoc = obj;
+        var textContent = textDoc.text.replace(/\n|\r/g, '\\n');
+        objValue += '\ttextDoc.text = \'' + textContent + '\';\
+\ttextDoc.font = \'' + textDoc.font + '\';\
+\ttextDoc.fontSize = ' + textDoc.fontSize + ';\
+\ttextDoc.applyStroke = ' + textDoc.applyStroke.toString() + ';\
+\ttextDoc.applyFill = ' + textDoc.applyFill.toString() + ';\n';
 
-    return keys + '\n';
+        if (textDoc.applyFill) {
+          objValue += '\ttextDoc.fillColor = [' + textDoc.fillColor.toString() + '];\n';
+        }
+        if (textDoc.applyStroke) {
+          objValue += '\ttextDoc.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
+        }
+        objValue += '\ttextDoc.strokeWidth = ' + textDoc.strokeWidth + ';\
+\ttextDoc.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\
+\ttextDoc.tracking = ' + textDoc.tracking + ';\
+\ttextDoc.leading = ' + textDoc.leading + ';\
+\ttextDoc.justification = ' + textDoc.justification + ';\n';
+        break;
+    }
+    return [objValue + '\n', valName];
   }
 
   function valueCode(prop, varName) {
@@ -136,16 +164,15 @@ function bin(thisObj) {
     var mn = prop.matchName;
     var val = prop.value;
       
-    if (val.length > 0) {
+    if (Array.isArray(val)) {
       val = '[' + val.toString() + ']';
       
     } else {
+
       if (typeof val == 'object') {
-        // case for txt objects...
-        
-        val = 'shp';
-        propValue += '\n\t' + val + ' = new Shape();\n' + objCode(prop.value, val);
-        
+        val = objCode(prop.value)[1];
+        propValue += objCode(prop.value)[0];
+
       } else {
         val = val.toString();
       }
@@ -163,7 +190,7 @@ function bin(thisObj) {
 
     anim += '\n\t// ' + prop.parentProperty.name
     .toLowerCase() + ' ' + prop.name
-    .toLowerCase() + ' animation...';
+    .toLowerCase() + ' animation...\n';
 
     for (var k = 1; k <= prop.numKeys; k++) {
       
@@ -176,47 +203,52 @@ function bin(thisObj) {
       var easeIn = '';
       var easeOut = '';
       
-      if (val.length > 0) {
+      if (Array.isArray(val)) {
         val = '[' + val.toString() + ']';
         
       } else {
+  
         if (typeof val == 'object') {
-          // case for txt objects...
-          
-          val = 'shp';
-          anim += '\n\t' + val + ' = new Shape();\n' + objCode(prop.keyValue(k), val);
-          
+          val = objCode(prop.keyValue(k))[1];
+          anim += objCode(prop.keyValue(k))[0];
+    
         } else {
           val = val.toString();
         }
       }
-      anim += '\n\t// key ' + k + '...\n';
+      anim += '\t// key ' + k + '...\
+  \t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\n\n';
 
-      for (var d = 0; d < tOutTArray.length; d++) {
-        var inS = tInTArray[d].speed.toFixed(2);
-        var outS = tOutTArray[d].speed.toFixed(2);
-        var inI = tInTArray[d].influence;
-        var outI = tOutTArray[d].influence;
-
-        inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
-        outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
-
-        anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
-\teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
-
-        if (d > 0) {
-          easeIn += ', easeIn' + (d + 1);
-          easeOut += ', easeOut' + (d + 1);
-
-        } else {
-          easeIn += 'easeIn' + (d + 1);
-          easeOut += 'easeOut' + (d + 1);
+      try {
+        prop.setTemporalEaseAtKey(k, tInTArray, tOutTArray);
+        prop.setInterpolationTypeAtKey(k, kInIType, kOutIType);
+        
+        for (var d = 0; d < tOutTArray.length; d++) {
+          var inS = tInTArray[d].speed.toFixed(2);
+          var outS = tOutTArray[d].speed.toFixed(2);
+          var inI = tInTArray[d].influence;
+          var outI = tOutTArray[d].influence;
+  
+          inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
+          outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
+  
+          anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
+  \teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
+  
+          if (d > 0) {
+            easeIn += ', easeIn' + (d + 1);
+            easeOut += ', easeOut' + (d + 1);
+  
+          } else {
+            easeIn += 'easeIn' + (d + 1);
+            easeOut += 'easeOut' + (d + 1);
+          }
         }
-      }
-      anim += '\t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\
-\t' + varName + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
-\t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
+        anim += '\t' + varName + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
+  \t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
 
+      } catch (error) {}  
+  
       try{
 
         if (prop.isSpatial) {
@@ -289,47 +321,27 @@ function bin(thisObj) {
           getProperties(cProp);
 
         } else {
-          /* cSpell:disable */
-          if (mn == 'ADBE Vector Shape' || mn == 'ADBE Mask Shape' ) {
-            layerStr += valueCode(cProp, var2);
 
+          if (cProp.isModified) {
+
+            var val = cProp.value;
             exp = cProp.expression;
 
-            if (exp != '') {
-              layerStr += '\n\t// ' + pProp.name
+            try {
+              cProp.setValue(val);
+              layerStr += valueCode(cProp, var2);
+
+              if (exp != '') {
+                layerStr += '\n\t// ' + pProp.name
                 .toLowerCase() + ' ' + cProp.name
                 .toLowerCase() + ' expression...\
 \n\texp = \'' + expCode(exp) + '\';\
 \t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
-            }
-            // path animation...
+              }
+            } catch (error) {}
+
             if (cProp.numKeys > 0) {
               layerStr += animCode(cProp, var2);
-            }
-            /* cSpell:enable */
-          } else {
-            
-            if (cProp.isModified) {
-
-              var val = cProp.value;
-              exp = cProp.expression;
-
-              try {
-                cProp.setValue(val);
-                layerStr += valueCode(cProp, var2);
-
-                if (exp != '') {
-                  layerStr += '\n\t// ' + pProp.name
-                  .toLowerCase() + ' ' + cProp.name
-                  .toLowerCase() + ' expression...\
-\n\texp = \'' + expCode(exp) + '\';\
-\t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
-                }
-              } catch (error) {}
-
-              if (cProp.numKeys > 0) {
-                layerStr += animCode(cProp, var2);
-              }
             }
           }
           if (i == pProp.numProperties) {
@@ -378,32 +390,13 @@ function bin(thisObj) {
         break;
 
       case layer instanceof TextLayer:
-        var text = layer.property('ADBE Text Properties');        
-        var textDoc = text.property('ADBE Text Document').value;
+        var text = layer.property('ADBE Text Properties');
         layerStr += '\n\t// text layer creation...\
 \tvar layer = app.project.activeItem.layers.addText();\
 \n\t// text document...\
 \tvar text = layer.property(\'ADBE Text Properties\');\
-\tvar textDoc = text.property(\'ADBE Text Document\');\
-\tvar textDocVal = textDoc.value;\
-\ttextDocVal.text = \'' + textDoc.text.replace(/\n|\r/g, '\\n') + '\';\
-\ttextDocVal.font = \'' + textDoc.font + '\';\
-\ttextDocVal.fontSize = ' + textDoc.fontSize + ';\
-\ttextDocVal.applyStroke = ' + textDoc.applyStroke.toString() + ';\
-\ttextDocVal.applyFill = ' + textDoc.applyFill.toString() + ';\n';
+\tvar textDoc = text.property(\'ADBE Text Document\').value;\n';
 
-        if (textDoc.applyFill) {
-          layerStr += '\ttextDocVal.fillColor = [' + textDoc.fillColor.toString() + '];\n';
-        }
-        if (textDoc.applyStroke) {
-          layerStr += '\ttextDocVal.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
-        }
-        layerStr += '\ttextDocVal.strokeWidth = ' + textDoc.strokeWidth + ';\
-\ttextDocVal.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\
-\ttextDocVal.tracking = ' + textDoc.tracking + ';\
-\ttextDocVal.leading = ' + textDoc.leading + ';\
-\ttextDocVal.justification = ' + textDoc.justification + ';\
-\n\t// text content...\n';
         getProperties(text);
         break;
     }
