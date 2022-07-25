@@ -120,10 +120,10 @@ function bin(thisObj) {
                     for (var d = 0; d < kv.length; d++) {
                       keyStrVal += kv[d].toFixed(2) + ',';
                     }
-                    keyStrVal = keyStrVal.pops() + '],';
+                    keyStrVal = keyStrVal.popLastCharacter() + '],';
                   }
                 }
-                keyStrVal = keyStrVal.pops() +']';
+                keyStrVal = keyStrVal.popLastCharacter() +']';
               }
               objValue += '\t' + valName + '.' + keyName + '= ' + keyStrVal + ';\n';
             }
@@ -334,7 +334,7 @@ function bin(thisObj) {
                 layerStr += '\n\t// ' + pProp.name
                 .toLowerCase() + ' ' + cProp.name
                 .toLowerCase() + ' expression...\
-\n\texp = \'' + expCode(exp) + '\';\
+\texp = \'' + expCode(exp) + '\';\
 \t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
               }
             } catch (error) {}
@@ -674,6 +674,6 @@ String.prototype.trim = function () {
   return this.replace(/^[\s|\t]+|[\s|\t]+$/, '');
 };
 
-String.prototype.pops = function () {
+String.prototype.popLastCharacter = function () {
   return this.replace(/.$/, '');
 };
