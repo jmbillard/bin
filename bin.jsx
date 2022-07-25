@@ -287,13 +287,13 @@ function bin(thisObj) {
         var varN = pProp.name;
         var mn = cProp.matchName;
         var exp;
+        var var1 = cProp.name.replace(/^[\d]+/, 'n')
+          .toCamelCase()
+          .replace(/\-/, '_') + '_' + pName + D;
 
         if (cProp.numProperties > 0) {
-          var var1 = cProp.name.replace(/^[\d]+/, 'n')
-            .toCamelCase()
-            .replace(/\-/, '_') + '_' + pName + D;
   
-          if (pProp.elided || pProp == contents || pProp == effects || pProp == masks) {
+          if (pProp.canAddProperty(mn)) {
 
             if (pProp == effects) {
               layerStr += '\t// ' + cProp.name.toLowerCase() + ' effect...\n';
@@ -304,12 +304,8 @@ function bin(thisObj) {
               layerStr += var1 + '.enabled = false;\n';
             }
           } else {
-            if (mn == 'ADBE Vector Group') {
-              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n\n';
+            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
 
-            } else {
-              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
-            }
             if (i == pProp.numProperties) {
               
               try {
@@ -321,9 +317,12 @@ function bin(thisObj) {
           getProperties(cProp);
 
         } else {
-
+          
           if (cProp.isModified) {
 
+            if (pProp.canAddProperty(mn)) {
+              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
+            }
             var val = cProp.value;
             exp = cProp.expression;
 
