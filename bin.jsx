@@ -6,7 +6,7 @@
 
   notes:   a multi purpose tool to for development
            1. binary converter;
-           2. shape layer definition;
+           2. layer definition;
            3. expression string formatter;
 
   copy this file to 'ScriptUI Panels' folder
@@ -21,6 +21,7 @@
 
 //  linter settings:
 //  jshint -W061
+//  jshint -W043
 //  jscs:disable maximumLineLength
 
 function bin(thisObj) {
@@ -46,7 +47,9 @@ function bin(thisObj) {
     binStr = binStr.substring(12, binStr.length - 2);
     inFile.close();
 
-    return binStr.replace(/\'/g, '\\\'').replace(/^\"/, '\'').replace(/[\"]+$/, '\'');
+    return binStr.replace(/\'/g, '\\\'')
+      .replace(/^\"/, '\'')
+      .replace(/[\"]+$/, '\'');
   }
 
   function exportFile(outFile, strCode) {
@@ -76,16 +79,190 @@ function bin(thisObj) {
     return str.trim();
   }
 
+  // formats the expression value from a property...
   function expCode(exp) {
 
-    var tab = (exp.match(/^\t+/) != null) ? exp.match(/^\t+/) : '';
     exp = exp.trim().replace(/\\/g, '\\\\');
     exp = exp.replace(/\'|\"/g, '\\\'');
-    exp = exp.replace(/\t/g, '\\t');
+    exp = exp.replace(/\t|[ ]{2}/g, '\\t');
     exp = exp.split(/\r*\n+/);
-    exp = tab.toString() + 'exp += \'' + exp.join('\\n\';\n' + tab.toString() + 'exp += \'') + '\';\n';
+    exp = exp.join('\\\n');
 
     return exp;
+  }
+
+  // formats the object property names and values...
+  function objCode(obj) {
+    
+    var objValue = '';
+    switch (obj.toString()) {
+      case '[object Shape]':            
+        valName = 'shp';
+
+        for (var o in obj) {
+      
+          if (obj.hasOwnProperty(o)) {
+            var keyVal = obj[o];
+            var keyName = o.toString();
+            var keyStrVal = keyVal.toString();
+
+            if (keyStrVal != '') {
+              
+              if (Array.isArray(keyVal)) {
+                keyStrVal = '[';
+
+                for (var v = 0; v < keyVal.length; v++) {
+                  var kv = keyVal[v];
+
+                  if (Array.isArray(kv)) {
+                    keyStrVal += '[';
+
+                    for (var d = 0; d < kv.length; d++) {
+                      keyStrVal += kv[d].toFixed(2) + ',';
+                    }
+                    keyStrVal = keyStrVal.popLastCharacter() + '],';
+                  }
+                }
+                keyStrVal = keyStrVal.popLastCharacter() +']';
+              }
+              objValue += '\t' + valName + '.' + keyName + '= ' + keyStrVal + ';\n';
+            }
+          }
+        }
+        objValue = '\n\t' + valName + ' = new Shape();\n' + objValue;
+        break;
+        
+      default: 
+        valName = 'textDoc';
+        var textDoc = obj;
+        var textContent = textDoc.text.replace(/\n|\r/g, '\\n');
+        objValue += '\ttextDoc.text = \'' + textContent + '\';\
+\ttextDoc.font = \'' + textDoc.font + '\';\
+\ttextDoc.fontSize = ' + textDoc.fontSize + ';\
+\ttextDoc.applyStroke = ' + textDoc.applyStroke.toString() + ';\
+\ttextDoc.applyFill = ' + textDoc.applyFill.toString() + ';\n';
+
+        if (textDoc.applyFill) {
+          objValue += '\ttextDoc.fillColor = [' + textDoc.fillColor.toString() + '];\n';
+        }
+        if (textDoc.applyStroke) {
+          objValue += '\ttextDoc.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
+        }
+        objValue += '\ttextDoc.strokeWidth = ' + textDoc.strokeWidth + ';\
+\ttextDoc.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\
+\ttextDoc.tracking = ' + textDoc.tracking + ';\
+\ttextDoc.leading = ' + textDoc.leading + ';\
+\ttextDoc.justification = ' + textDoc.justification + ';\n';
+        break;
+    }
+    return [objValue + '\n', valName];
+  }
+
+  function valueCode(prop, varName) {
+
+    var propValue = '';
+    var mn = prop.matchName;
+    var val = prop.value;
+
+    if (Array.isArray(val)) {
+      val = '[' + val.toString() + ']';
+
+    } else {
+
+      if (typeof val == 'object') {
+        val = objCode(prop.value)[1];
+        propValue += objCode(prop.value)[0];
+
+      } else {
+        val = val.toString();
+      }
+    }
+    propValue += '\t' + varName + '.property(\'' + mn + '\').setValue(' + val + ');\n';
+
+    return propValue;
+  }
+
+  function animCode(prop, varName) {
+
+    var anim = '';
+    var mn = prop.matchName;
+    var val = prop.value;
+
+    anim += '\n\t// ' + prop.parentProperty.name
+    .toLowerCase() + ' ' + prop.name
+    .toLowerCase() + ' animation...\n';
+
+    for (var k = 1; k <= prop.numKeys; k++) {
+
+      val = prop.keyValue(k);
+      var t = prop.keyTime(k);
+      var tInTArray = prop.keyInTemporalEase(k);
+      var tOutTArray = prop.keyOutTemporalEase(k);
+      var kInIType = prop.keyInInterpolationType(k);
+      var kOutIType = prop.keyOutInterpolationType(k);
+      var easeIn = '';
+      var easeOut = '';
+
+      if (Array.isArray(val)) {
+        val = '[' + val.toString() + ']';
+        
+      } else {
+
+        if (typeof val == 'object') {
+          val = objCode(prop.keyValue(k))[1];
+          anim += objCode(prop.keyValue(k))[0];
+
+        } else {
+          val = val.toString();
+        }
+      }
+      anim += '\t// key ' + k + '...\
+  \t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\n\n';
+
+      try {
+        prop.setTemporalEaseAtKey(k, tInTArray, tOutTArray);
+        prop.setInterpolationTypeAtKey(k, kInIType, kOutIType);
+        
+        for (var d = 0; d < tOutTArray.length; d++) {
+          var inS = tInTArray[d].speed.toFixed(2);
+          var outS = tOutTArray[d].speed.toFixed(2);
+          var inI = tInTArray[d].influence;
+          var outI = tOutTArray[d].influence;
+
+          inI = (inI < 0.1) ? 0.1 : inI.toFixed(2);
+          outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
+
+          anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
+  \teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
+
+          if (d > 0) {
+            easeIn += ', easeIn' + (d + 1);
+            easeOut += ', easeOut' + (d + 1);
+
+          } else {
+            easeIn += 'easeIn' + (d + 1);
+            easeOut += 'easeOut' + (d + 1);
+          }
+        }
+        anim += '\t' + varName + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
+  \t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
+
+      } catch (error) {}  
+
+      try{
+
+        if (prop.isSpatial) {
+          var kInSArray = prop.keyInSpatialTangent(k).toString();
+          var kOutSArray = prop.keyOutSpatialTangent(k).toString();
+          var ct = prop.keySpatialContinuous(k).toString();
+          
+          anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
+          anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
+        }
+      } catch (error) {}
+    }
+
+    return anim;
   }
 
   function layerCode(layer) {
@@ -93,174 +270,83 @@ function bin(thisObj) {
     var layerStr = '';
 
     function getProperties(prop) {
-  
+
       for (var i = 1; i <= prop.numProperties; i++) {
-        var currentProp = prop.property(i);
-        var parentProp = currentProp.parentProperty;
-        var parentName = parentProp.name.toCamelCase().replace(/\-/, '_');
-        var D = prop.property(i).propertyDepth - 1;
-        var var2 = (parentProp.propertyDepth == 1) ? parentName : parentName + '_' + parentProp.parentProperty.name.toCamelCase().replace(/\-/, '_') + (D - 1);
-        var varN = parentProp.name;
+        var cProp = prop.property(i);
+        var D = cProp.propertyDepth - 1;
+        var pProp = cProp.parentProperty;
+        var pName = pProp.name
+          .replace(/^[\d]+/, 'n')
+          .toCamelCase()
+          .replace(/\-/, '_');
+        var pName2 = pProp.parentProperty.name
+          .replace(/^[\d]+/, 'n')
+          .toCamelCase()
+          .replace(/\-/, '_') + (D - 1);
+        var var2 = (pProp.propertyDepth == 1) ? pName : pName + '_' + pName2;
+        var varN = pProp.name;
+        var mn = cProp.matchName;
+        var exp;
+        var var1 = cProp.name.replace(/^[\d]+/, 'n')
+          .toCamelCase()
+          .replace(/\-/, '_') + '_' + pName + D;
 
-        //alert(currentProp.name + '(\'' + currentProp.matchName + '\')');
-  
-        if (currentProp.numProperties > 0) {
-          var var1 = currentProp.name.toCamelCase().replace(/\-/, '_') + '_' + parentName + D;
-  
-          if (parentProp.elided || parentProp == contents || parentProp == effects || parentProp == masks) {
+        if (cProp.numProperties > 0) {
 
-            if (parentProp == effects) {
-              layerStr += '\t// ' + currentProp.name.toLowerCase() + ' effect...\n';
+          if (pProp.canAddProperty(mn)) {
+
+            if (pProp == effects) {
+              layerStr += '\t// ' + cProp.name.toLowerCase() + ' effect...\n';
             }
-            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n';
-  
-            if (!currentProp.enabled) {
+            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
+
+            if (!cProp.enabled) {
               layerStr += var1 + '.enabled = false;\n';
             }
           } else {
-            if (currentProp.matchName == 'ADBE Vector Group' || currentProp.matchName == 'ADBE Text Animator Properties') {
-              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n\n';
+            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
 
-            } else {
-              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + currentProp.matchName + '\');\n';
-            }
-            if (i == parentProp.numProperties) {
-<<<<<<< HEAD
-=======
-              
->>>>>>> a669a1e54492260f40bf6842d17c12f620fdb806
+            if (i == pProp.numProperties) {
+
               try {
-                parentProp.name = parentProp.name;
+                pProp.name = pProp.name;
                 layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
               } catch (error) {}
             }
           }
-          getProperties(currentProp);
-        
+          getProperties(cProp);
+
         } else {
-          
-          if (currentProp.matchName == 'ADBE Vector Shape' || currentProp.matchName == 'ADBE Mask Shape' ) {
-            var vert = currentProp.value.vertices;
-            var inTang = currentProp.value.inTangents;
-            var outTang = currentProp.value.outTangents;
 
-            /* cSpell:disable */
-            layerStr += '\n\tshp = new Shape();\n';
-            layerStr += '\tshp.vertices = [';
-            
-            for (var v = 0; v < vert.length; v++) {
-              layerStr += '[' + vert[v].toString() + '],';
+          if (cProp.isModified) {
+
+            if (pProp.canAddProperty(mn)) {
+              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
             }
-            layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n';
-            layerStr += '\tshp.inTangents = [';
-  
-            for (var iT = 0; iT < inTang.length; iT++) {
-              layerStr += '[' + inTang[iT].toString() + '],';
-            }
-            layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n';
-            layerStr += '\tshp.outTangents = [';
-  
-            for (var oT = 0; oT < outTang.length; oT++) {
-              layerStr += '[' + outTang[oT].toString() + '],';
-            }
-            layerStr = layerStr.substring(0, layerStr.length - 1) + '];\n\n';
-            layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(shp);\n';
-            /* cSpell:enable */
-          } else {
-            
-            if (currentProp.isModified) {
-              var val = currentProp.value;
-              var exp = currentProp.expression;
-
-              try {
-                currentProp.setValue(val);
-
-                if (val.length > 0) {
-                  val = '[' + val.toString() + ']';
-                  
-                } else {
-                  
-                  if (typeof val == 'object') {
-                    val = 'textDocVal';
-
-                  } else {
-                    val = val.toString();
-                  }
-                }
-                if (parentProp.matchName == ('ADBE Text Animator Properties')) {
-                  layerStr += '\t' + var2 + '.addProperty(\'' + currentProp.matchName + '\');\n';
-                }
-                layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValue(' + val + ');\n';
-
-                if (exp != '') {
-                  layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' expression...';
-                  layerStr += '\n\texp = \'\';\n' + expCode('\t' + exp);
-                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').expression = exp;\n\n';
-                }
-              } catch (error) {}              
-
-              if (currentProp.numKeys > 0) {
-                layerStr += '\n\t// ' + parentProp.name.toLowerCase() + ' ' + currentProp.name.toLowerCase() + ' animation...\n';
-                
-                for (var k = 1; k <= currentProp.numKeys; k++) {
-
-                  val = currentProp.keyValue(k);
-                  var t = currentProp.keyTime(k);
-                  var tInTArray = currentProp.keyInTemporalEase(k);
-                  var tOutTArray = currentProp.keyOutTemporalEase(k);
-                  var kInIType = currentProp.keyInInterpolationType(k);
-                  var kOutIType = currentProp.keyOutInterpolationType(k);
-                  var easeIn = '';
-                  var easeOut = '';
-
-                  if (val.length > 0) {
-                    val = '[' + val.toString() + ']';
-                  
-                  } else {
-                  
-                    if (typeof val == 'object') {
-                      val = 'text';
-
-                    } else {
-                      val = val.toString();
-                    }
-                  }
-                  layerStr += '\t// key ' + k + '...\n';
-                  
-                  for (var d = 0; d < tOutTArray.length; d++) {
-                    layerStr += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + tInTArray[d].speed + ', ' + tInTArray[d].influence + ');\n';
-                    layerStr += '\teaseOut' + (d + 1) + ' = new KeyframeEase(' + tOutTArray[d].speed + ', ' + tOutTArray[d].influence + ');\n';
-
-                    if (d > 0) {
-                      easeIn += ', easeIn' + (d + 1);
-                      easeOut += ', easeOut' + (d + 1);
-
-                    } else {
-                      easeIn += 'easeIn' + (d + 1);
-                      easeOut += 'easeOut' + (d + 1);
-                    }
-                  }
-                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setValueAtTime(' + t + ', ' + val + ');\n';
-                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\n';
-                  layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
-                  
-                  if (currentProp.isSpatial) {
-                    var kInSArray = currentProp.keyInSpatialTangent(k).toString();
-                    var kOutSArray = currentProp.keyOutSpatialTangent(k).toString();
-                    var ct = currentProp.keySpatialContinuous(k).toString();
-                  
-                    layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
-                    layerStr += '\t' + var2 + '.property(\'' + currentProp.matchName + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
-                  }
-                }
-                layerStr += '\n';
-              }
-            }
-          }
-          if (i == parentProp.numProperties) {
+            var val = cProp.value;
+            exp = cProp.expression;
 
             try {
-              parentProp.name = parentProp.name;
+              cProp.setValue(val);
+              layerStr += valueCode(cProp, var2);
+
+              if (exp != '') {
+                layerStr += '\n\t// ' + pProp.name
+                .toLowerCase() + ' ' + cProp.name
+                .toLowerCase() + ' expression...\
+\texp = \'' + expCode(exp) + '\';\
+\t' + var2 + '.property(\'' + mn + '\').expression = exp;\n\n';
+              }
+            } catch (error) {}
+
+            if (cProp.numKeys > 0) {
+              layerStr += animCode(cProp, var2);
+            }
+          }
+          if (i == pProp.numProperties) {
+
+            try {
+              pProp.name = pProp.name;
               layerStr += '\t' + var2 + '.name = \'' + varN + '\';\n';
             } catch (error) {}
           }
@@ -272,66 +358,49 @@ function bin(thisObj) {
     var effects = layer.property('ADBE Effect Parade');
     var masks = layer.property('ADBE Mask Parade');
     var marker = layer.property('ADBE Marker');
-    
-    layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase().replace(/\-/, '_').replace(/\W/g, '')) + '() {\n\n';
-    layerStr += '\t// expressions variable...\n';
-    layerStr += '\tvar exp;\n';
-    layerStr += '\n\t// keyframe ease objects variable...\n';
-    layerStr += '\tvar easeIn1;\n';
-    layerStr += '\tvar easeIn2;\n';
-    layerStr += '\tvar easeIn3;\n';
-    layerStr += '\tvar easeOut1;\n';
-    layerStr += '\tvar easeOut2;\n';
-    layerStr += '\tvar easeOut3;\n';
-    
+
+    layerStr += 'function ' + replaceSpcChar(layer.name.toCamelCase()
+      .replace(/\-/, '_')
+      .replace(/\W/g, '')) + '() {\n\n';
+    layerStr += '\t// expressions variable...\
+\tvar exp;\
+\n\t// keyframe ease objects variable...\
+\tvar easeIn1;\
+\tvar easeIn2;\
+\tvar easeIn3;\
+\tvar easeOut1;\
+\tvar easeOut2;\
+\tvar easeOut3;\n';
+
     switch (true) {
-      
+
       case layer instanceof ShapeLayer:
-        var contents = layer.property('ADBE Root Vectors Group');        
-        layerStr += '\n\t// shape object variable...\n';
-        layerStr += '\tvar shp;\n';
-        layerStr += '\n\t// shape layer creation...\n';
-        layerStr += '\tvar layer = app.project.activeItem.layers.addShape();\n';
+        var contents = layer.property('ADBE Root Vectors Group');
+        layerStr += '\n\t// shape object variable...\
+\tvar shp;\
+\n\t// shape layer creation...\
+\tvar layer = app.project.activeItem.layers.addShape();\n';
 
         if (contents.numProperties > 0) {
-          layerStr += '\n\t// vector content...\n';
-          layerStr += '\tvar contents = layer.property(\'ADBE Root Vectors Group\');\n';
+          layerStr += '\n\t// vector content...\
+\tvar contents = layer.property(\'ADBE Root Vectors Group\');\n';
           getProperties(contents);
         }
         break;
-        
+
       case layer instanceof TextLayer:
-        var text = layer.property('ADBE Text Properties');        
-        var textDoc = text.property('ADBE Text Document').value;
-        layerStr += '\n\t// text layer creation...\n';
-        layerStr += '\tvar layer = app.project.activeItem.layers.addText();\n';
-        layerStr += '\n\t// text document...\n';
-        layerStr += '\tvar text = layer.property(\'ADBE Text Properties\');\n';
-        layerStr += '\tvar textDoc = text.property(\'ADBE Text Document\');\n';
-        layerStr += '\tvar textDocVal = textDoc.value;\n';
-        layerStr += '\ttextDocVal.text = \'' + textDoc.text + '\';\n';
-        layerStr += '\ttextDocVal.font = \'' + textDoc.font + '\';\n';
-        layerStr += '\ttextDocVal.fontSize = ' + textDoc.fontSize + ';\n';
-        layerStr += '\ttextDocVal.applyStroke = ' + textDoc.applyStroke.toString() + ';\n';
-        layerStr += '\ttextDocVal.applyFill = ' + textDoc.applyFill.toString() + ';\n';
-        
-        if (textDoc.applyFill) {
-          layerStr += '\ttextDocVal.fillColor = [' + textDoc.fillColor.toString() + '];\n';
-        }
-        if (textDoc.applyStroke) {
-          layerStr += '\ttextDocVal.strokeColor = [' + textDoc.strokeColor.toString() + '];\n';
-        }
-        layerStr += '\ttextDocVal.strokeWidth = ' + textDoc.strokeWidth + ';\n';
-        layerStr += '\ttextDocVal.strokeOverFill = ' + textDoc.strokeOverFill.toString() + ';\n';
-        layerStr += '\ttextDocVal.tracking = ' + textDoc.tracking + ';\n';
-        layerStr += '\ttextDocVal.leading = ' + textDoc.leading + ';\n';
-        layerStr += '\ttextDocVal.justification = ' + textDoc.justification + ';\n';        
-        layerStr += '\n\t// text content...\n';
+        var text = layer.property('ADBE Text Properties');
+        layerStr += '\n\t// text layer creation...\
+\tvar layer = app.project.activeItem.layers.addText();\
+\n\t// text document...\
+\tvar text = layer.property(\'ADBE Text Properties\');\
+\tvar textDoc = text.property(\'ADBE Text Document\').value;\n';
+
         getProperties(text);
         break;
     }
-    layerStr += '\n\t// transformations...\n';
-    layerStr += '\tvar transform = layer.property(\'ADBE Transform Group\');\n';
+    layerStr += '\n\t// transformations...\
+\tvar transform = layer.property(\'ADBE Transform Group\');\n';
     var t1 = layerStr;
     var t2 = getProperties(transform);
 
@@ -339,48 +408,49 @@ function bin(thisObj) {
       layerStr = layerStr.substring(0, layerStr.length - 81);
     }
     if (masks.numProperties > 0) {
-      layerStr += '\n\t// masks...\n';
-      layerStr += '\tvar masks = layer.property(\'ADBE Mask Parade\');\n';
+      layerStr += '\n\t// masks...\
+\tvar masks = layer.property(\'ADBE Mask Parade\');\n';
       getProperties(masks);
     }
     if (effects.numProperties > 0) {
-      layerStr += '\n\t// fx...\n';
-      layerStr += '\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
+      layerStr += '\n\t// fx...\
+\tvar effects = layer.property(\'ADBE Effect Parade\');\n';
       getProperties(effects);
     }
     var i = 1;
-    
+
     while (i > 0) {
-      
+
       try {
         var t = marker.keyTime(i);
         var comment = marker.keyValue(i).comment;
         var l = marker.keyValue(i).label;
         var dur = marker.keyValue(i).duration;
-        layerStr += '\n\t// layer marker ' + i + '...\n';
-        layerStr += '\tvar t' + i + ' = ' + t + ';\n';
-        layerStr += '\tvar marker' + i + ' = new MarkerValue(\'' + comment + '\');\n';
-        layerStr += '\tmarker' + i + '.label = ' + l + ';\n';
-        layerStr += '\tmarker' + i + '.duration = ' + dur + ';\n';
-        layerStr += '\tlayer.property(\'ADBE Marker\').setValueAtTime(t' + i + ', marker' + i + ');\n\n';
-        i += 1;          
-      
+        layerStr += '\n\t// layer marker ' + i + '...\
+\tvar t' + i + ' = ' + t + ';\
+\tvar marker' + i + ' = new MarkerValue(\'' + comment + '\');\
+\tmarker' + i + '.label = ' + l + ';\
+\tmarker' + i + '.duration = ' + dur + ';\
+\tlayer.property(\'ADBE Marker\').setValueAtTime(t' + i + ', marker' + i + ');\n\n';
+        i += 1;
+
       } catch (error) {
         break;
       }
-    }      
-    layerStr += '\n\t// layer attributes...\n';
-    layerStr += '\tlayer.autoOrient = ' + layer.autoOrient + ';\n';
-    layerStr += '\tlayer.inPoint = ' + layer.inPoint + ';\n';
-    layerStr += '\tlayer.outPoint = ' + layer.outPoint + ';\n';
-    layerStr += '\tlayer.comment = \'' + layer.comment + '\';\n';
-    layerStr += '\tlayer.name = \'' + layer.name + '\';\n';
-    layerStr += '\tlayer.label = ' + layer.label + ';\n';
-    layerStr += '\tlayer.locked = ' + layer.locked + ';\n';
-    layerStr += '\n\treturn layer;\n';
-    layerStr += '}\n\n';
+    }
+    layerStr += '\n\t// layer attributes...\
+\tlayer.autoOrient = ' + layer.autoOrient + ';\
+\tlayer.inPoint = ' + layer.inPoint + ';\
+\tlayer.outPoint = ' + layer.outPoint + ';\
+\tlayer.comment = \'' + layer.comment + '\';\
+\tlayer.name = \'' + layer.name + '\';\
+\tlayer.label = ' + layer.label + ';\
+\tlayer.locked = ' + layer.locked + ';\
+\tlayer.guideLayer = ' + layer.guideLayer + ';\
+\n\treturn layer;\
+}\n\n';
     layerStr += replaceSpcChar(layer.name.toCamelCase().replace(/\-/, '_').replace(/\W/g, '')) + '();';
-  
+
     return layerStr;
   }
 
@@ -411,7 +481,7 @@ function bin(thisObj) {
     
     var exportBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     exportBtn.helpTip = 'export data';
-    
+
     var evalBtn = btnGrp.add('iconbutton', undefined, evalIcon, {style: 'toolbutton'});
     evalBtn.helpTip = 'run data';
 
@@ -428,7 +498,7 @@ function bin(thisObj) {
 
     stcTxt.graphics.foregroundColor = stcTxt.graphics.newPen(pType, coolBlue, 1);
     w.graphics.backgroundColor = w.graphics.newBrush(bType, offWhite);
-    
+
     // eventos
     w.onShow = function() {
 
@@ -465,30 +535,30 @@ function bin(thisObj) {
 
       nameTxt = '';
       codeTxt = '';
-      
+
       switch (true) {
-        
+
         case expRad01.value:
           prgBar.value = 0;
           fileArray = File.openDialog('open...', undefined, true);
-    
+
           if (fileArray != null) {
-    
+
             for (i = 0; i < fileArray.length; i++) {
               var fileObj = fileArray[i];
               var fileName = fileObj.name;
-    
+
               nameTxt += fileName + ' | ';
               fileName = File.decode(fileName.substring(0, fileName.length - 4));
               fileName = replaceSpcChar(fileName);
               codeTxt += '\nvar ' + fileName + ' = ' + convertFile(fileObj) + ';\n';
-    
+
               codeArray.push(convertFile(fileObj));
               prgBar.value = (i + 1) / fileArray.length * 100;
             }
             nameTxt = File.decode(nameTxt.substring(0, nameTxt.length - 2));
             stcTxt.helpTip = nameTxt;
-    
+
             if (nameTxt.length > 120) {
               nameTxt = nameTxt.substring(0, 120) + '...';
             }
@@ -501,20 +571,38 @@ function bin(thisObj) {
         case expRad02.value:
           aItem = app.project.activeItem;
           aLayer = aItem.selectedLayers[0];
-    
+
           stcTxt.text = 'layer: ' + aLayer.name;
           edtText.text = layerCode(aLayer);
           break;
           
         case expRad03.value:
+          aItem = app.project.activeItem;
+          aLayer = aItem.selectedLayers[0];
           var aProp = aLayer.selectedProperties[0];
-          var exp = (aProp.expression == undefined) ? '' : aProp.expression;
-          
-          if (exp != '') {
-            exp = 'var exp = \'\';\n' + expCode(exp);
-            edtText.text = exp;
+          var exp;
+          if (aProp.numProperties == undefined) {
+            exp = (aProp.expression == undefined) ? '' : aProp.expression;
+            if (exp != '') {
+              exp = 'var exp = \'' + expCode(exp) + '\';\n';
+              edtText.text = exp;
+            }
+            stcTxt.text = 'prop: ' + aProp.name;
+
+          } else {
+            for (var p = 1; p <= aProp.numProperties; p++) {
+              var sProp = aProp.property(p);
+
+              if (aProp.property(p).selected) {
+                exp = (sProp.expression == undefined) ? '' : sProp.expression;
+                if (exp != '') {
+                  exp = 'var exp = \'' + expCode(exp) + '\';\n';
+                  edtText.text = exp;
+                }
+                stcTxt.text = 'prop: ' + aProp.name;
+              }
+            }
           }
-          stcTxt.text = 'prop: ' + aProp.name;
           break;
       }
       hasData = (edtText.text.trim() != '');
@@ -538,23 +626,24 @@ function bin(thisObj) {
     };
 
     evalBtn.onClick = function() {
+      app.beginUndoGroup('run...');
 
       if (expRad02.value) {
 
         if (edtText.text != '') {
           eval(edtText.text);
-        }          
+        }
       }
-    
+      app.endUndoGroup();
     };
 
     expRad01.onClick = expRad02.onClick = expRad03.onClick = function() {
-      
+
       evalBtn.enabled = expRad02.value && hasData;
     };
 
     return w;
-  }  
+  }
 
   binWindow = bin_ui(thisObj);
 
@@ -577,9 +666,14 @@ String.prototype.toCamelCase = function () {
   return this.toLowerCase()
     .replace(/\s(.)/g, function ($1) {return $1.toUpperCase();})
     .replace(/\s/g, '')
+    .replace(/\./g, 'dot')
     .replace(/^(.)/, function ($1) {return $1.toLowerCase();});
 };
 
 String.prototype.trim = function () {
   return this.replace(/^[\s|\t]+|[\s|\t]+$/, '');
+};
+
+String.prototype.popLastCharacter = function () {
+  return this.replace(/.$/, '');
 };
