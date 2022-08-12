@@ -91,7 +91,7 @@ function bin(thisObj) {
     return exp;
   }
 
-  // formats the object property names and values...
+  // formats the object property key names and values...
   function objCode(obj) {
     
     var objValue = '';
@@ -166,9 +166,9 @@ function bin(thisObj) {
 
     if (Array.isArray(val)) {
       val = '[' + val.toString() + ']';
-
+      
     } else {
-
+      
       if (typeof val == 'object') {
         val = objCode(prop.value)[1];
         propValue += objCode(prop.value)[0];
@@ -292,7 +292,7 @@ function bin(thisObj) {
           .replace(/\-/, '_') + '_' + pName + D;
 
         if (cProp.numProperties > 0) {
-
+          
           if (pProp.canAddProperty(mn)) {
 
             if (pProp == effects) {
@@ -305,14 +305,13 @@ function bin(thisObj) {
             }
           } else {
             layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
+          }
+          if (i == pProp.numProperties) {
 
-            if (i == pProp.numProperties) {
-
-              try {
-                pProp.name = pProp.name;
-                layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
-              } catch (error) {}
-            }
+            try {
+              pProp.name = pProp.name;
+              layerStr += '\t' + var1 + '.parentProperty.name = \'' + varN + '\';\n';
+            } catch (error) {}
           }
           getProperties(cProp);
 
@@ -325,7 +324,6 @@ function bin(thisObj) {
             }
             var val = cProp.value;
             exp = cProp.expression;
-
             try {
               cProp.setValue(val);
               layerStr += valueCode(cProp, var2);
@@ -401,12 +399,8 @@ function bin(thisObj) {
     }
     layerStr += '\n\t// transformations...\
 \tvar transform = layer.property(\'ADBE Transform Group\');\n';
-    var t1 = layerStr;
-    var t2 = getProperties(transform);
+    getProperties(transform);
 
-    if (t1 == t2) {
-      layerStr = layerStr.substring(0, layerStr.length - 81);
-    }
     if (masks.numProperties > 0) {
       layerStr += '\n\t// masks...\
 \tvar masks = layer.property(\'ADBE Mask Parade\');\n';
@@ -677,3 +671,9 @@ String.prototype.trim = function () {
 String.prototype.popLastCharacter = function () {
   return this.replace(/.$/, '');
 };
+
+if (typeof Array.isArray === 'undefined') {
+  Array.isArray = function(obj) {
+    return Object.prototype.toString.call(obj) === '[object Array]';
+  };
+}
