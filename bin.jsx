@@ -96,7 +96,7 @@ function bin(thisObj) {
     
     var objValue = '';
     switch (obj.toString()) {
-      case '[object Shape]':            
+      case '[object Shape]':
         valName = 'shp';
 
         for (var o in obj) {
@@ -217,7 +217,7 @@ function bin(thisObj) {
         }
       }
       anim += '\t// key ' + k + '...\
-  \t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\n\n';
+\t' + varName + '.property(\'' + mn + '\').setValueAtTime(' + t + ', ' + val + ');\n\n';
 
       try {
         prop.setTemporalEaseAtKey(k, tInTArray, tOutTArray);
@@ -233,7 +233,7 @@ function bin(thisObj) {
           outI = (outI < 0.1) ? 0.1 : outI.toFixed(2);
 
           anim += '\teaseIn' + (d + 1) + ' = new KeyframeEase(' + inS + ', ' + inI + ');\
-  \teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
+\teaseOut' + (d + 1) + ' = new KeyframeEase(' + outS + ', ' + outI + ');\n';
 
           if (d > 0) {
             easeIn += ', easeIn' + (d + 1);
@@ -245,9 +245,9 @@ function bin(thisObj) {
           }
         }
         anim += '\t' + varName + '.property(\'' + mn + '\').setTemporalEaseAtKey(' + k + ', [' + easeIn + '], [' + easeOut + ']);\
-  \t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
+\t' + varName + '.property(\'' + mn + '\').setInterpolationTypeAtKey(' + k + ', ' + kInIType + ', ' + kOutIType + ');\n';
 
-      } catch (error) {}  
+      } catch (error) {}
 
       try{
 
@@ -255,7 +255,7 @@ function bin(thisObj) {
           var kInSArray = prop.keyInSpatialTangent(k).toString();
           var kOutSArray = prop.keyOutSpatialTangent(k).toString();
           var ct = prop.keySpatialContinuous(k).toString();
-          
+
           anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialTangentsAtKey(' + k + ', [' + kInSArray + '], [' + kOutSArray + ']);\n';
           anim += '\t' + varName + '.property(\'' + mn + '\').setSpatialContinuousAtKey(' + k + ', ' + ct + ');\n';
         }
