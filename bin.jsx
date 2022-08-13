@@ -100,7 +100,7 @@ function bin(thisObj) {
         valName = 'shp';
 
         for (var o in obj) {
-      
+
           if (obj.hasOwnProperty(o)) {
             var keyVal = obj[o];
             var keyName = o.toString();
@@ -131,7 +131,7 @@ function bin(thisObj) {
         }
         objValue = '\n\t' + valName + ' = new Shape();\n' + objValue;
         break;
-        
+
       default: 
         valName = 'textDoc';
         var textDoc = obj;
@@ -166,9 +166,9 @@ function bin(thisObj) {
 
     if (Array.isArray(val)) {
       val = '[' + val.toString() + ']';
-      
+
     } else {
-      
+
       if (typeof val == 'object') {
         val = objCode(prop.value)[1];
         propValue += objCode(prop.value)[0];
@@ -205,7 +205,7 @@ function bin(thisObj) {
 
       if (Array.isArray(val)) {
         val = '[' + val.toString() + ']';
-        
+
       } else {
 
         if (typeof val == 'object') {
@@ -222,7 +222,7 @@ function bin(thisObj) {
       try {
         prop.setTemporalEaseAtKey(k, tInTArray, tOutTArray);
         prop.setInterpolationTypeAtKey(k, kInIType, kOutIType);
-        
+
         for (var d = 0; d < tOutTArray.length; d++) {
           var inS = tInTArray[d].speed.toFixed(2);
           var outS = tOutTArray[d].speed.toFixed(2);
@@ -472,7 +472,7 @@ function bin(thisObj) {
     pickBtn.helpTip = 'pick files | selected layer';
 
     btnGrp.add('image', undefined, spacer);
-    
+
     var exportBtn = btnGrp.add('iconbutton', undefined, exportIcon, {style: 'toolbutton'});
     exportBtn.helpTip = 'export data';
 
@@ -569,7 +569,7 @@ function bin(thisObj) {
           stcTxt.text = 'layer: ' + aLayer.name;
           edtText.text = layerCode(aLayer);
           break;
-          
+
         case expRad03.value:
           aItem = app.project.activeItem;
           aLayer = aItem.selectedLayers[0];
