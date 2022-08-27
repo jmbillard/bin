@@ -298,13 +298,13 @@ function bin(thisObj) {
             if (pProp == effects) {
               layerStr += '\t// ' + cProp.name.toLowerCase() + ' effect...\n';
             }
-            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
+            layerStr += '\t' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
 
             if (!cProp.enabled) {
               layerStr += var1 + '.enabled = false;\n';
             }
           } else {
-            layerStr += '\tvar ' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
+            layerStr += '\t' + var1 + ' = ' + var2 + '.property(\'' + mn + '\');\n';
           }
           if (i == pProp.numProperties) {
 
@@ -320,7 +320,7 @@ function bin(thisObj) {
           if (cProp.isModified) {
 
             if (pProp.canAddProperty(mn)) {
-              layerStr += '\tvar ' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
+              layerStr += '\t' + var1 + ' = ' + var2 + '.addProperty(\'' + mn + '\');\n';
             }
             var val = cProp.value;
             exp = cProp.expression;
@@ -661,6 +661,7 @@ String.prototype.toCamelCase = function () {
     .replace(/\s(.)/g, function ($1) {return $1.toUpperCase();})
     .replace(/\s/g, '')
     .replace(/\./g, 'dot')
+    .replace(/\#/g, 'rash')
     .replace(/^(.)/, function ($1) {return $1.toLowerCase();});
 };
 
