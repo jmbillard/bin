@@ -24,6 +24,11 @@
 //  jshint -W043
 //  jscs:disable maximumLineLength
 
+
+//[ ] implement camelCase on the binary variable name
+//[ ] jsxinc file tipe on export
+
+
 function bin(thisObj) {
 
   /* cSpell:disable */
