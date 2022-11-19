@@ -25,8 +25,8 @@
 //  jscs:disable maximumLineLength
 
 
-//[ ] implement camelCase on the binary variable name
-//[ ] jsxinc file tipe on export
+//[x] implement camelCase on the binary variable name
+//[x] jsxinc file tipe on export
 
 
 function bin(thisObj) {
@@ -546,7 +546,7 @@ function bin(thisObj) {
               nameTxt += fileName + ' | ';
               fileName = File.decode(fileName.substring(0, fileName.length - 4));
               fileName = replaceSpcChar(fileName);
-              codeTxt += '\nvar ' + fileName + ' = ' + convertFile(fileObj) + ';\n';
+              codeTxt += '\nvar ' + fileName.toCamelCase() + ' = ' + convertFile(fileObj) + ';\n';
 
               codeArray.push(convertFile(fileObj));
               prgBar.value = (i + 1) / fileArray.length * 100;
@@ -610,7 +610,7 @@ function bin(thisObj) {
       prgBar.value = 0;
 
       if (edtText.text != '') {
-        var fileTypesArray = ['Script:*.jsx','Text:*.txt'];
+        var fileTypesArray = ['Script:*.jsx','Script:*.jsxinc','Text:*.txt'];
         fileExpObj = File.saveDialog('export...', fileTypesArray);
 
         if (fileExpObj != null) {
