@@ -50,7 +50,7 @@ function bin(thisObj) {
       .replace(/[\"]+$/, '\'');
   }
 
-  function exportFile(outFile, strCode) {
+  function writeFileContent(outFile, strCode) {
 
     outFile.open('w');
     outFile.write(strCode);
@@ -540,7 +540,7 @@ function bin(thisObj) {
               fileName = File.decode(fileName.substring(0, fileName.length - 4))
                 .replaceSpecialCharacters();
               fileName = (fileName.split(/\s/).length > 1) ? fileName.toCamelCase() : fileName;
-              codeTxt += '\nvar ' + fileName + ' = ' + convertToBinary(fileObj) + ';\n';
+              codeTxt += '\nvar ' + fileName + ' = ' + fileToBinary(fileObj) + ';\n';
 
               codeArray.push(convertFile(fileObj));
               prgBar.value = (i + 1) / fileArray.length * 100;
@@ -608,7 +608,7 @@ function bin(thisObj) {
         fileExpObj = File.saveDialog('export...', fileTypesArray);
 
         if (fileExpObj != null) {
-          exportFile(fileExpObj, edtText.text);
+          writeFileContent(fileExpObj, edtText.text);
         }
       }
       prgBar.value = 100;
