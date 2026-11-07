@@ -11,8 +11,8 @@ O **BIN** lê as layers selecionadas (ou uma **comp inteira**, com as precomps) 
 Serve para transformar um layout pronto em ferramenta: o script gerado pode virar um botão de outro painel, um template ou um trecho de automação.
 
 <p align="center">
-  <img src="docs/img/02-propriedades.png" width="300" alt="aba propriedades">
-  <img src="docs/img/03-codigo.png" width="300" alt="aba código">
+  <img src="docs/img/demo.gif" width="340" alt="o BIN em ação"><br>
+  <sub>o painel em ação: capturar, tirar uma propriedade e um efeito, ver o código, recriar e a comp inteira.</sub>
 </p>
 
 > 📂 **arquivos:**\
@@ -73,20 +73,23 @@ Serve para transformar um layout pronto em ferramenta: o script gerado pode vira
 
 ## 2 · capturar
 
-o BIN tem dois modos de captura:
+abra o painel em `Window` > `Extensions` > `BIN`. ele pode ser encaixado em qualquer lugar da área de trabalho, como os outros painéis.
 
-- **layers selecionadas**: selecione uma ou mais layers na comp e clique em **capturar seleção**;
-- **comp inteira**: abra a comp (ou selecione no painel Project) e clique em **comp inteira**. veja a [seção 4](#4--comp-inteira).
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/01-vazio.png" width="280"></td>
+    <td>
 
-depois da primeira captura, o seletor no topo da aba propriedades troca de modo, e o chip da layer captura de novo.
+1. **capturar seleção** → lê as layers selecionadas na comp ativa.
+2. **comp inteira** → lê a comp ativa com todas as layers e as precomps. veja a [seção 4](#4--comp-inteira).
+3. **abas** → `propriedades`, `código` e `utilitários` (atalhos `1` `2` `3`).
+4. **tema** → automático (segue o After Effects), claro ou escuro.
 
-<p align="center">
-  <img src="docs/img/01-vazio.png" width="280" alt="painel vazio">
-</p>
+  </td>
+  </tr>
+</table>
 
 a captura é **somente leitura**: nada no projeto é alterado e o histórico de undo fica limpo.
-
-o chip do topo mostra o tipo (`SHAPE`, `TEXT`, `SOLID`, `NULL`, `ADJ`, `CAM`, `LUZ`, `COMP`, `MÍDIA`), a comp de origem e quantas propriedades, keyframes e expressões foram encontradas.
 
 <br>
 
@@ -94,19 +97,52 @@ o chip do topo mostra o tipo (`SHAPE`, `TEXT`, `SOLID`, `NULL`, `ADJ`, `CAM`, `L
 
 ## 3 · escolher o que entra no script
 
-a aba **propriedades** mostra um card por grupo: atributos da layer, contents, transform, masks, effects, texto, markers…
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/02-propriedades.png" width="280"></td>
+    <td>
 
-- só aparecem as propriedades **modificadas** (diferentes do padrão, com keyframes ou com expressão);
-- os **losangos** amarelos são keyframes; o **ƒ** violeta é uma expressão;
-- **clique na linha** para tirar a propriedade do script; ela fica riscada, e clicar de novo devolve. em grupos, cards e layers, o **olho** aparece ao passar o mouse e tira o grupo inteiro (um efeito, uma máscara, um grupo de shape). um olho azul fixo num grupo fechado avisa que parte dele está fora;
-- **filtrar** procura pelo nome da propriedade ou do grupo;
-- os botões **◇** e **[-]** ligam e desligam keyframes e expressões no script inteiro. sem keyframes, cada propriedade recebe o valor do primeiro keyframe.
+1. **chip** → tipo da layer (`SHAPE`, `TEXT`, `SOLID`, `NULL`, `ADJ`, `CAM`, `LUZ`, `COMP`, `MÍDIA`), comp de origem e contagens. clique para capturar de novo (`Ctrl/⌘ + L`).
+2. **modo** → `layers selecionadas` ou `comp inteira`. trocar captura de novo.
+3. **filtrar** → pelo nome da propriedade, do grupo ou da layer (`Ctrl/⌘ + F`).
+4. **keyframes e expressões** → ligam e desligam no script inteiro. sem keyframes, cada propriedade recebe o valor do primeiro keyframe.
+5. **linha fora do script** → clique na linha para tirar a propriedade; ela fica riscada. clique de novo para devolver.
+6. **resumo** → layers, linhas do script e keyframes que entram.
 
-com várias layers, cada uma ganha um cabeçalho com seu próprio olho.
+  </td>
+  </tr>
+</table>
+
+só aparecem as propriedades **modificadas**: diferentes do padrão, com keyframes ou com expressão. os **losangos** amarelos são keyframes e o **ƒ** violeta é uma expressão.
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/02b-linha-fora.png" width="280"></td>
+    <td>
+
+1. **olho** → aparece ao passar o mouse. nas propriedades, a linha inteira é clicável; em grupos, cards e layers, o olho tira o grupo inteiro (um efeito, uma máscara, um grupo de shape).
+
+um olho azul fixo num grupo **fechado** avisa que parte dele está fora do script.
+
+  </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/05-varias-layers.png" width="280"></td>
+    <td>
+
+**1** **2** · **várias layers** → cada layer selecionada ganha um cabeçalho com o tipo, as contagens e o próprio olho. clique no cabeçalho para abrir ou fechar.
+
+  </td>
+  </tr>
+</table>
+
+passe o mouse sobre qualquer botão ou linha para ver a **dica**: o que ele faz e, quando houver, o atalho. nas propriedades, a dica mostra o nome interno no After Effects, os keyframes e o começo da expressão.
 
 <p align="center">
-  <img src="docs/img/05-varias-layers.png" width="280" alt="várias layers">
-  <img src="docs/img/08-claro.png" width="280" alt="tema claro">
+  <img src="docs/img/11-tooltip.png" width="300">
 </p>
 
 <br>
@@ -117,16 +153,33 @@ com várias layers, cada uma ganha um cabeçalho com seu próprio olho.
 
 no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e também as **precomps** usadas dentro dela, em qualquer profundidade. o script gerado cria as comps no projeto, das mais internas para a principal, e liga cada layer de precomp à comp recém-criada.
 
-<p align="center">
-  <img src="docs/img/09-comp.png" width="280" alt="comp inteira">
-  <img src="docs/img/09b-comp-layer.png" width="280" alt="detalhe de uma layer da comp">
-  <img src="docs/img/10-comp-recriada.png" width="280" alt="comp recriada">
-</p>
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/09-comp.png" width="280"></td>
+    <td>
 
-- cada comp aparece com o card **comp · configurações** (tamanho, duração e frame rate, mais o que for diferente do padrão: cor de fundo, work area, motion blur, shutter, renderizador…) e os **markers da comp**;
-- as layers aparecem como uma **lista, uma linha cada**, com o tipo e as marcas de keyframes e expressões. clique na linha para abrir o detalhe da layer (no mesmo formato do modo layer) e em **‹ voltar** para retornar. o olho, ao passar o mouse, tira a layer do script;
-- **tire uma precomp** (olho no cabeçalho dela) para não recriá-la: as layers que a usam procuram a comp original no projeto pelo nome. as precomps que só ela usava saem junto;
-- a comp principal sempre entra.
+1. **comp principal** → sempre entra no script. as precomps aparecem abaixo, cada uma com o próprio cabeçalho e olho.
+2. **configurações** → tamanho, duração e frame rate, mais o que for diferente do padrão: cor de fundo, work area, motion blur, shutter, renderizador…
+3. **layers** → uma linha por layer, com as marcas de keyframes e expressões e o tipo. clique para abrir o detalhe.
+4. **layer fora do script** → o olho, ao passar o mouse, tira a layer.
+
+**tire uma precomp** (olho no cabeçalho dela) para não recriá-la: as layers que a usam procuram a comp original no projeto pelo nome, e as precomps que só ela usava saem junto.
+
+  </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/09b-comp-layer.png" width="280"></td>
+    <td>
+
+1. **voltar** → retorna para a lista na mesma posição (`Esc`).
+2. **layer aberta** → o mesmo formato do modo layer, com o olho para tirar a layer inteira.
+
+  </td>
+  </tr>
+</table>
 
 <br>
 
@@ -134,7 +187,19 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
 
 ## 5 · o código gerado
 
-a aba **código** mostra o script com numeração de linhas. as funções auxiliares do BIN ficam recolhidas na prévia (clique para ver).
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/03-codigo.png" width="280"></td>
+    <td>
+
+1. **arquivo** → nome sugerido para exportar e quantidade de linhas.
+2. **copiar e exportar** → `Ctrl/⌘ + Shift + C` copia, `Ctrl/⌘ + S` salva o `.jsx`.
+3. **funções auxiliares** → recolhidas na prévia; clique para ver.
+4. **opções** → veja a tabela abaixo.
+
+  </td>
+  </tr>
+</table>
 
 | opção | o que faz |
 |---|---|
@@ -175,22 +240,45 @@ function criar_titulo_principal(comp) {
 
 ## 6 · recriar, copiar e exportar
 
-- **recriar layer** roda o script na hora, dentro de um único undo. o botão fica verde e o aviso oferece **desfazer** e **exportar .jsx**;
-- **copiar** e **exportar** ficam na barra da aba código. o arquivo é salvo em UTF-8 com BOM, que o ExtendScript lê com acentos corretos em qualquer sistema;
-- o selo **avisos** no rodapé lista o que pode dar diferença em outro computador: fontes, plug-ins de terceiros, footage e precomps (procurados no projeto pelo nome).
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/04-recriada.png" width="280"></td>
+    <td>
 
-<p align="center">
-  <img src="docs/img/04-recriada.png" width="280" alt="layer recriada">
-  <img src="docs/img/06-avisos.png" width="280" alt="avisos">
-</p>
+1. **desfazer e exportar** → o aviso de conclusão oferece desfazer tudo de uma vez e exportar o `.jsx` que acabou de rodar.
+2. **recriar** → roda o script na hora, dentro de um único undo (`Ctrl/⌘ + Enter`). fica verde ao terminar.
 
-<br>
+o arquivo exportado é salvo em UTF-8 com BOM, que o ExtendScript lê com acentos corretos em qualquer sistema.
 
----
+  </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/06-avisos.png" width="280"></td>
+    <td>
+
+1. **avisos** → o que pode dar diferença em outro computador: fontes, plug-ins de terceiros, footage e precomps procurados no projeto pelo nome. passe o mouse para ver a lista; clique para ver tudo.
+
+  </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/10-comp-recriada.png" width="280"></td>
+    <td>
+
+1. **comp recriada** → no modo comp, o aviso diz quantas layers e precomps foram criadas, e a comp nova abre no viewer.
+
+  </td>
+  </tr>
+</table>
 
 ### ⌨️ atalhos
 
-passe o mouse sobre qualquer botão para ver a dica com o que ele faz e o atalho. com o painel em foco:
+com o painel em foco:
 
 | atalho | o que faz |
 |---|---|
@@ -208,16 +296,34 @@ passe o mouse sobre qualquer botão para ver a dica com o que ele faz e o atalho
 
 ## 7 · utilitários
 
-<p align="center">
-  <img src="docs/img/07-utilitarios.png" width="280" alt="utilitários">
-</p>
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/07-utilitarios.png" width="280"></td>
+    <td>
 
-- **expressão → string**: pega a expressão da propriedade selecionada (ou todas as expressões das layers selecionadas) e formata como string JS, uma linha por item, pronta para colar em um script;
-- **arquivo → binário**: arraste arquivos (PNG, WAV, FFX…) e o BIN gera uma variável com o conteúdo de cada um, mais a função `binToFile()` para gravar de volta no disco. no ScriptUI, a string de um PNG já serve direto como imagem.
+1. **expressão → string** → pega a expressão da propriedade selecionada (ou todas as expressões das layers selecionadas)…
+2. … e formata como string JS, uma linha por item, pronta para colar em um script. copie ou exporte pela barra.
+3. **arquivo → binário** → arraste arquivos (PNG, WAV, FFX…) ou clique para escolher. o BIN gera uma variável com o conteúdo de cada um, mais a função `binToFile()` para gravar de volta no disco. no ScriptUI, a string de um PNG já serve direto como imagem.
+
+  </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="300"><img src="docs/img/08-claro.png" width="280"></td>
+    <td>
+
+1. **tema** → alterna entre automático (segue o brilho da interface do After Effects), claro e escuro.
+
+  </td>
+  </tr>
+</table>
 
 <br>
 
 ---
+
 
 ## 🧩 o que é recriado
 
@@ -259,6 +365,9 @@ tests/
   pill_align.js       mede o alinhamento vertical do texto nas pílulas
   tab_ink.js          confere o fundo da aba ativa depois da captura
   tooltips.js         dicas (conteúdo, posição, modo aquecido) e atalhos de teclado
+  lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
+  make_docs.js        capturas do README com destaques
+  make_demo.js        GIF do uso simulado
 ```
 
 ```bash
@@ -267,6 +376,8 @@ node tests/run_panel.js      # painel de ponta a ponta + capturas de tela em tes
 node tests/make_icons.js     # ícones da aba e logo
 node tests/make_banner.js    # banner do instalador
 node tests/installer_preview.js  # roda o instalador num ScriptUI simulado e desenha cada passo
+node tests/make_docs.js      # capturas do README com os destaques numerados
+node tests/make_demo.js      # grava o uso simulado e gera docs/img/demo.gif (precisa do ffmpeg)
 ```
 
 para depurar o painel dentro do After Effects, com o `PlayerDebugMode` ligado, abra `http://localhost:8098` no Chrome.
