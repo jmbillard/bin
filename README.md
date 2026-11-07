@@ -237,6 +237,7 @@ tests/
   run_panel.js        painel no Chromium com o host.jsx rodando no mock
   scene.js            comp de exemplo usada nos testes
   installer_preview.js  instalador num ScriptUI simulado
+  pill_align.js       mede o alinhamento vertical do texto nas pílulas
 ```
 
 ```bash

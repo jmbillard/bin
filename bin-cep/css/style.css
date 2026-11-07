@@ -191,6 +191,9 @@ body.is-empty .chip { display: none; }
 	justify-content: center;
 	font-size: 9.5px;
 	font-weight: 700;
+	line-height: 1;
+	/* caixa alta não tem descendentes: desce o texto para o centro óptico */
+	padding-top: .2em;
 	letter-spacing: .5px;
 	border-radius: 999px;
 	color: #fff;
@@ -260,7 +263,11 @@ body.is-empty .chip { display: none; }
 	height: 17px;
 	padding: 0 5px;
 	border-radius: 9px;
-	font-weight: 600; font-size: 10px; line-height: 17px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600; font-size: 10px; line-height: 1;
+	padding-top: .1em; /* algarismos têm a altura das maiúsculas */
 	background: var(--surface-2);
 	color: var(--muted);
 	font-variant-numeric: tabular-nums;
