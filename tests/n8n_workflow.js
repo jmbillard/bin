@@ -19,12 +19,13 @@ let failed = false;
 const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); if (!ok) failed = true; };
 
 const env = Object.assign({}, process.env, {
-	N8N_USER_FOLDER: HOME, N8N_PORT: String(PORT), N8N_ENCRYPTION_KEY: 'chave-de-teste-bin-docs',
+	N8N_USER_FOLDER: HOME, N8N_PORT: String(PORT), N8N_LISTEN_ADDRESS: '127.0.0.1', N8N_ENCRYPTION_KEY: 'chave-de-teste-bin-docs',
 	N8N_DIAGNOSTICS_ENABLED: 'false', N8N_PERSONALIZATION_ENABLED: 'false', N8N_VERSION_NOTIFICATIONS_ENABLED: 'false',
 	N8N_SECURE_COOKIE: 'false', DB_SQLITE_POOL_SIZE: '1', N8N_RUNNERS_ENABLED: 'true', N8N_LOG_LEVEL: 'warn',
 	N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false', WEBHOOK_URL: 'http://127.0.0.1:' + PORT + '/'
 });
-const cli = (args) => execFileSync(N8N, args, { env, stdio: ['ignore', 'pipe', 'pipe'] }).toString();
+// a 1ª chamada roda as migrações do banco e imprime muito: buffer grande
+const cli = (args) => execFileSync(N8N, args, { env, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024, timeout: 300000 }).toString();
 
 // OpenAI falsa: guarda o pedido e responde com um markdown em bloco de código (o workflow tem que tirar o bloco)
 const aiCalls = [];
@@ -34,7 +35,9 @@ const ai = http.createServer((req, res) => {
 	req.on('end', () => {
 		const j = JSON.parse(body || '{}');
 		aiCalls.push({ url: req.url, auth: req.headers.authorization, body: j });
-		const mode = /## pedido/.test(JSON.stringify(j)) ? 'revise' : 'draft';
+		// o prompt do sistema também fala em "pedidos de ajuste": olha só a mensagem do usuário
+		const userText = ((j.messages || [])[1] || { content: [] }).content.map((c) => c.text || '').join('\n');
+		const mode = /^## pedido$/m.test(userText) ? 'revise' : 'draft';
 		res.writeHead(200, { 'content-type': 'application/json' });
 		res.end(JSON.stringify({ model: j.model, choices: [{ message: { role: 'assistant', content: '```markdown\n# 🥖 rascunho ' + mode + '\n\n![controles](imagens/print-1.png)\n```' } }], usage: { total_tokens: 1234 } }));
 	});
@@ -67,7 +70,7 @@ function multipart(fields, files) {
 function post(pathname, fields, files, token) {
 	const m = multipart(fields, files);
 	return new Promise((resolve, reject) => {
-		const req = http.request({ host: '127.0.0.1', port: PORT, path: pathname, method: 'POST', headers: Object.assign({ 'content-type': m.type, 'content-length': m.body.length }, token ? { 'x-bin-token': token } : {}) }, (r) => {
+		const req = http.request({ host: '127.0.0.1', port: PORT, path: pathname, method: 'POST', headers: Object.assign({ 'content-type': m.type, 'content-length': m.body.length, origin: 'https://docs.exemplo.test' }, token ? { 'x-bin-token': token } : {}) }, (r) => {
 			let s = '';
 			r.on('data', (c) => { s += c; });
 			r.on('end', () => resolve({ status: r.statusCode, body: s, headers: r.headers }));
@@ -100,7 +103,7 @@ function post(pathname, fields, files, token) {
 		cli(['import:workflow', '--input=' + path.join(HOME, 'wf.json')]);
 		check(true, 'n8n importou credenciais e workflow');
 	} catch (e) {
-		check(false, 'importar no n8n: ' + (e.stderr || e.message).toString().slice(0, 400));
+		check(false, 'importar no n8n: ' + e.message + ' ' + String(e.stderr || '').slice(-400));
 		ai.close(); process.exit(1);
 	}
 	// ativar (n8n 2.x: publish; versões anteriores: update:workflow --active)
@@ -118,7 +121,12 @@ function post(pathname, fields, files, token) {
 
 	try {
 		await waitFor('http://127.0.0.1:' + PORT + '/healthz', 120000);
-		await new Promise((r) => setTimeout(r, 3000));
+		// o /healthz responde antes de os webhooks dos workflows ativos estarem registrados
+		for (let i = 0; i < 60; i++) {
+			const st = await waitFor('http://127.0.0.1:' + PORT + '/webhook/bin-docs-health', 5000).catch(() => 0);
+			if (st === 200) break;
+			await new Promise((r) => setTimeout(r, 1000));
+		}
 
 		// healthcheck do workflow
 		const h = await new Promise((resolve) => http.get('http://127.0.0.1:' + PORT + '/webhook/bin-docs-health', (r) => { let s = ''; r.on('data', (c) => { s += c; }); r.on('end', () => resolve({ status: r.statusCode, body: s })); }).on('error', (e) => resolve({ status: 0, body: e.message })));
@@ -142,7 +150,8 @@ function post(pathname, fields, files, token) {
 		let j = {};
 		try { j = JSON.parse(r.body); } catch (e) { }
 		check(r.status === 200 && j.markdown === '# 🥖 rascunho draft\n\n![controles](imagens/print-1.png)', 'rascunho: 200 com o markdown sem o bloco de código');
-		console.log('info  CORS na resposta: ' + (r.headers['access-control-allow-origin'] || '(sem cabeçalho)'));
+		const aco = r.headers['access-control-allow-origin'] || '';
+		check(aco === '*' || aco === 'https://docs.exemplo.test', 'CORS: a resposta do POST libera a origem do app (' + (aco || 'sem cabeçalho') + ')');
 
 		// o navegador manda um OPTIONS antes (o cabeçalho X-Bin-Token não é "simples")
 		const pre = await new Promise((resolve) => {

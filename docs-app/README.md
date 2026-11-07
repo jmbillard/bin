@@ -118,7 +118,10 @@ docs-app/
 node tests/make_doc_pack.js            # gera docs-app/exemplo a partir da comp de teste
 node tests/docs_app.js                 # app de ponta a ponta com um webhook falso (18 checks)
 node docs-app/n8n/build_workflow.js    # workflow.json a partir do prompt.md
+N8N_BIN=n8n node tests/n8n_workflow.js # o workflow num n8n de verdade, com uma OpenAI falsa local (14 checks)
 ```
+
+o teste do workflow sobe um n8n temporário (o n8n 2.x precisa do Node 24), importa as credenciais e o workflow, ativa e confere: healthcheck, token recusado, CORS (o OPTIONS do navegador e a resposta do POST), o que chega na OpenAI (prompt, ficha, notas e as imagens em base64), o ajuste e o erro 502 quando a OpenAI cai. testado no n8n 2.46.6.
 
 para abrir o app, sirva a pasta `docs-app/` em qualquer servidor estático (ou abra o `index.html` direto no navegador).
 
