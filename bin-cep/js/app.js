@@ -341,10 +341,13 @@
 		return h;
 	}
 
-	function cbHTML(id, disabled) {
+	// olho no fim da linha: aparece ao passar o mouse; fica fixo quando algo está fora do script
+	function eyeHTML(id, locked) {
+		if (locked) return '<span class="eye-sp"></span>';
 		var on = !excluded(id);
 		var mixed = on && anyExcludedBelow(id);
-		return '<input type="checkbox" class="cb' + (mixed ? ' mixed' : '') + '" data-id="' + id + '"' + (on && !mixed ? ' checked' : '') + (disabled ? ' disabled' : '') + '>';
+		var tip = !on ? 'fora do script\nclique para incluir' : mixed ? 'parte está fora do script\nclique para incluir tudo' : 'no script\nclique para tirar';
+		return '<button class="eye' + (!on ? ' off' : mixed ? ' mixed' : '') + '" data-id="' + id + '" title="' + tip + '">' + UI.icon(on ? 'eye' : 'eyeOff') + '</button>';
 	}
 
 	function isOpen(id, def) { return id in state.open ? state.open[id] : def; }
@@ -417,15 +420,16 @@
 		if (n.kind === 'group') {
 			var open = q ? true : isOpen(id, true);
 			var g = n.node;
-			return '<div class="grp' + (open ? '' : ' closed') + '"><div class="row group' + off + hit + '" data-toggle="' + id + '"' + d + '>' + cbHTML(id) +
-				'<span class="tw">' + UI.icon('chevron', 'chev') + '</span><span class="n">' + esc(g.name) + (g.off ? '<small>desligado</small>' : '') + '</span><span class="cnt">' + cntHTML(counts(id)) + '</span></div>' +
+			return '<div class="grp' + (open ? '' : ' closed') + '"><div class="row group' + off + hit + '" data-toggle="' + id + '"' + d + '>' +
+				'<span class="tw">' + UI.icon('chevron', 'chev') + '</span><span class="n">' + esc(g.name) + (g.off ? '<small>desligado</small>' : '') + '</span><span class="cnt">' + cntHTML(counts(id)) + '</span>' + eyeHTML(id) + '</div>' +
 				'<div class="grp-kids">' + n.kids.map(function (k) { return rowHTML(k, depth + 1, q); }).join('') + '</div></div>';
 		}
 
 		var name = n.kind === 'marker' ? fmtTime(n.node.t) : esc(label(n));
 		var title = n.kind === 'prop' ? ' title="' + esc(n.node.mn) + '"' : '';
-		var box = n.kind === 'cinfo' ? '<span class="cb-fix" title="sempre incluído"></span>' : cbHTML(id);
-		return '<label class="row' + off + hit + '"' + d + title + '>' + box + '<span class="n">' + name + '</span><span class="v">' + rowValue(n) + '</span></label>';
+		// a linha inteira liga / desliga (tamanho, duração e fps da comp sempre entram)
+		var fixed = n.kind === 'cinfo';
+		return '<div class="row' + (fixed ? '' : ' leaf') + off + hit + '"' + (fixed ? '' : ' data-id="' + id + '"') + d + title + '><span class="n">' + name + '</span><span class="v">' + rowValue(n) + '</span>' + eyeHTML(id, fixed) + '</div>';
 	}
 
 	function cardHTML(id, title, icon, defOpen, q) {
@@ -435,8 +439,8 @@
 		var c = counts(id);
 		var kids = n.kind === 'prop' ? rowHTML(id, 0, q) : n.kids.map(function (k) { return rowHTML(k, 0, q); }).join('');
 		return '<div class="card' + (open ? '' : ' closed') + (excluded(id) ? ' off' : '') + '">' +
-			'<div class="card-head" data-toggle="' + id + '">' + (n.kind === 'prop' ? '' : cbHTML(id)) + UI.icon(icon, 'g') + '<b>' + esc(title) + '</b>' +
-			'<span class="cnt">' + cntHTML(c, c.props) + UI.icon('chevron', 'chev') + '</span></div>' +
+			'<div class="card-head" data-toggle="' + id + '">' + UI.icon(icon, 'g') + '<b>' + esc(title) + '</b>' +
+			'<span class="cnt">' + cntHTML(c, c.props) + '</span>' + (n.kind === 'prop' ? '' : eyeHTML(id)) + UI.icon('chevron', 'chev') + '</div>' +
 			'<div class="rows">' + (open ? kids : '') + '</div></div>';
 	}
 
@@ -456,19 +460,19 @@
 		var open = q ? true : isOpen(L.id, defOpen);
 		var c = counts(L.id);
 		return '<div class="lyr' + (open ? '' : ' closed') + '">' +
-			'<div class="layer-head' + (excluded(L.id) ? ' off' : '') + '" data-toggle="' + L.id + '">' + cbHTML(L.id) +
+			'<div class="layer-head' + (excluded(L.id) ? ' off' : '') + '" data-toggle="' + L.id + '">' +
 			'<span class="ltype t-' + L.type + '">' + (TYPE_LABEL[L.type] || '') + '</span><span class="lname">' + esc(L.name) + '</span>' +
-			'<span class="cnt">' + cntHTML(c) + '<i class="faint">#' + L.index + '</i>' + UI.icon('chevron', 'chev') + '</span></div>' +
+			'<span class="cnt">' + cntHTML(c) + '<i class="faint">#' + L.index + '</i></span>' + eyeHTML(L.id) + UI.icon('chevron', 'chev') + '</div>' +
 			(open ? '<div class="lyr-kids">' + layerCards(L, false, q) + '</div>' : '') + '</div>';
 	}
 
 	function compHTML(C, inScript, q) {
 		var c = counts(C.key);
-		var html = '<div class="comp-head' + (inScript ? '' : ' off') + '">' + cbHTML(C.key, C.root) +
+		var html = '<div class="comp-head' + (inScript ? '' : ' off') + '">' +
 			'<span class="ltype t-comp">COMP</span><span class="lname">' + esc(C.name) + '<small>' + (C.root ? 'principal' : 'precomp') + '</small></span>' +
-			'<span class="cnt">' + cntHTML(c) + '<i>' + plural(c.layers, 'layer', 'layers') + '</i></span></div>';
+			'<span class="cnt">' + cntHTML(c) + '<i>' + plural(c.layers, 'layer', 'layers') + '</i></span>' + eyeHTML(C.key, C.root) + '</div>';
 		if (!inScript) {
-			return html + '<div class="comp-note">' + (state.ex[C.key] ? 'desmarcada: as layers que usam esta comp procuram a original no projeto pelo nome.' : 'fora do script: só é usada por uma precomp desmarcada.') + '</div>';
+			return html + '<div class="comp-note">' + (state.ex[C.key] ? 'fora do script: as layers que usam esta comp procuram a original no projeto pelo nome.' : 'fora do script: só é usada por uma precomp desmarcada.') + '</div>';
 		}
 		html += cardHTML(C.settingsId, 'comp · configurações', 'monitor', false, q);
 		if (C.markers.length) html += cardHTML(C.markersId, 'markers da comp', 'marker', false, q);
@@ -737,11 +741,13 @@
 	// ----------------------------------------------------------- bind ------
 	function bindTree() {
 		$('tree').addEventListener('click', function (e) {
-			var cb = e.target.closest('.cb');
-			if (cb) {
-				e.stopPropagation();
-				// caixa parcial (alguns filhos desligados): o clique liga tudo
-				setIncluded(cb.dataset.id, cb.classList.contains('mixed') ? true : cb.checked);
+			// olho (grupos, cards, layers, comps) ou a linha inteira (propriedades)
+			var hit = e.target.closest('.eye') || e.target.closest('.row.leaf');
+			if (hit && hit.dataset.id) {
+				var id0 = hit.dataset.id;
+				var on = !excluded(id0);
+				// parcial (alguns filhos fora): o clique inclui tudo
+				setIncluded(id0, !on || anyExcludedBelow(id0));
 				changed();
 				return;
 			}

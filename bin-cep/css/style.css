@@ -406,9 +406,8 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .comp-head { margin-top: 6px; padding: 8px 6px 4px; border-top: 1px solid var(--line-2); border-radius: 0; font-size: 12.5px; }
 #tree > .comp-head:first-child { margin-top: 0; border-top: 0; padding-top: 2px; }
 .comp-head small { font-weight: 400; color: var(--faint); margin-left: 6px; font-size: 10.5px; }
-.comp-head .cb:disabled { opacity: .5; cursor: default; }
 .comp-note { color: var(--faint); font-size: 11px; padding: 0 8px 4px 29px; }
-.cb-fix { width: 15px; height: 15px; flex: none; border-radius: 4px; border: 1.5px dashed var(--line-2); }
+.eye-sp { width: 22px; height: 22px; flex: none; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; flex: none; }
 .card.off { opacity: .55; }
@@ -437,7 +436,7 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 5px 10px 5px calc(10px + var(--d, 0) * 16px);
+	padding: 3px 6px 3px calc(10px + var(--d, 0) * 16px);
 	min-height: 28px;
 	font-size: 11.5px;
 	border-top: 1px solid var(--line);
@@ -455,24 +454,32 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .row.off .n, .row.off .v { opacity: .4; }
 .row.match .n { color: var(--accent); }
 
-.cb {
-	-webkit-appearance: none;
-	appearance: none;
-	width: 15px;
-	height: 15px;
+/* olho: tira / põe no script. escondido até o mouse passar, fixo quando algo está fora */
+.eye {
+	width: 22px;
+	height: 22px;
 	flex: none;
-	margin: 0;
-	border-radius: 4px;
-	border: 1.5px solid var(--faint);
 	display: grid;
 	place-items: center;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: none;
+	color: var(--faint);
+	opacity: 0;
 	cursor: pointer;
-	transition: background .15s, border-color .15s;
+	transition: opacity .15s, background .15s, color .15s;
 }
 
-.cb:checked, .cb.mixed { background: var(--accent); border-color: var(--accent); }
-.cb:checked::after { content: ""; width: 7px; height: 4px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
-.cb.mixed::after { content: ""; width: 7px; height: 2px; background: #fff; border-radius: 1px; }
+.eye .ico { width: 14px; height: 14px; }
+.row:hover > .eye, .card-head:hover > .eye, .layer-head:hover > .eye, .comp-head:hover > .eye, .eye:focus-visible { opacity: 1; }
+.eye:hover { background: var(--surface-3); color: var(--txt); }
+.eye.off { opacity: 1; color: var(--muted); }
+.eye.mixed { color: var(--accent); }
+/* parcial: só fica fixo com o grupo fechado (aberto, a linha riscada já aparece) */
+.card.closed > .card-head > .eye.mixed, .grp.closed > .row > .eye.mixed, .lyr.closed > .layer-head > .eye.mixed { opacity: 1; }
+.row.leaf { cursor: pointer; }
+.row.off .n, .row.off .v, .card.off .card-head b, .layer-head.off .lname, .comp-head.off .lname { text-decoration: line-through; text-decoration-color: var(--faint); }
 
 .kd { display: inline-flex; gap: 3px; align-items: center; }
 .kd i { width: 6px; height: 6px; background: var(--key); transform: rotate(45deg); display: block; border-radius: 1px; }

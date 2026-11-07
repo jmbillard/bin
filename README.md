@@ -98,11 +98,11 @@ a aba **propriedades** mostra um card por grupo: atributos da layer, contents, t
 
 - só aparecem as propriedades **modificadas** (diferentes do padrão, com keyframes ou com expressão);
 - os **losangos** amarelos são keyframes; o **ƒ** violeta é uma expressão;
-- a **caixa** de cada linha decide se ela entra no script. desmarcar um grupo tira o grupo inteiro (um efeito, uma máscara, um grupo de shape);
+- **clique na linha** para tirar a propriedade do script; ela fica riscada, e clicar de novo devolve. em grupos, cards e layers, o **olho** aparece ao passar o mouse e tira o grupo inteiro (um efeito, uma máscara, um grupo de shape). um olho azul fixo num grupo fechado avisa que parte dele está fora;
 - **filtrar** procura pelo nome da propriedade ou do grupo;
 - os botões **◇** e **[-]** ligam e desligam keyframes e expressões no script inteiro. sem keyframes, cada propriedade recebe o valor do primeiro keyframe.
 
-com várias layers, cada uma ganha um cabeçalho com sua própria caixa.
+com várias layers, cada uma ganha um cabeçalho com seu próprio olho.
 
 <p align="center">
   <img src="docs/img/05-varias-layers.png" width="280" alt="várias layers">
@@ -124,7 +124,7 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
 
 - cada comp aparece com o card **comp · configurações** (tamanho, duração e frame rate, mais o que for diferente do padrão: cor de fundo, work area, motion blur, shutter, renderizador…) e os **markers da comp**;
 - as layers começam recolhidas: clique no cabeçalho para abrir;
-- **desmarque uma precomp** para não recriá-la: as layers que a usam procuram a comp original no projeto pelo nome. as precomps que só ela usava saem junto;
+- **tire uma precomp** (olho no cabeçalho dela) para não recriá-la: as layers que a usam procuram a comp original no projeto pelo nome. as precomps que só ela usava saem junto;
 - a comp principal sempre entra.
 
 <br>

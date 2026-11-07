@@ -62,11 +62,22 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	await page.evaluate(() => window.BIN.ui.hideToast());
 	await shot('02-propriedades');
 
+	// clicar na linha tira a propriedade do script; clicar de novo devolve
+	const gen = () => page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.m, { excluded: window.BIN.state.ex }));
+	const roundRow = 'xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="Roundness"]]';
+	await page.click(roundRow);
+	const sem = await gen();
+	const riscada = await page.$eval(roundRow, (e) => e.classList.contains('off'));
+	await page.hover(roundRow);
+	await shot('02b-linha-fora');
+	await page.click(roundRow);
+	check(riscada && !/Rect Roundness/.test(sem) && /Rect Roundness/.test(await gen()), 'clicar na linha tira e devolve a propriedade');
+
 	// desliga o efeito Glow e confere o código
 	// cards fechados não desenham as linhas: abre antes de procurar
 	await (await page.$('xpath=//div[contains(@class,"card-head")][.//b[text()="effects"]]')).click();
 	await page.waitForTimeout(100);
-	const glowRow = await page.$('xpath=//div[contains(@class,"card")][.//b[text()="effects"]]//div[contains(@class,"row") and .//span[text()="Glow"]]//input');
+	const glowRow = await page.$('xpath=//div[contains(@class,"card")][.//b[text()="effects"]]//div[contains(@class,"row") and .//span[text()="Glow"]]//button[contains(@class,"eye")]');
 	await glowRow.click();
 	await page.click('.tab[data-tab=code]');
 	await page.waitForTimeout(400);
@@ -137,7 +148,7 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	ctx.app.project.activeItem = comp;
 	await page.click('#chip');
 	await page.waitForTimeout(400);
-	await (await page.$('xpath=//div[contains(@class,"comp-head")][.//span[contains(text(),"PRE logo")]]//input')).click();
+	await (await page.$('xpath=//div[contains(@class,"comp-head")][.//span[contains(text(),"PRE logo")]]//button[contains(@class,"eye")]')).click();
 	await page.waitForTimeout(200);
 	const offs = await page.$$eval('.comp-head.off', (els) => els.length);
 	check(offs === 2 && /recriar comp$/.test(await page.textContent('#runTxt')), 'desmarcar uma precomp tira as que só ela usa');
