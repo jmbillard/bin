@@ -147,14 +147,14 @@
 			tip.style.left = '0px';
 			tip.style.top = '0px';
 			var w = tip.offsetWidth, h = tip.offsetHeight;
-			var gap = 8;
+			var gap = 14; // espaço para a ponta do balão inteira entre o balão e o elemento
 			var up = r.top - h - gap > 6 && !(r.top < vh * 0.28 && r.bottom + h + gap < vh - 6);
 			var top = up ? r.top - h - gap : r.bottom + gap;
 			var cx = r.left + r.width / 2;
 			var left = Math.max(6, Math.min(vw - w - 6, cx - w / 2));
 			tip.style.left = Math.round(left) + 'px';
 			tip.style.top = Math.round(Math.max(6, Math.min(vh - h - 6, top))) + 'px';
-			tip.style.setProperty('--ax', Math.round(Math.max(10, Math.min(w - 10, cx - left))) + 'px');
+			tip.style.setProperty('--ax', Math.round(Math.max(14, Math.min(w - 14, cx - left))) + 'px');
 			tip.classList.toggle('up', up);
 			tip.classList.toggle('down', !up);
 		}

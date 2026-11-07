@@ -667,7 +667,7 @@ body.is-empty .sum { visibility: hidden; }
 	color: #f1f3f6;
 	font-size: 11.5px;
 	line-height: 1.35;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .06);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .09);
 	pointer-events: none;
 	opacity: 0;
 	transform: translateY(var(--from-y, 4px)) scale(.96);
@@ -698,16 +698,20 @@ body.is-empty .sum { visibility: hidden; }
 
 .tip-arrow {
 	position: absolute;
-	left: calc(var(--ax, 50%) - 5px);
-	width: 10px;
-	height: 10px;
+	left: calc(var(--ax, 50%) - 7px);
+	width: 14px;
+	height: 14px;
 	background: var(--tip-bg);
 	transform: rotate(45deg);
-	border-radius: 2px;
+	border-radius: 0 0 3px 0;
+	/* o mesmo contorno do balão, só nos dois lados de fora da ponta */
+	border: 1px solid transparent;
+	border-right-color: rgba(255, 255, 255, .09);
+	border-bottom-color: rgba(255, 255, 255, .09);
 }
 
-.tip.up .tip-arrow { bottom: -4px; }
-.tip.down .tip-arrow { top: -4px; }
+.tip.up .tip-arrow { bottom: -7px; }
+.tip.down .tip-arrow { top: -7px; transform: rotate(225deg); }
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation: none !important; transition: none !important; }
