@@ -2,25 +2,29 @@
  * BIN - gerador de código
  *
  * Transforma a captura (JSON vindo do host.jsx) em um script .jsx autônomo que
- * recria as layers em qualquer projeto. Não depende do DOM: roda no painel e no
- * Node (testes).
+ * recria as layers (ou a comp inteira, com as precomps) em qualquer projeto.
+ * Não depende do DOM: roda no painel e no Node (testes).
  *
- * O script gerado traz um pequeno objeto `bin` com funções auxiliares que
- * engolem erros propriedade a propriedade: uma propriedade que não existe na
- * versão do After Effects de destino não derruba o resto da layer. Os erros são
- * listados no final.
+ * Modelo (CG.prepare):
+ *   { mode: 'layers' | 'comp', comps: [comp], root: id }
+ *   comp  = { key, id, name, width, height, pixelAspect, duration, frameRate, settings, markers, layers, root }
+ *   layer = { id, index, name, type, attrs, groups, markers, source, parent, matte, warnings }
+ *   nó    = { id, k: 'g' | 'p', mn, name, idx, kids | v | keys, x, ... }
+ *
+ * Todos os nós têm um id estável; `opts.excluded[id]` tira o nó (e o que estiver
+ * dentro dele) do script.
  */
 (function (root) {
 	'use strict';
 
 	var CG = {};
+	var I = '\t';
 
-	// ------------------------------------------------------------ literais --
+	// ============================================================ literais ==
 	function num(n) {
 		if (typeof n !== 'number' || !isFinite(n)) return '0';
 		var r = Math.round(n * 10000) / 10000;
-		if (r === 0) r = 0; // -0
-		return String(r);
+		return String(r === 0 ? 0 : r); // sem -0
 	}
 
 	// string JS entre aspas simples, só ASCII (o .jsx abre certo em qualquer codificação)
@@ -34,11 +38,8 @@
 			else if (c === '\n') out += '\\n';
 			else if (c === '\r') out += '\\r';
 			else if (c === '\t') out += '\\t';
-			else if (code < 32 || code > 126) {
-				var h = code.toString(16);
-				while (h.length < 4) h = '0' + h;
-				out += '\\u' + h;
-			} else out += c;
+			else if (code < 32 || code > 126) out += '\\u' + ('000' + code.toString(16)).slice(-4);
+			else out += c;
 		}
 		return out + "'";
 	}
@@ -46,7 +47,8 @@
 	var IDENT = /^[A-Za-z_$][\w$]*$/;
 	var RESERVED = ('break case catch class const continue debugger default delete do else enum export extends false finally for ' +
 		'function if import in instanceof new null return super switch this throw true try typeof var void while with yield ' +
-		'let static implements interface package private protected public comp bin app layer undefined arguments eval').split(' ');
+		'let static implements interface package private protected public undefined arguments eval ' +
+		'app bin comp layer C L').split(' ');
 
 	function key(k) { return IDENT.test(k) && RESERVED.indexOf(k) < 0 ? k : str(k); }
 
@@ -64,41 +66,47 @@
 	}
 
 	function obj(o) {
-		var parts = [];
-		Object.keys(o).forEach(function (k) {
-			if (o[k] !== undefined) parts.push(key(k) + ': ' + lit(o[k]));
-		});
+		var parts = Object.keys(o).filter(function (k) { return o[k] !== undefined; }).map(function (k) { return key(k) + ': ' + lit(o[k]); });
 		return '{ ' + parts.join(', ') + ' }';
 	}
+
+	// objeto em uma linha ou, se for longo, uma chave por linha
+	function block(list, ind) {
+		if (list.length <= 2) return '{ ' + list.map(function (a) { return key(a.key) + ': ' + lit(a.v); }).join(', ') + ' }';
+		return '{\n' + list.map(function (a) { return ind + I + key(a.key) + ': ' + lit(a.v); }).join(',\n') + '\n' + ind + '}';
+	}
+
+	// texto seguro dentro de comentários
+	function plain(s) { return String(s).replace(/[\r\n]+/g, ' ').replace(/\*\//g, '* /'); }
 
 	CG.num = num;
 	CG.str = str;
 	CG.lit = lit;
 
-	// --------------------------------------------------------------- nomes --
+	// =============================================================== nomes ==
+	function ascii(s) {
+		s = String(s || '');
+		return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
+	}
+
 	function slug(s) {
-		s = String(s || '').normalize ? String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : String(s || '');
-		s = s.replace(/[^\w]+/g, ' ').trim();
-		if (!s) return '';
-		var words = s.split(/\s+/);
+		var words = ascii(s).replace(/[^\w]+/g, ' ').trim().split(/\s+/).filter(Boolean);
 		var out = words.map(function (w, i) {
 			w = w.toLowerCase();
 			return i ? w.charAt(0).toUpperCase() + w.slice(1) : w;
 		}).join('');
-		if (/^\d/.test(out)) out = 'n' + out;
-		return out;
+		return /^\d/.test(out) ? 'n' + out : out;
 	}
-	CG.slug = slug;
 
 	function snake(s) {
-		s = String(s || '').normalize ? String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : String(s || '');
-		s = s.replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
-		if (/^\d/.test(s)) s = 'n' + s;
-		return s || 'layer';
+		s = ascii(s).replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+		return (/^\d/.test(s) ? 'n' + s : s) || 'layer';
 	}
+
+	CG.slug = slug;
 	CG.snake = snake;
 
-	function Namer() { this.used = {}; }
+	function Namer(parent) { this.used = Object.create(parent ? parent.used : null); }
 	Namer.prototype.take = function (base, fallback, raw) {
 		var b = (raw ? base : slug(base)) || fallback || 'grp';
 		if (RESERVED.indexOf(b) >= 0) b += '_';
@@ -108,27 +116,70 @@
 		return n;
 	};
 
-	// -------------------------------------------------------------- modelo --
-	// numera os nós (ids estáveis para as caixas do painel) e marca matchNames repetidos
-	CG.prepare = function (cap) {
-		cap.layers.forEach(function (L, li) {
-			L.id = 'L' + li;
-			L.attrsId = L.id + '/attrs';
-			L.markersId = L.id + '/markers';
-			(function walk(nodes, pid) {
-				var seen = {};
-				nodes.forEach(function (n) { seen[n.mn] = (seen[n.mn] || 0) + 1; });
-				nodes.forEach(function (n) {
-					n.id = pid + '/' + n.idx;
-					if (seen[n.mn] > 1) n.dup = true;
-					if (n.kids) walk(n.kids, n.id);
-				});
-			})(L.groups, L.id);
+	// ============================================================== modelo ==
+	CG.prepare = function (raw) {
+		var m = { mode: raw.mode === 'comp' ? 'comp' : 'layers', ae: raw.ae };
+		if (m.mode === 'comp') {
+			m.comps = raw.comps;
+			m.root = raw.root;
+		} else {
+			var c = raw.comp;
+			c.layers = raw.layers;
+			m.comps = [c];
+			m.root = c.id;
+		}
+		m.comps.forEach(function (C, ci) {
+			C.key = 'C' + ci;
+			C.root = C.id === m.root;
+			C.settings = C.settings || {};
+			C.markers = C.markers || [];
+			C.settingsId = C.key + '/comp';
+			C.markersId = C.key + '/markers';
+			C.layers.forEach(function (L, li) {
+				L.id = C.key + '/L' + li;
+				L.attrsId = L.id + '/attrs';
+				L.markersId = L.id + '/markers';
+				L.markers = L.markers || [];
+				L.warnings = L.warnings || [];
+				(function walk(nodes, pid) {
+					var seen = {};
+					nodes.forEach(function (n) { seen[n.mn] = (seen[n.mn] || 0) + 1; });
+					nodes.forEach(function (n) {
+						n.id = pid + '/' + n.idx;
+						if (seen[n.mn] > 1) n.dup = true; // matchName repetido no mesmo grupo: acessa pelo índice
+						if (n.kids) walk(n.kids, n.id);
+					});
+				})(L.groups, L.id);
+			});
 		});
-		return cap;
+		m.rootComp = m.comps.filter(function (C) { return C.root; })[0];
+		return m;
 	};
 
-	// atributos que só entram no código quando diferentes do padrão de uma layer nova
+	// comps que entram no script: a principal e as precomps marcadas que ela ainda usa
+	// (desmarcar uma precomp tira também as que só ela usava)
+	CG.compsIn = function (m, ex) {
+		ex = ex || {};
+		if (m.mode === 'layers') return m.comps;
+		var byId = {}, keep = {};
+		m.comps.forEach(function (C) { byId[C.id] = C; });
+		(function visit(C) {
+			if (keep[C.id]) return;
+			keep[C.id] = true;
+			CG.layersIn(C, ex).forEach(function (L) {
+				var src = L.source;
+				if (L.type === 'precomp' && src && byId[src.id] && !ex[byId[src.id].key]) visit(byId[src.id]);
+			});
+		})(m.rootComp || m.comps.filter(function (C) { return C.root; })[0]);
+		return m.comps.filter(function (C) { return keep[C.id]; });
+	};
+
+	CG.layersIn = function (C, ex) {
+		ex = ex || {};
+		return C.layers.filter(function (L) { return !ex[L.id]; });
+	};
+
+	// ---------------------------------------------------------- atributos --
 	var ATTR_DEFAULTS = {
 		comment: '', enabled: true, shy: false, locked: false, stretch: 100, startTime: 0,
 		threeDLayer: false, motionBlur: false, adjustmentLayer: false, guideLayer: false, collapseTransformation: false,
@@ -136,449 +187,597 @@
 		blendingMode: 'BlendingMode.NORMAL', quality: 'LayerQuality.BEST', samplingQuality: 'LayerSamplingQuality.BILINEAR',
 		frameBlendingType: 'FrameBlendingType.NO_FRAME_BLEND', autoOrient: 'AutoOrientType.NO_AUTO_ORIENT'
 	};
+	// a ordem importa: early antes das propriedades (time remap, 3D), late depois (entrada / saída)
 	var ATTR_EARLY = ['name', 'label', 'comment', 'threeDLayer', 'threeDPerChar', 'timeRemapEnabled', 'stretch', 'startTime'];
 	var ATTR_LATE = ['inPoint', 'outPoint', 'enabled', 'shy', 'motionBlur', 'adjustmentLayer', 'guideLayer', 'collapseTransformation',
 		'effectsActive', 'preserveTransparency', 'audioEnabled', 'blendingMode', 'quality', 'samplingQuality', 'frameBlendingType', 'autoOrient', 'locked'];
 
-	function sameVal(a, b) {
+	function same(a, b) {
 		if (a && a.e) a = a.e;
+		if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every(function (x, i) { return Math.abs(x - b[i]) < 1e-6; });
+		if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) < 1e-6;
 		return a === b;
 	}
 
-	// atributos que valem a pena mostrar / gerar (a ordem importa: early antes das propriedades)
 	CG.attrList = function (L) {
 		var out = [];
 		ATTR_EARLY.concat(ATTR_LATE).forEach(function (k) {
 			if (!(k in L.attrs)) return;
 			var v = L.attrs[k];
-			if (k === 'autoOrient' && L.type === 'camera' && sameVal(v, 'AutoOrientType.CAMERA_OR_POINT_OF_INTEREST')) return;
-			if (k in ATTR_DEFAULTS && sameVal(v, ATTR_DEFAULTS[k])) return;
+			if (k === 'autoOrient' && L.type === 'camera' && same(v, 'AutoOrientType.CAMERA_OR_POINT_OF_INTEREST')) return;
+			if (k in ATTR_DEFAULTS && same(v, ATTR_DEFAULTS[k])) return;
 			out.push({ key: k, v: v, late: ATTR_LATE.indexOf(k) >= 0 });
 		});
 		return out;
 	};
 
-	// contagens para o painel (respeita as exclusões)
-	CG.stats = function (cap, opt) {
+	// configurações da comp diferentes do padrão de uma comp nova (duração antes do início da work area)
+	var COMP_ORDER = ['bgColor', 'displayStartTime', 'workAreaDuration', 'workAreaStart', 'motionBlur', 'frameBlending', 'hideShyLayers', 'draft3d',
+		'shutterAngle', 'shutterPhase', 'motionBlurSamplesPerFrame', 'motionBlurAdaptiveSampleLimit', 'preserveNestedFrameRate',
+		'preserveNestedResolution', 'resolutionFactor', 'renderer', 'comment', 'label'];
+	var COMP_DEFAULTS = {
+		bgColor: [0, 0, 0], displayStartTime: 0, workAreaStart: 0, motionBlur: false, frameBlending: false, hideShyLayers: false, draft3d: false,
+		shutterAngle: 180, shutterPhase: -90, motionBlurSamplesPerFrame: 16, motionBlurAdaptiveSampleLimit: 128, preserveNestedFrameRate: false,
+		preserveNestedResolution: false, resolutionFactor: [1, 1], renderer: 'ADBE Advanced 3d', comment: ''
+	};
+
+	CG.compAttrList = function (C) {
+		return COMP_ORDER.filter(function (k) {
+			if (!(k in C.settings)) return false;
+			var def = k === 'workAreaDuration' ? C.duration : COMP_DEFAULTS[k];
+			return def === undefined || !same(C.settings[k], def);
+		}).map(function (k) { return { key: k, v: C.settings[k] }; });
+	};
+
+	// ------------------------------------------------------------ contagem --
+	CG.stats = function (m, opt) {
 		var ex = (opt && opt.excluded) || {};
-		var s = { props: 0, keys: 0, expr: 0, fx: 0 };
-		cap.layers.forEach(function (L) {
-			if (ex[L.id]) return;
-			(function walk(nodes) {
-				nodes.forEach(function (n) {
-					if (ex[n.id]) return;
-					if (n.k === 'g') {
-						if (n.fx) s.fx++;
-						walk(n.kids);
-						return;
-					}
-					s.props++;
-					if (n.keys) s.keys += n.keys.length;
-					if (n.x) s.expr++;
-				});
-			})(L.groups);
+		var s = { comps: 0, layers: 0, props: 0, keys: 0, expr: 0, fx: 0 };
+		CG.compsIn(m, ex).forEach(function (C) {
+			s.comps++;
+			CG.layersIn(C, ex).forEach(function (L) {
+				s.layers++;
+				(function walk(nodes) {
+					nodes.forEach(function (n) {
+						if (ex[n.id]) return;
+						if (n.k === 'g') {
+							if (n.fx) s.fx++;
+							walk(n.kids);
+							return;
+						}
+						s.props++;
+						if (n.keys) s.keys += n.keys.length;
+						if (n.x) s.expr++;
+					});
+				})(L.groups);
+			});
 		});
 		return s;
 	};
 
-	// ------------------------------------------------------------- geração --
-	var DEFAULT_OPTS = { target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, excluded: {} };
+	// ============================================================= geração ==
+	var DEFAULT_OPTS = { target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, excluded: {}, now: null };
 
-	CG.generate = function (cap, opts) {
-		var o = {};
-		Object.keys(DEFAULT_OPTS).forEach(function (k) { o[k] = opts && k in opts ? opts[k] : DEFAULT_OPTS[k]; });
-		var ex = o.excluded || {};
-		var lines = [];
-		var I = '\t';
-		var layers = cap.layers.filter(function (L) { return !ex[L.id]; });
+	var SECTION = /^(ADBE Transform Group|ADBE Root Vectors Group|ADBE Effect Parade|ADBE Mask Parade|ADBE Text Properties|ADBE Camera Options Group|ADBE Light Options Group|ADBE Material Options Group|ADBE Audio Group)$/;
+	var ITEM = /^(ADBE Vector Group|ADBE Mask Atom|ADBE Text Animator)$/;
 
-		function c(indent, text) { if (o.comments) lines.push(indent + '// ' + text); }
+	function Gen(m, opts) {
+		var o = this.o = {};
+		Object.keys(DEFAULT_OPTS).forEach(function (k) { o[k] = opts && opts[k] !== undefined ? opts[k] : DEFAULT_OPTS[k]; });
+		this.m = m;
+		this.ex = o.excluded || {};
+		this.comps = CG.compsIn(m, this.ex);
+		this.compById = {};
+		var self = this;
+		if (m.mode === 'comp') this.comps.forEach(function (C) { self.compById[C.id] = C; });
+		this.top = new Namer();
+	}
 
-		// cabeçalho
-		var d = o.now || new Date();
-		var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-		var stamp = pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-		lines.push('/*');
-		lines.push(' * BIN 3.0 · ' + (layers.length === 1 ? 'layer "' + ascii(layers[0].name) + '"' : layers.length + ' layers') + ' · comp "' + ascii(cap.comp.name) + '"');
-		lines.push(' * gerado em ' + stamp);
-		lines.push(' *');
-		lines.push(' * recria as layers na ' + (o.target === 'new' ? 'nova comp "' + ascii(cap.comp.name) + '"' : 'comp ativa') + '.');
-		lines.push(' * File > Scripts > Run Script File...');
-		lines.push(' */');
-		lines.push('(function () {');
-		HELPERS.split('\n').forEach(function (l) { lines.push(I + l); });
-		lines.push('');
+	Gen.prototype.comment = function (out, ind, text) {
+		if (this.o.comments) out.push(ind + '// ' + plain(text));
+	};
 
-		var shared = new Namer();
-		['L', 'bin', 'comp', 'layer'].forEach(function (n) { shared.used[n] = true; });
-		var bodies = [];
+	// --------------------------------------------------------------- layer --
+	Gen.prototype.textDoc = function (L) {
+		var tp = L.groups.filter(function (g) { return g.mn === 'ADBE Text Properties'; })[0];
+		var td = tp && tp.kids.filter(function (k) { return k.mn === 'ADBE Text Document'; })[0];
+		var v = td && (td.v || (td.keys && td.keys[0].v));
+		return v && v.doc;
+	};
 
-		// uma função (ou bloco) por layer
-		layers.forEach(function (L) {
-			var namer = o.wrap ? new Namer() : shared;
-			var fn = o.wrap ? shared.take('criar_' + snake(L.name), 'criar', true) : null;
-			var lv = o.wrap ? 'layer' : namer.take(L.name, 'layer');
-			if (o.wrap) ['comp', 'layer', 'bin'].forEach(function (n) { namer.used[n] = true; });
-			var ind = o.wrap ? I + I : I + I;
-			var body = [];
-			emitLayer(L, lv, namer, ind, body);
-			bodies.push({ L: L, fn: fn, lv: lv, body: body });
+	Gen.prototype.make = function (L) {
+		var src = L.source || {};
+		switch (L.type) {
+			case 'shape': return 'comp.layers.addShape()';
+			case 'text': {
+				var doc = this.textDoc(L);
+				return doc && doc.boxText && doc.boxTextSize ? 'comp.layers.addBoxText(' + lit(doc.boxTextSize) + ')' : 'comp.layers.addText()';
+			}
+			case 'null': return 'comp.layers.addNull()';
+			case 'solid':
+			case 'adjustment':
+				return 'comp.layers.addSolid(' + [lit(src.color), str(src.name), num(src.width), num(src.height), num(src.pixelAspect || 1)].join(', ') + ')';
+			case 'camera': return 'comp.layers.addCamera(' + str(L.name) + ', [comp.width / 2, comp.height / 2])';
+			case 'light': return 'comp.layers.addLight(' + str(L.name) + ', [comp.width / 2, comp.height / 2])';
+		}
+		// precomp recriada pelo próprio script
+		if (src.kind === 'comp' && this.compById[src.id]) return 'comp.layers.add(C[' + src.id + '])';
+		return 'bin.source(comp, ' + obj({ name: src.name, kind: src.kind, file: src.file, width: src.width, height: src.height, duration: src.duration }) + ')';
+	};
+
+	Gen.prototype.layer = function (L, lv, namer, ind, out) {
+		var ex = this.ex, o = this.o, self = this;
+		out.push(ind + 'var ' + lv + ' = ' + this.make(L) + ';');
+		if (L.type === 'adjustment') out.push(ind + lv + '.adjustmentLayer = true;');
+		if (L.type === 'light' && L.source && L.source.lightType) out.push(ind + 'bin.attrs(' + lv + ', { lightType: ' + lit(L.source.lightType) + ' });');
+
+		var attrs = ex[L.attrsId] ? [] : CG.attrList(L).filter(function (a) { return a.key !== 'locked' && !ex[L.attrsId + '/' + a.key]; });
+		var early = attrs.filter(function (a) { return !a.late; });
+		var late = attrs.filter(function (a) { return a.late; });
+		if (early.length) out.push(ind + 'bin.attrs(' + lv + ', ' + block(early, ind) + ');');
+
+		L.groups.forEach(function (n) { self.node(n, lv, namer, ind, out); });
+
+		if (L.markers.length && !ex[L.markersId]) {
+			out.push('');
+			this.comment(out, ind, 'markers');
+			this.markers(L.markers, L.markersId, lv, ind, out);
+		}
+		if (late.length) {
+			out.push('');
+			out.push(ind + 'bin.attrs(' + lv + ', ' + block(late, ind) + ');');
+		}
+	};
+
+	Gen.prototype.markers = function (list, pid, target, ind, out) {
+		var ex = this.ex;
+		list.forEach(function (m, i) {
+			if (ex[pid + '/' + i]) return;
+			var mo = {};
+			Object.keys(m).forEach(function (k) { if (k !== 't') mo[k] = m[k]; });
+			out.push(ind + 'bin.marker(' + target + ', ' + num(m.t) + ', ' + obj(mo) + ');');
 		});
+	};
 
-		if (o.wrap) {
-			bodies.forEach(function (b) {
-				c(I, b.L.name + ' (' + b.L.type + ')');
-				lines.push(I + 'function ' + b.fn + '(comp) {');
-				b.body.forEach(function (l) { lines.push(l); });
-				lines.push(I + I + 'return layer;');
-				lines.push(I + '}');
-				lines.push('');
-			});
+	Gen.prototype.hasContent = function (n) {
+		if (this.ex[n.id]) return false;
+		if (n.k !== 'g' || n.add) return true;
+		return n.kids.some(this.hasContent, this);
+	};
+
+	function access(n, pv) {
+		return pv + '.property(' + (n.dup ? n.idx : str(n.mn)) + ')';
+	}
+
+	Gen.prototype.node = function (n, pv, namer, ind, out) {
+		if (!this.hasContent(n)) return;
+		var o = this.o, self = this;
+
+		if (n.k === 'g') {
+			var v = namer.take(n.name, 'grp');
+			if (n.fx || (n.add && ITEM.test(n.mn))) {
+				out.push('');
+				this.comment(out, ind, (n.fx ? 'efeito › ' : '') + n.name);
+			} else if (!n.add && SECTION.test(n.mn)) {
+				out.push('');
+				this.comment(out, ind, n.name.toLowerCase());
+			}
+			out.push(ind + 'var ' + v + ' = ' + (n.add ? 'bin.add(' + pv + ', ' + str(n.mn) + ', ' + str(n.name) + ')' : access(n, pv)) + ';');
+			if (n.off) out.push(ind + v + '.enabled = false;');
+			if (n.mask) {
+				var m = n.mask, mo = {};
+				if (m.mode && m.mode.e !== 'MaskMode.ADD') mo.maskMode = m.mode;
+				if (m.inverted) mo.inverted = true;
+				if (m.rotoBezier) mo.rotoBezier = true;
+				if (m.motionBlur && m.motionBlur.e && m.motionBlur.e !== 'MaskMotionBlur.SAME_AS_LAYER') mo.maskMotionBlur = m.motionBlur;
+				if (m.falloff && m.falloff.e && m.falloff.e !== 'MaskFeatherFalloff.FFO_SMOOTH') mo.maskFeatherFalloff = m.falloff;
+				if (m.color) mo.color = m.color;
+				if (m.locked) mo.locked = true;
+				if (Object.keys(mo).length) out.push(ind + 'bin.attrs(' + v + ', ' + obj(mo) + ');');
+			}
+			n.kids.forEach(function (k) { self.node(k, v, namer, ind, out); });
+			return;
 		}
 
-		// execução
-		var target = o.target === 'new'
-			? obj({ name: cap.comp.name, width: cap.comp.width, height: cap.comp.height, pixelAspect: cap.comp.pixelAspect, duration: cap.comp.duration, frameRate: cap.comp.frameRate, bgColor: cap.comp.bgColor })
-			: 'null';
-		lines.push(I + 'var comp = bin.comp(' + target + ');');
-		lines.push(I + 'if (!comp) return;');
-		lines.push(I + 'var L = {};');
-		lines.push(I + 'app.beginUndoGroup(' + str('BIN · ' + (layers.length === 1 ? layers[0].name : layers.length + ' layers')) + ');');
-		lines.push(I + 'try {');
+		// propriedade
+		if (n.sep) {
+			out.push(ind + access(n, pv) + '.dimensionsSeparated = true;');
+			return;
+		}
+		var target = n.add ? 'bin.add(' + pv + ', ' + str(n.mn) + ')' : access(n, pv);
+		var useKeys = n.keys && o.keys;
+		var value = n.keys ? n.keys[0].v : n.v;
+		var ops = [];
+		if (useKeys) ops.push('keys');
+		else if (value !== undefined) ops.push('set');
+		if (n.x && o.expr) ops.push('expr');
+		if (!ops.length) {
+			if (n.add) out.push(ind + target + ';');
+			return;
+		}
+		var t = target;
+		if (ops.length > 1 || n.add) {
+			t = namer.take(n.name, 'prop');
+			out.push(ind + 'var ' + t + ' = ' + target + ';');
+		}
+		ops.forEach(function (op) {
+			if (op === 'set') out.push(ind + 'bin.set(' + t + ', ' + lit(value) + ');');
+			if (op === 'keys') {
+				out.push(ind + 'bin.keys(' + t + ', [');
+				n.keys.forEach(function (k, i) { out.push(ind + I + keyLit(k) + (i < n.keys.length - 1 ? ',' : '')); });
+				out.push(ind + ']);');
+			}
+			if (op === 'expr') {
+				var xl = String(n.x).split(/\r\n|\r|\n/);
+				var xs = xl.length > 1
+					? '[\n' + xl.map(function (l) { return ind + I + str(l); }).join(',\n') + '\n' + ind + "].join('\\n')"
+					: str(n.x);
+				out.push(ind + 'bin.expr(' + t + ', ' + xs + (n.xoff ? ', false' : '') + ');');
+			}
+		});
+	};
 
-		// de baixo para cima: cada layer nova entra no topo, então a ordem final fica igual à original
-		var order = bodies.slice().sort(function (a, b) { return b.L.index - a.L.index; });
-		order.forEach(function (b) {
-			var ref = 'L[' + b.L.index + ']';
+	function keyLit(k) {
+		var ko = { t: k.t, v: k.v };
+		var clamp = function (e) { return [e[0], Math.max(0.1, Math.min(100, e[1]))]; };
+		var zero = function (a) { return !a || a.every(function (x) { return x === 0; }); };
+		if (k.i) ko.i = k.i;
+		if (k.ei && /B/.test(k.i || 'B') && !k.ta) { ko.ei = k.ei.map(clamp); ko.eo = k.eo.map(clamp); }
+		['tc', 'ta', 'sc', 'sa', 'rv'].forEach(function (f) { if (k[f]) ko[f] = true; });
+		if (k.si && !k.sa && !(zero(k.si) && zero(k.so))) { ko.si = k.si; ko.so = k.so; }
+		return obj(ko);
+	}
+
+	// ---------------------------------------------------------- uma comp ----
+	// corpo de criação das layers de uma comp: chamadas (ou blocos), parentesco, track matte e travas
+	Gen.prototype.compBody = function (C, plans, ind, out) {
+		var ex = this.ex, o = this.o, self = this;
+		var ordered = plans.slice().sort(function (a, b) { return b.L.index - a.L.index; }); // de baixo para cima
+		ordered.forEach(function (p) {
+			var ref = 'L[' + p.L.index + ']';
 			if (o.wrap) {
-				lines.push(I + I + ref + ' = ' + b.fn + '(comp);');
+				out.push(ind + ref + ' = ' + p.fn + '(comp);');
 			} else {
-				lines.push('');
-				c(I + I, '---- ' + b.L.name + ' (' + b.L.type + ')');
-				b.body.forEach(function (l) { lines.push(l); });
-				lines.push(I + I + ref + ' = ' + b.lv + ';');
+				out.push('');
+				self.comment(out, ind, '---- ' + p.L.name + ' (' + p.L.type + ')');
+				p.body.forEach(function (l) { out.push(l); });
+				out.push(ind + ref + ' = ' + p.lv + ';');
 			}
 		});
 
 		var byIndex = {};
-		layers.forEach(function (L) { byIndex[L.index] = L; });
-		function refTo(info) {
+		plans.forEach(function (p) { byIndex[p.L.index] = p.L; });
+		var refTo = function (info) {
 			if (byIndex[info.index] && byIndex[info.index].name === info.name) return 'L[' + info.index + ']';
 			return 'bin.find(comp, ' + str(info.name) + ', L)';
-		}
+		};
+		var on = function (L, k) { return !ex[L.attrsId] && !ex[L.attrsId + '/' + k]; };
 
-		var links = [];
-		if (o.parent) layers.forEach(function (L) {
-			if (L.parent && !ex[L.attrsId] && !ex[L.attrsId + '/parent']) links.push(I + I + 'bin.parent(L[' + L.index + '], ' + refTo(L.parent) + ');');
+		var links = [], mattes = [], locks = [];
+		plans.forEach(function (p) {
+			var L = p.L;
+			if (o.parent && L.parent && on(L, 'parent')) links.push(ind + 'bin.parent(L[' + L.index + '], ' + refTo(L.parent) + ');');
+			if (L.matte && L.matte.name && on(L, 'matte')) mattes.push(ind + 'bin.matte(L[' + L.index + '], ' + refTo(L.matte) + ', ' + lit(L.matte.type) + ');');
+			if (L.attrs.locked && on(L, 'locked')) locks.push(ind + 'L[' + L.index + '].locked = true;');
 		});
-		var mattes = [];
-		layers.forEach(function (L) {
-			if (L.matte && L.matte.name && !ex[L.attrsId] && !ex[L.attrsId + '/matte']) mattes.push(I + I + 'bin.matte(L[' + L.index + '], ' + refTo(L.matte) + ', ' + lit(L.matte.type) + ');');
-		});
-		if (links.length) { lines.push(''); c(I + I, 'parentesco'); links.forEach(function (l) { lines.push(l); }); }
-		if (mattes.length) { lines.push(''); c(I + I, 'track matte'); mattes.forEach(function (l) { lines.push(l); }); }
-
-		// trava depois de tudo pronto
-		var locks = layers.filter(function (L) { return L.attrs.locked && !ex[L.attrsId] && !ex[L.attrsId + '/locked']; });
-		if (locks.length) {
-			lines.push('');
-			locks.forEach(function (L) { lines.push(I + I + 'L[' + L.index + '].locked = true;'); });
-		}
-
-		lines.push(I + '} catch (e) {');
-		lines.push(I + I + "bin.err('script', e);");
-		lines.push(I + '}');
-		lines.push(I + 'app.endUndoGroup();');
-		lines.push(I + 'bin.done(comp, L);');
-		lines.push('})();');
-		lines.push('');
-		return lines.join('\n');
-
-		// ---------------------------------------------------------- layer --
-		function emitLayer(L, lv, namer, ind, out) {
-			var src = L.source || {};
-			var make;
-			switch (L.type) {
-				case 'shape': make = 'comp.layers.addShape()'; break;
-				case 'text': {
-					var doc = textDoc(L);
-					make = doc && doc.boxText && doc.boxTextSize ? 'comp.layers.addBoxText(' + lit(doc.boxTextSize) + ')' : 'comp.layers.addText()';
-					break;
-				}
-				case 'null': make = 'comp.layers.addNull()'; break;
-				case 'solid':
-				case 'adjustment':
-					make = 'comp.layers.addSolid(' + [lit(src.color), str(src.name), num(src.width), num(src.height), num(src.pixelAspect || 1)].join(', ') + ')';
-					break;
-				case 'camera': make = 'comp.layers.addCamera(' + str(L.name) + ', [comp.width / 2, comp.height / 2])'; break;
-				case 'light': make = 'comp.layers.addLight(' + str(L.name) + ', [comp.width / 2, comp.height / 2])'; break;
-				default: make = 'bin.source(comp, ' + obj({ name: src.name, kind: src.kind, file: src.file, width: src.width, height: src.height, duration: src.duration }) + ')';
-			}
-			out.push(ind + 'var ' + lv + ' = ' + make + ';');
-			if (L.type === 'adjustment') out.push(ind + lv + '.adjustmentLayer = true;');
-			if (L.type === 'light' && src.lightType) out.push(ind + 'bin.attrs(' + lv + ', { lightType: ' + lit(src.lightType) + ' });');
-
-			var attrs = ex[L.attrsId] ? [] : CG.attrList(L).filter(function (a) { return a.key !== 'locked' && !ex[L.attrsId + '/' + a.key]; });
-			var early = attrs.filter(function (a) { return !a.late; });
-			var late = attrs.filter(function (a) { return a.late; });
-			if (early.length) out.push(ind + 'bin.attrs(' + lv + ', ' + attrObj(early, ind) + ');');
-
-			L.groups.forEach(function (n) { emitNode(n, lv, namer, ind, out); });
-
-			if (L.markers && L.markers.length && !ex[L.markersId]) {
-				out.push('');
-				if (o.comments) out.push(ind + '// markers');
-				L.markers.forEach(function (m, i) {
-					if (ex[L.markersId + '/' + i]) return;
-					var mo = {};
-					Object.keys(m).forEach(function (k) { if (k !== 't') mo[k] = m[k]; });
-					out.push(ind + 'bin.marker(' + lv + ', ' + num(m.t) + ', ' + obj(mo) + ');');
-				});
-			}
-			if (late.length) {
-				out.push('');
-				out.push(ind + 'bin.attrs(' + lv + ', ' + attrObj(late, ind) + ');');
-			}
-		}
-
-		function attrObj(list, ind) {
-			if (list.length <= 2) return '{ ' + list.map(function (a) { return a.key + ': ' + lit(a.v); }).join(', ') + ' }';
-			return '{\n' + list.map(function (a) { return ind + I + a.key + ': ' + lit(a.v); }).join(',\n') + '\n' + ind + '}';
-		}
-
-		function textDoc(L) {
-			var tp = L.groups.filter(function (g) { return g.mn === 'ADBE Text Properties'; })[0];
-			var td = tp && tp.kids.filter(function (k) { return k.mn === 'ADBE Text Document'; })[0];
-			if (!td) return null;
-			var v = td.v || (td.keys && td.keys[0].v);
-			return v && v.doc;
-		}
-
-		function access(n, pv) {
-			return n.dup ? pv + '.property(' + n.idx + ')' : pv + '.property(' + str(n.mn) + ')';
-		}
-
-		function hasContent(n) {
-			if (ex[n.id]) return false;
-			if (n.k !== 'g') return true;
-			if (n.add) return true;
-			return n.kids.some(hasContent);
-		}
-
-		function emitNode(n, pv, namer, ind, out) {
-			if (!hasContent(n)) return;
-
-			if (n.k === 'g') {
-				var v = namer.take(n.name, 'grp');
-				if (n.fx || (n.add && (n.mn === 'ADBE Vector Group' || n.mn === 'ADBE Mask Atom' || n.mn === 'ADBE Text Animator'))) {
-					out.push('');
-					if (o.comments) out.push(ind + '// ' + (n.fx ? 'efeito › ' : '') + n.name);
-				} else if (!n.add && /^(ADBE Transform Group|ADBE Root Vectors Group|ADBE Effect Parade|ADBE Mask Parade|ADBE Text Properties|ADBE Camera Options Group|ADBE Light Options Group|ADBE Material Options Group|ADBE Audio Group)$/.test(n.mn)) {
-					out.push('');
-					if (o.comments) out.push(ind + '// ' + n.name.toLowerCase());
-				}
-				out.push(ind + 'var ' + v + ' = ' + (n.add ? 'bin.add(' + pv + ', ' + str(n.mn) + ', ' + str(n.name) + ')' : access(n, pv)) + ';');
-				if (n.off) out.push(ind + v + '.enabled = false;');
-				if (n.mask) {
-					var m = n.mask, mo = {};
-					if (m.mode && m.mode.e !== 'MaskMode.ADD') mo.maskMode = m.mode;
-					if (m.inverted) mo.inverted = true;
-					if (m.rotoBezier) mo.rotoBezier = true;
-					if (m.motionBlur && m.motionBlur.e && m.motionBlur.e !== 'MaskMotionBlur.SAME_AS_LAYER') mo.maskMotionBlur = m.motionBlur;
-					if (m.falloff && m.falloff.e && m.falloff.e !== 'MaskFeatherFalloff.FFO_SMOOTH') mo.maskFeatherFalloff = m.falloff;
-					if (m.color) mo.color = m.color;
-					if (m.locked) mo.locked = true;
-					if (Object.keys(mo).length) out.push(ind + 'bin.attrs(' + v + ', ' + obj(mo) + ');');
-				}
-				n.kids.forEach(function (k) { emitNode(k, v, namer, ind, out); });
-				return;
-			}
-
-			// propriedade
-			if (n.sep) {
-				out.push(ind + access(n, pv) + '.dimensionsSeparated = true;');
-				return;
-			}
-			var target = n.add ? 'bin.add(' + pv + ', ' + str(n.mn) + ')' : access(n, pv);
-			var ops = [];
-			var useKeys = n.keys && o.keys;
-			var value = n.keys ? n.keys[0].v : n.v;
-			if (useKeys) ops.push('keys');
-			else if (value !== undefined) ops.push('set');
-			if (n.x && o.expr) ops.push('expr');
-			if (!ops.length) {
-				if (n.add) out.push(ind + target + ';');
-				return;
-			}
-			var t = target;
-			if (ops.length > 1 || (n.add && ops.length)) {
-				t = namer.take(n.name, 'prop');
-				out.push(ind + 'var ' + t + ' = ' + target + ';');
-			}
-			ops.forEach(function (op) {
-				if (op === 'set') out.push(ind + 'bin.set(' + t + ', ' + lit(value) + ');');
-				if (op === 'keys') {
-					out.push(ind + 'bin.keys(' + t + ', [');
-					n.keys.forEach(function (k, i) {
-						out.push(ind + I + keyLit(k) + (i < n.keys.length - 1 ? ',' : ''));
-					});
-					out.push(ind + ']);');
-				}
-				if (op === 'expr') {
-					var xl = String(n.x).split(/\r\n|\r|\n/);
-					var xs = xl.length > 1
-						? '[\n' + xl.map(function (l) { return ind + I + str(l); }).join(',\n') + '\n' + ind + "].join('\\n')"
-						: str(n.x);
-					out.push(ind + 'bin.expr(' + t + ', ' + xs + (n.xoff ? ', false' : '') + ');');
-				}
-			});
-		}
-
-		function keyLit(k) {
-			var ko = { t: k.t, v: k.v };
-			if (k.i) ko.i = k.i;
-			if (k.ei && /B/.test(k.i || 'B') && !k.ta) {
-				ko.ei = k.ei.map(function (e) { return [e[0], Math.max(0.1, Math.min(100, e[1]))]; });
-				ko.eo = k.eo.map(function (e) { return [e[0], Math.max(0.1, Math.min(100, e[1]))]; });
-			}
-			['tc', 'ta', 'sc', 'sa', 'rv'].forEach(function (f) { if (k[f]) ko[f] = true; });
-			var zero = function (a) { return !a || a.every(function (x) { return x === 0; }); };
-			if (k.si && !k.sa && !(zero(k.si) && zero(k.so))) { ko.si = k.si; ko.so = k.so; }
-			return obj(ko);
-		}
+		if (links.length) { out.push(''); this.comment(out, ind, 'parentesco'); links.forEach(function (l) { out.push(l); }); }
+		if (mattes.length) { out.push(''); this.comment(out, ind, 'track matte'); mattes.forEach(function (l) { out.push(l); }); }
+		if (locks.length) { out.push(''); locks.forEach(function (l) { out.push(l); }); }
 	};
 
-	function ascii(s) { return String(s).replace(/[\r\n]+/g, ' ').replace(/\*\//g, '* /'); }
+	Gen.prototype.compMarkers = function (C, ind, out) {
+		if (!C.markers.length || this.ex[C.markersId]) return;
+		out.push('');
+		this.comment(out, ind, 'markers da comp');
+		this.markers(C.markers, C.markersId, 'comp', ind, out);
+	};
 
-	// --------------------------------------------- auxiliares do script ----
-	var HELPERS = [
-		'// ---- funções auxiliares do BIN (erros por propriedade não interrompem o script)',
-		'var bin = {',
-		'\terrors: [],',
-		'\terr: function (what, e) { bin.errors.push(what + \': \' + (e && e.message ? e.message : e)); },',
-		'\tpath: function (p) { var n = []; try { while (p && p.parentProperty) { n.unshift(p.name); p = p.parentProperty; } } catch (e) { } return n.join(\' > \'); },',
-		'\tadd: function (g, mn, name) {',
-		'\t\tif (!g) return null;',
-		'\t\ttry { var p = g.addProperty(mn); } catch (e) { bin.err(\'+ \' + mn, e); return null; }',
-		'\t\tif (name) try { p.name = name; } catch (e2) { }',
-		'\t\treturn p;',
-		'\t},',
-		'\tshape: function (o) {',
-		'\t\tvar s = new Shape();',
-		'\t\ts.vertices = o.v; s.inTangents = o.i; s.outTangents = o.o; s.closed = o.c;',
-		'\t\tif (o.fs) { s.featherSegLocs = o.fs; s.featherRelSegLocs = o.ft; s.featherRadii = o.fr; s.featherInterps = o.fi; s.featherTensions = o.fn; s.featherTypes = o.fd; s.featherRelCornerAngles = o.fa; }',
-		'\t\treturn s;',
-		'\t},',
-		'\tdoc: function (o) { o.__doc = true; return o; },',
-		'\tval: function (p, v) {',
-		'\t\tif (!v || !v.__doc) return v;',
-		'\t\tvar d = p.value, k, f = [\'font\', \'fontSize\', \'applyFill\', \'applyStroke\', \'strokeWidth\', \'strokeOverFill\', \'justification\', \'tracking\', \'autoLeading\',',
-		'\t\t\t\'baselineShift\', \'horizontalScale\', \'verticalScale\', \'tsume\', \'fauxBold\', \'fauxItalic\', \'allCaps\', \'smallCaps\', \'boxTextSize\'];',
-		'\t\td.text = v.text;',
-		'\t\tfor (k = 0; k < f.length; k++) if (v[f[k]] !== undefined) try { d[f[k]] = v[f[k]]; } catch (e) { }',
-		'\t\tif (v.applyFill && v.fillColor) try { d.fillColor = v.fillColor; } catch (e) { }',
-		'\t\tif (v.applyStroke && v.strokeColor) try { d.strokeColor = v.strokeColor; } catch (e) { }',
-		'\t\tif (!v.autoLeading && v.leading) try { d.leading = v.leading; } catch (e) { }',
-		'\t\tif (v.runs && d.characterRange) for (k = 0; k < v.runs.length; k++) try {',
-		'\t\t\tvar r = d.characterRange(v.runs[k].start, v.runs[k].end), q = v.runs[k];',
-		'\t\t\tr.font = q.font; r.fontSize = q.fontSize; r.tracking = q.tracking;',
-		'\t\t\tif (q.fillColor) r.fillColor = q.fillColor;',
-		'\t\t} catch (e) { }',
-		'\t\treturn d;',
-		'\t},',
-		'\tset: function (p, v) {',
-		'\t\tif (!p) return;',
-		'\t\ttry { p.setValue(bin.val(p, v)); } catch (e) { bin.err(bin.path(p), e); }',
-		'\t},',
-		'\tkeys: function (p, keys) {',
-		'\t\tif (!p) return;',
-		'\t\tvar I = { L: KeyframeInterpolationType.LINEAR, B: KeyframeInterpolationType.BEZIER, H: KeyframeInterpolationType.HOLD };',
-		'\t\tvar i, j, k, o;',
-		'\t\tfunction ease(a) { var r = []; for (var n = 0; n < a.length; n++) r.push(new KeyframeEase(a[n][0], a[n][1])); return r; }',
-		'\t\ttry { for (i = 0; i < keys.length; i++) p.setValueAtTime(keys[i].t, bin.val(p, keys[i].v)); } catch (e) { bin.err(bin.path(p), e); return; }',
-		'\t\tfor (i = 0; i < keys.length; i++) {',
-		'\t\t\to = keys[i];',
-		'\t\t\tk = p.nearestKeyIndex(o.t);',
-		'\t\t\tif (o.i) try { p.setInterpolationTypeAtKey(k, I[o.i.charAt(0)], I[o.i.charAt(1)]); } catch (e) { }',
-		'\t\t\tif (o.ta) try { p.setTemporalAutoBezierAtKey(k, true); } catch (e) { }',
-		'\t\t\telse if (o.ei) try { p.setTemporalEaseAtKey(k, ease(o.ei), ease(o.eo)); } catch (e) { bin.err(bin.path(p) + \' (ease)\', e); }',
-		'\t\t\tif (o.tc) try { p.setTemporalContinuousAtKey(k, true); } catch (e) { }',
-		'\t\t\tif (o.sa) try { p.setSpatialAutoBezierAtKey(k, true); } catch (e) { }',
-		'\t\t\telse if (o.si) try { p.setSpatialTangentsAtKey(k, o.si, o.so); } catch (e) { }',
-		'\t\t\tif (o.sc) try { p.setSpatialContinuousAtKey(k, true); } catch (e) { }',
-		'\t\t}',
-		'\t\tfor (j = 0; j < keys.length; j++) if (keys[j].rv) try { p.setRovingAtKey(p.nearestKeyIndex(keys[j].t), true); } catch (e) { }',
-		'\t},',
-		'\texpr: function (p, x, on) {',
-		'\t\tif (!p) return;',
-		'\t\ttry { p.expression = x; if (on === false) p.expressionEnabled = false; } catch (e) { bin.err(bin.path(p) + \' (expressão)\', e); }',
-		'\t},',
-		'\tattrs: function (o, a) {',
-		'\t\tif (!o) return;',
-		'\t\tfor (var k in a) if (a.hasOwnProperty(k)) try { o[k] = a[k]; } catch (e) { bin.err((o.name || \'\') + \'.\' + k, e); }',
-		'\t},',
-		'\tmarker: function (l, t, o) {',
-		'\t\ttry {',
-		'\t\t\tvar m = new MarkerValue(o.comment || \'\');',
-		'\t\t\tfor (var k in o) if (o.hasOwnProperty(k) && k !== \'comment\' && k !== \'params\') try { m[k] = o[k]; } catch (e) { }',
-		'\t\t\tif (o.params) m.setParameters(o.params);',
-		'\t\t\tl.property(\'ADBE Marker\').setValueAtTime(t, m);',
-		'\t\t} catch (e) { bin.err(\'marker \' + t, e); }',
-		'\t},',
-		'\tsource: function (comp, o) {',
-		'\t\tvar item = null, i, it;',
-		'\t\tfor (i = 1; i <= app.project.numItems && !item; i++) {',
-		'\t\t\tit = app.project.item(i);',
-		'\t\t\tif (it.name === o.name && (o.kind === \'comp\' ? it instanceof CompItem : it instanceof FootageItem) && it !== comp) item = it;',
-		'\t\t}',
-		'\t\tif (!item && o.file && new File(o.file).exists) try { item = app.project.importFile(new ImportOptions(new File(o.file))); } catch (e) { }',
-		'\t\tif (item) return comp.layers.add(item);',
-		'\t\tbin.err(o.name, \'item não encontrado no projeto: criado um solid no lugar\');',
-		'\t\tvar s = comp.layers.addSolid([0.5, 0.5, 0.5], o.name + \' [faltando]\', o.width || comp.width, o.height || comp.height, 1);',
-		'\t\treturn s;',
-		'\t},',
-		'\tcomp: function (o) {',
-		'\t\tif (!o) {',
-		'\t\t\tvar c = app.project.activeItem;',
-		'\t\t\tif (c instanceof CompItem) return c;',
-		'\t\t\talert(\'BIN: abra (ou selecione) a comp onde as layers serão criadas.\');',
-		'\t\t\treturn null;',
-		'\t\t}',
-		'\t\tvar n = app.project.items.addComp(o.name, o.width, o.height, o.pixelAspect, o.duration, o.frameRate);',
-		'\t\tn.bgColor = o.bgColor;',
-		'\t\tn.openInViewer();',
-		'\t\treturn n;',
-		'\t},',
-		'\tfind: function (comp, name, made) {',
-		'\t\tfor (var i = 1; i <= comp.numLayers; i++) {',
-		'\t\t\tvar l = comp.layer(i), mine = false;',
-		'\t\t\tfor (var k in made) if (made[k] === l) mine = true;',
-		'\t\t\tif (l.name === name && !mine) return l;',
-		'\t\t}',
-		'\t\tbin.err(name, \'layer não encontrada na comp\');',
-		'\t\treturn null;',
-		'\t},',
-		'\tparent: function (l, p) {',
-		'\t\tif (!l || !p) return;',
-		'\t\ttry { if (l.setParentWithJump) l.setParentWithJump(p); else l.parent = p; } catch (e) { bin.err(l.name + \' > parent\', e); }',
-		'\t},',
-		'\tmatte: function (l, m, type) {',
-		'\t\tif (!l) return;',
-		'\t\ttry { if (l.setTrackMatte && m) l.setTrackMatte(m, type); else l.trackMatteType = type; } catch (e) { bin.err(l.name + \' > track matte\', e); }',
-		'\t},',
-		'\tdone: function (comp, made) {',
-		'\t\tvar names = [];',
-		'\t\ttry {',
-		'\t\t\tfor (var i = 1; i <= comp.numLayers; i++) comp.layer(i).selected = false;',
-		'\t\t\tfor (var k in made) if (made.hasOwnProperty(k) && made[k]) { made[k].selected = true; names.push(made[k].name); }',
-		'\t\t} catch (e) { }',
-		'\t\t$.global.BIN_LAST = { ok: true, comp: comp.name, layers: names, errors: bin.errors };',
-		'\t\tif (!$.global.BIN_PANEL && bin.errors.length) alert(\'BIN: \' + bin.errors.length + \' aviso(s)\\n\\n\' + bin.errors.slice(0, 12).join(\'\\n\'));',
-		'\t}',
-		'};'
-	].join('\n');
+	Gen.prototype.newComp = function (C, ind) {
+		var ex = this.ex;
+		var base = obj({ name: C.name, width: C.width, height: C.height, pixelAspect: C.pixelAspect, duration: C.duration, frameRate: C.frameRate });
+		var extra = ex[C.settingsId] ? [] : CG.compAttrList(C).filter(function (a) { return !ex[C.settingsId + '/' + a.key]; });
+		return 'bin.newComp(' + base + (extra.length ? ', ' + block(extra, ind) : '') + ')';
+	};
 
-	// ------------------------------------------------------- utilitários ---
+	// planeja as layers de uma comp: nome da função (ou variável) e corpo
+	Gen.prototype.plan = function (C, shared) {
+		var o = this.o, self = this;
+		return CG.layersIn(C, this.ex).map(function (L) {
+			var namer = o.wrap ? new Namer() : shared;
+			var fn = o.wrap ? self.top.take('criar_' + snake(L.name), 'criar', true) : null;
+			var lv = o.wrap ? 'layer' : namer.take(L.name, 'layer');
+			var body = [];
+			self.layer(L, lv, namer, I + I, body);
+			return { L: L, fn: fn, lv: lv, body: body };
+		});
+	};
+
+	Gen.prototype.layerFunctions = function (plans, out) {
+		var self = this;
+		plans.forEach(function (p) {
+			self.comment(out, I, p.L.name + ' (' + p.L.type + ')');
+			out.push(I + 'function ' + p.fn + '(comp) {');
+			p.body.forEach(function (l) { out.push(l); });
+			out.push(I + I + 'return layer;');
+			out.push(I + '}');
+			out.push('');
+		});
+	};
+
+	// ------------------------------------------------------------- script --
+	Gen.prototype.header = function (out) {
+		var m = this.m, o = this.o;
+		var d = o.now || new Date();
+		var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+		var stamp = pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+		var root = m.rootComp;
+		out.push('/*');
+		if (m.mode === 'comp') {
+			var pre = this.comps.length - 1;
+			out.push(' * BIN 3.0 · comp "' + plain(root.name) + '"' + (pre ? ' + ' + pre + (pre === 1 ? ' precomp' : ' precomps') : ''));
+			out.push(' * gerado em ' + stamp);
+			out.push(' *');
+			out.push(' * cria a' + (pre ? 's comps' : ' comp') + ' no projeto, com todas as layers.');
+		} else {
+			var L = CG.layersIn(root, this.ex);
+			out.push(' * BIN 3.0 · ' + (L.length === 1 ? 'layer "' + plain(L[0].name) + '"' : L.length + ' layers') + ' · comp "' + plain(root.name) + '"');
+			out.push(' * gerado em ' + stamp);
+			out.push(' *');
+			out.push(' * recria as layers na ' + (o.target === 'new' ? 'nova comp "' + plain(root.name) + '"' : 'comp ativa') + '.');
+		}
+		out.push(' * File > Scripts > Run Script File...');
+		out.push(' */');
+	};
+
+	Gen.prototype.layersScript = function (out) {
+		var C = this.m.rootComp, o = this.o;
+		var shared = new Namer(this.top);
+		var plans = this.plan(C, shared);
+		if (o.wrap) this.layerFunctions(plans, out);
+
+		var names = plans.map(function (p) { return p.L.name; });
+		out.push(I + 'var comp = ' + (o.target === 'new' ? this.newComp(C, I) : 'bin.comp()') + ';');
+		out.push(I + 'if (!comp) return;');
+		out.push(I + 'var L = {};');
+		out.push(I + 'app.beginUndoGroup(' + str('BIN · ' + (names.length === 1 ? names[0] : names.length + ' layers')) + ');');
+		out.push(I + 'try {');
+		this.compBody(C, plans, I + I, out);
+		if (o.target === 'new') this.compMarkers(C, I + I, out);
+		out.push(I + '} catch (e) {');
+		out.push(I + I + "bin.err('script', e);");
+		out.push(I + '}');
+		out.push(I + 'app.endUndoGroup();');
+		out.push(I + 'bin.done(comp, L);');
+	};
+
+	Gen.prototype.compScript = function (out) {
+		var o = this.o, self = this;
+		var rootC = this.m.rootComp;
+		out.push(I + 'var C = {};');
+		out.push('');
+
+		var all = this.comps.map(function (C) {
+			var shared = new Namer(self.top);
+			return { C: C, plans: self.plan(C, shared), fn: self.top.take('criar_comp_' + snake(C.name), 'criar_comp', true) };
+		});
+
+		if (o.wrap) all.forEach(function (c) {
+			if (c.plans.length) { self.comment(out, I, '==== comp ' + c.C.name); out.push(''); }
+			self.layerFunctions(c.plans, out);
+		});
+
+		all.forEach(function (c) {
+			self.comment(out, I, 'comp ' + c.C.name + (c.C.root ? ' (principal)' : ' (precomp)'));
+			out.push(I + 'function ' + c.fn + '() {');
+			out.push(I + I + 'var comp = ' + self.newComp(c.C, I + I) + ';');
+			out.push(I + I + 'var L = {};');
+			self.compBody(c.C, c.plans, I + I, out);
+			self.compMarkers(c.C, I + I, out);
+			out.push(I + I + 'return comp;');
+			out.push(I + '}');
+			out.push('');
+		});
+
+		out.push(I + 'app.beginUndoGroup(' + str('BIN · comp ' + rootC.name) + ');');
+		out.push(I + 'try {');
+		all.forEach(function (c) { out.push(I + I + 'C[' + c.C.id + '] = ' + c.fn + '();'); });
+		out.push(I + '} catch (e) {');
+		out.push(I + I + "bin.err('script', e);");
+		out.push(I + '}');
+		out.push(I + 'app.endUndoGroup();');
+		out.push(I + 'bin.done(C[' + rootC.id + '], null, C);');
+	};
+
+	CG.generate = function (m, opts) {
+		var g = new Gen(m, opts);
+		var out = [];
+		g.header(out);
+		out.push('(function () {');
+		CG.helpers().split('\n').forEach(function (l) { out.push(l ? I + l : ''); });
+		out.push('');
+		if (m.mode === 'comp') g.compScript(out);
+		else g.layersScript(out);
+		out.push('})();');
+		out.push('');
+		return out.join('\n');
+	};
+
+	// ============================================ auxiliares do script ======
+	// Escrito como JS de verdade (ES3, roda no ExtendScript) e copiado para o script
+	// gerado com toString(). Só o corpo entra, sem o "function binRuntime() {".
+	function binRuntime() {
+		// ---- funções auxiliares do BIN (erros por propriedade não interrompem o script)
+		var bin = {
+			errors: [],
+			err: function (what, e) { bin.errors.push(what + ': ' + (e && e.message ? e.message : e)); },
+			path: function (p) {
+				var n = [];
+				try { while (p && p.parentProperty) { n.unshift(p.name); p = p.parentProperty; } } catch (e) { }
+				return n.join(' > ');
+			},
+			add: function (g, mn, name) {
+				if (!g) return null;
+				var p;
+				try { p = g.addProperty(mn); } catch (e) { bin.err('+ ' + mn, e); return null; }
+				if (name) try { p.name = name; } catch (e2) { }
+				return p;
+			},
+			attrs: function (o, a) {
+				if (!o) return;
+				for (var k in a) if (a.hasOwnProperty(k)) try { o[k] = a[k]; } catch (e) { bin.err((o.name || '') + '.' + k, e); }
+			},
+			shape: function (o) {
+				var s = new Shape();
+				s.vertices = o.v; s.inTangents = o.i; s.outTangents = o.o; s.closed = o.c;
+				if (o.fs) {
+					s.featherSegLocs = o.fs; s.featherRelSegLocs = o.ft; s.featherRadii = o.fr; s.featherInterps = o.fi;
+					s.featherTensions = o.fn; s.featherTypes = o.fd; s.featherRelCornerAngles = o.fa;
+				}
+				return s;
+			},
+			doc: function (o) { o.__doc = true; return o; },
+			// converte os valores marcados (textos) usando o documento atual da propriedade como base
+			val: function (p, v) {
+				if (!v || !v.__doc) return v;
+				var d = p.value, k, q, r;
+				var f = ['font', 'fontSize', 'applyFill', 'applyStroke', 'strokeWidth', 'strokeOverFill', 'justification', 'tracking', 'autoLeading',
+					'baselineShift', 'horizontalScale', 'verticalScale', 'tsume', 'fauxBold', 'fauxItalic', 'allCaps', 'smallCaps', 'boxTextSize'];
+				d.text = v.text;
+				for (k = 0; k < f.length; k++) if (v[f[k]] !== undefined) try { d[f[k]] = v[f[k]]; } catch (e) { }
+				if (v.applyFill && v.fillColor) try { d.fillColor = v.fillColor; } catch (e) { }
+				if (v.applyStroke && v.strokeColor) try { d.strokeColor = v.strokeColor; } catch (e) { }
+				if (!v.autoLeading && v.leading) try { d.leading = v.leading; } catch (e) { }
+				if (v.runs && d.characterRange) {
+					for (k = 0; k < v.runs.length; k++) {
+						try {
+							q = v.runs[k];
+							r = d.characterRange(q.start, q.end);
+							r.font = q.font; r.fontSize = q.fontSize; r.tracking = q.tracking;
+							if (q.fillColor) r.fillColor = q.fillColor;
+						} catch (e) { }
+					}
+				}
+				return d;
+			},
+			set: function (p, v) {
+				if (!p) return;
+				try { p.setValue(bin.val(p, v)); } catch (e) { bin.err(bin.path(p), e); }
+			},
+			keys: function (p, keys) {
+				if (!p) return;
+				var I = { L: KeyframeInterpolationType.LINEAR, B: KeyframeInterpolationType.BEZIER, H: KeyframeInterpolationType.HOLD };
+				var i, k, o;
+				function ease(a) { var r = []; for (var n = 0; n < a.length; n++) r.push(new KeyframeEase(a[n][0], a[n][1])); return r; }
+				try {
+					while (p.numKeys > 0) p.removeKey(1); // ex.: o time remap já nasce com keys
+					for (i = 0; i < keys.length; i++) p.setValueAtTime(keys[i].t, bin.val(p, keys[i].v));
+				} catch (e) { bin.err(bin.path(p), e); return; }
+				for (i = 0; i < keys.length; i++) {
+					o = keys[i];
+					k = p.nearestKeyIndex(o.t);
+					if (o.i) try { p.setInterpolationTypeAtKey(k, I[o.i.charAt(0)], I[o.i.charAt(1)]); } catch (e) { }
+					if (o.ta) try { p.setTemporalAutoBezierAtKey(k, true); } catch (e) { }
+					else if (o.ei) try { p.setTemporalEaseAtKey(k, ease(o.ei), ease(o.eo)); } catch (e) { bin.err(bin.path(p) + ' (ease)', e); }
+					if (o.tc) try { p.setTemporalContinuousAtKey(k, true); } catch (e) { }
+					if (o.sa) try { p.setSpatialAutoBezierAtKey(k, true); } catch (e) { }
+					else if (o.si) try { p.setSpatialTangentsAtKey(k, o.si, o.so); } catch (e) { }
+					if (o.sc) try { p.setSpatialContinuousAtKey(k, true); } catch (e) { }
+				}
+				// roving só depois de todas as keys no lugar
+				for (i = 0; i < keys.length; i++) if (keys[i].rv) try { p.setRovingAtKey(p.nearestKeyIndex(keys[i].t), true); } catch (e) { }
+			},
+			expr: function (p, x, on) {
+				if (!p) return;
+				try {
+					p.expression = x;
+					if (on === false) p.expressionEnabled = false;
+				} catch (e) { bin.err(bin.path(p) + ' (expressão)', e); }
+			},
+			// markers de layer ou de comp
+			marker: function (o, t, m) {
+				try {
+					var mv = new MarkerValue(m.comment || '');
+					for (var k in m) if (m.hasOwnProperty(k) && k !== 'comment' && k !== 'params') try { mv[k] = m[k]; } catch (e) { }
+					if (m.params) mv.setParameters(m.params);
+					(o.markerProperty || o.property('ADBE Marker')).setValueAtTime(t, mv);
+				} catch (e) { bin.err('marker ' + t, e); }
+			},
+			// precomp ou footage: procura no projeto pelo nome; se não achar, importa o arquivo ou cria um solid no lugar
+			source: function (comp, o) {
+				var item = null, i, it;
+				for (i = 1; i <= app.project.numItems && !item; i++) {
+					it = app.project.item(i);
+					if (it.name === o.name && (o.kind === 'comp' ? it instanceof CompItem : it instanceof FootageItem) && it !== comp) item = it;
+				}
+				if (!item && o.file && new File(o.file).exists) try { item = app.project.importFile(new ImportOptions(new File(o.file))); } catch (e) { }
+				if (item) return comp.layers.add(item);
+				bin.err(o.name, 'item não encontrado no projeto: criado um solid no lugar');
+				return comp.layers.addSolid([0.5, 0.5, 0.5], o.name + ' [faltando]', o.width || comp.width, o.height || comp.height, 1);
+			},
+			comp: function () {
+				var c = app.project.activeItem;
+				if (c instanceof CompItem) return c;
+				alert('BIN: abra (ou selecione) a comp onde as layers serão criadas.');
+				return null;
+			},
+			newComp: function (o, a) {
+				var c = app.project.items.addComp(o.name, o.width, o.height, o.pixelAspect, o.duration, o.frameRate);
+				if (a) bin.attrs(c, a);
+				return c;
+			},
+			find: function (comp, name, made) {
+				for (var i = 1; i <= comp.numLayers; i++) {
+					var l = comp.layer(i), mine = false;
+					for (var k in made) if (made[k] === l) mine = true;
+					if (l.name === name && !mine) return l;
+				}
+				bin.err(name, 'layer não encontrada na comp');
+				return null;
+			},
+			parent: function (l, p) {
+				if (!l || !p) return;
+				try {
+					if (l.setParentWithJump) l.setParentWithJump(p); // mantém os valores de transform como estão
+					else l.parent = p;
+				} catch (e) { bin.err(l.name + ' > parent', e); }
+			},
+			matte: function (l, m, type) {
+				if (!l) return;
+				try {
+					if (l.setTrackMatte && m) l.setTrackMatte(m, type); // AE 23+
+					else l.trackMatteType = type;
+				} catch (e) { bin.err(l.name + ' > track matte', e); }
+			},
+			// seleciona o que foi criado e deixa o resumo para o painel
+			done: function (comp, made, comps) {
+				var names = [], list = [], k, i;
+				try {
+					if (made) {
+						for (i = 1; i <= comp.numLayers; i++) comp.layer(i).selected = false;
+						for (k in made) if (made.hasOwnProperty(k) && made[k]) { made[k].selected = true; names.push(made[k].name); }
+					}
+					for (k in comps) if (comps.hasOwnProperty(k) && comps[k]) list.push(comps[k].name);
+					comp.openInViewer();
+				} catch (e) { }
+				$.global.BIN_LAST = { ok: true, comp: comp ? comp.name : '', count: comp ? comp.numLayers : 0, layers: names, comps: list, errors: bin.errors };
+				if (!$.global.BIN_PANEL && bin.errors.length) alert('BIN: ' + bin.errors.length + ' aviso(s)\n\n' + bin.errors.slice(0, 12).join('\n'));
+			}
+		};
+	}
+
+	var HELPERS = null;
+	CG.helpers = function () {
+		if (HELPERS) return HELPERS;
+		var src = binRuntime.toString();
+		var lines = src.slice(src.indexOf('{') + 1, src.lastIndexOf('}')).split('\n');
+		while (lines.length && !lines[0].trim()) lines.shift();
+		while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+		var indent = lines[0].match(/^\s*/)[0];
+		HELPERS = lines.map(function (l) { return l.indexOf(indent) === 0 ? l.slice(indent.length) : l.replace(/^\s+/, ''); }).join('\n');
+		return HELPERS;
+	};
+
+	// ========================================================== utilitários ==
 	// expressões → string JS (uma linha por item do array, unidas com \n)
 	CG.expressions = function (items) {
 		var namer = new Namer();
@@ -586,11 +785,11 @@
 		items.forEach(function (it) {
 			var v = namer.take('exp ' + it.name, 'exp');
 			var lines = String(it.x).replace(/\s+$/, '').split(/\r\n|\r|\n/);
-			out.push('// ' + ascii(it.layer) + ' › ' + ascii(it.path));
+			out.push('// ' + plain(it.layer) + ' › ' + plain(it.path));
 			if (lines.length === 1) out.push('var ' + v + ' = ' + str(lines[0]) + ';');
 			else {
 				out.push('var ' + v + ' = [');
-				lines.forEach(function (l, i) { out.push('\t' + str(l) + (i < lines.length - 1 ? ',' : '')); });
+				lines.forEach(function (l, i) { out.push(I + str(l) + (i < lines.length - 1 ? ',' : '')); });
 				out.push("].join('\\n');");
 			}
 			out.push('');
@@ -600,44 +799,32 @@
 
 	// bytes → string binária para ExtendScript (gravar com encoding BINARY ou usar direto no ScriptUI)
 	CG.binaryString = function (bytes) {
-		var out = "'";
+		var out = ["'"];
 		for (var i = 0; i < bytes.length; i++) {
 			var b = bytes[i];
-			if (b === 39) out += "\\'";
-			else if (b === 92) out += '\\\\';
-			else if (b === 10) out += '\\n';
-			else if (b === 13) out += '\\r';
-			else if (b === 9) out += '\\t';
-			else if (b >= 32 && b <= 126) out += String.fromCharCode(b);
-			else out += '\\x' + (b < 16 ? '0' : '') + b.toString(16).toUpperCase();
+			if (b === 39) out.push("\\'");
+			else if (b === 92) out.push('\\\\');
+			else if (b === 10) out.push('\\n');
+			else if (b === 13) out.push('\\r');
+			else if (b === 9) out.push('\\t');
+			else if (b >= 32 && b <= 126) out.push(String.fromCharCode(b));
+			else out.push('\\x' + (b < 16 ? '0' : '') + b.toString(16).toUpperCase());
 		}
-		return out + "'";
+		out.push("'");
+		return out.join('');
 	};
 
 	CG.binaryFiles = function (files) {
 		var namer = new Namer();
-		var out = [];
 		var total = files.reduce(function (s, f) { return s + f.bytes.length; }, 0);
-		out.push('// ' + files.length + ' arquivo(s) · ' + CG.size(total));
+		var out = ['// ' + files.length + ' arquivo(s) · ' + CG.size(total)];
 		files.forEach(function (f) {
-			var base = String(f.name).replace(/\.[^.]+$/, '');
 			var ext = (String(f.name).match(/\.([^.]+)$/) || [])[1] || '';
-			var v = namer.take(base + ' ' + ext, 'arquivo');
-			out.push('');
-			out.push('// ' + ascii(f.name) + ' · ' + CG.size(f.bytes.length));
-			out.push('var ' + v + ' = ' + CG.binaryString(f.bytes) + ';');
+			var v = namer.take(String(f.name).replace(/\.[^.]+$/, '') + ' ' + ext, 'arquivo');
+			out.push('', '// ' + plain(f.name) + ' · ' + CG.size(f.bytes.length), 'var ' + v + ' = ' + CG.binaryString(f.bytes) + ';');
 		});
-		out.push('');
-		out.push('// grava uma string binária de volta como arquivo');
-		out.push('function binToFile(str, path) {');
-		out.push('\tvar f = new File(path);');
-		out.push("\tf.encoding = 'BINARY';");
-		out.push("\tf.open('w');");
-		out.push('\tf.write(str);');
-		out.push('\tf.close();');
-		out.push('\treturn f;');
-		out.push('}');
-		out.push('');
+		out.push('', '// grava uma string binária de volta como arquivo', 'function binToFile(str, path) {',
+			I + 'var f = new File(path);', I + "f.encoding = 'BINARY';", I + "f.open('w');", I + 'f.write(str);', I + 'f.close();', I + 'return f;', '}', '');
 		return out.join('\n');
 	};
 

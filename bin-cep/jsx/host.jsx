@@ -101,6 +101,9 @@ function bin_try(obj, key) {
 }
 
 // --------------------------------------------------------------- valores --
+// textos maiores que isso usam só o estilo geral (uma chamada à API por caractere fica lenta)
+var BIN_MAX_RUN_CHARS = 2000;
+
 var BIN_DOC_FIELDS = ['fontSize', 'applyFill', 'applyStroke', 'strokeWidth', 'strokeOverFill', 'tracking', 'leading', 'autoLeading',
 	'baselineShift', 'horizontalScale', 'verticalScale', 'tsume', 'fauxBold', 'fauxItalic', 'allCaps', 'smallCaps', 'boxText'];
 
@@ -118,7 +121,7 @@ function bin_doc(td) {
 
 	// AE 24.3+: estilos por trecho (fonte, tamanho e cor diferentes no mesmo texto)
 	try {
-		if (typeof td.characterRange === 'function' && d.text.length > 1) {
+		if (typeof td.characterRange === 'function' && d.text.length > 1 && d.text.length <= BIN_MAX_RUN_CHARS) {
 			var runs = [], cur = null;
 			for (var c = 0; c < d.text.length; c++) {
 				var r = td.characterRange(c, c + 1);
@@ -319,9 +322,9 @@ var BIN_ATTRS = {
 	text: ['threeDPerChar']
 };
 
-function bin_markers(l) {
+// markers de uma layer ('ADBE Marker') ou de uma comp (comp.markerProperty)
+function bin_markers(mk) {
 	var out = [];
-	var mk = l.property('ADBE Marker');
 	if (!mk) return out;
 	for (var k = 1; k <= mk.numKeys; k++) {
 		var m = mk.keyValue(k);
@@ -336,9 +339,9 @@ function bin_markers(l) {
 		if (bin_try(m, 'protectedRegion')) o.protectedRegion = true;
 		try {
 			var params = m.getParameters();
-			var has = false;
-			for (var pk in params) { if (params.hasOwnProperty(pk)) { has = true; break; } }
-			if (has) o.params = params;
+			for (var pk in params) {
+				if (params.hasOwnProperty(pk)) { o.params = params; break; }
+			}
 		} catch (e) { }
 		out.push(o);
 	}
@@ -376,14 +379,13 @@ function bin_layer(l) {
 	d.attrs.autoOrient = bin_enum('AutoOrientType', l.autoOrient);
 	if (type === 'adjustment') delete d.attrs.adjustmentLayer;
 
-	// origem
+	// origem (precomp e footage: o painel decide se recria a comp ou procura o item pelo nome)
 	var src = bin_try(l, 'source');
 	if (type === 'solid' || type === 'adjustment') {
 		d.source = { name: src.name, color: src.mainSource.color, width: src.width, height: src.height, pixelAspect: src.pixelAspect };
 	} else if (type === 'precomp' || type === 'footage') {
-		d.source = { name: src.name, kind: type === 'precomp' ? 'comp' : 'footage', width: src.width, height: src.height, duration: src.duration };
+		d.source = { id: src.id, name: src.name, kind: type === 'precomp' ? 'comp' : 'footage', width: src.width, height: src.height, duration: src.duration };
 		try { if (src.mainSource && src.mainSource.file) d.source.file = src.mainSource.file.fsName; } catch (e) { }
-		ctx.warnings.push('"' + l.name + '" usa "' + src.name + '": o script procura esse item no projeto pelo nome' + (d.source.file ? ' (ou importa o arquivo original)' : '') + '.');
 	} else if (type === 'light') {
 		var lt = bin_try(l, 'lightType');
 		if (lt !== undefined) d.source = { lightType: bin_enum('LightType', lt) };
@@ -391,9 +393,55 @@ function bin_layer(l) {
 
 	if (l.parent) d.parent = { name: l.parent.name, index: l.parent.index };
 
-	d.markers = bin_markers(l);
+	d.markers = bin_markers(l.property('ADBE Marker'));
 	d.groups = bin_walk(l, ctx, '');
 	return d;
+}
+
+// ----------------------------------------------------------------- comp --
+var BIN_COMP_ATTRS = ['bgColor', 'displayStartTime', 'workAreaStart', 'workAreaDuration', 'motionBlur', 'frameBlending', 'hideShyLayers',
+	'draft3d', 'shutterAngle', 'shutterPhase', 'motionBlurSamplesPerFrame', 'motionBlurAdaptiveSampleLimit', 'preserveNestedFrameRate',
+	'preserveNestedResolution', 'resolutionFactor', 'renderer', 'comment', 'label'];
+
+function bin_compInfo(comp) {
+	var d = {
+		id: comp.id, name: comp.name, width: comp.width, height: comp.height, pixelAspect: comp.pixelAspect,
+		duration: comp.duration, frameRate: comp.frameRate, settings: {}
+	};
+	for (var i = 0; i < BIN_COMP_ATTRS.length; i++) {
+		var v = bin_try(comp, BIN_COMP_ATTRS[i]);
+		if (v !== undefined && v !== null) d.settings[BIN_COMP_ATTRS[i]] = v;
+	}
+	d.markers = bin_markers(bin_try(comp, 'markerProperty')); // AE 14+
+	return d;
+}
+
+function bin_layerList(comp, onlySelected) {
+	var list = [], src = onlySelected ? comp.selectedLayers : null, i;
+	if (src) for (i = 0; i < src.length; i++) list.push(src[i]);
+	else for (i = 1; i <= comp.numLayers; i++) list.push(comp.layer(i));
+	list.sort(function (a, b) { return a.index - b.index; });
+	var out = [];
+	for (i = 0; i < list.length; i++) out.push(bin_layer(list[i]));
+	return out;
+}
+
+// comps em ordem de dependência: as precomps vêm antes de quem as usa
+function bin_compTree(comp, seen, out) {
+	if (seen[comp.id]) return;
+	seen[comp.id] = true;
+	for (var i = 1; i <= comp.numLayers; i++) {
+		var src = bin_try(comp.layer(i), 'source');
+		if (src instanceof CompItem) bin_compTree(src, seen, out);
+	}
+	var d = bin_compInfo(comp);
+	d.layers = bin_layerList(comp, false);
+	out.push(d);
+}
+
+function bin_activeComp() {
+	var comp = app.project.activeItem;
+	return comp instanceof CompItem ? comp : null;
 }
 
 // ------------------------------------------------------------ chamadas --
@@ -401,28 +449,26 @@ function bin_ping() {
 	return bin_json({ ok: true, version: app.version });
 }
 
+// layers selecionadas na comp ativa
 function bin_capture() {
 	try {
-		var comp = app.project.activeItem;
-		if (!(comp instanceof CompItem)) return bin_json({ error: 'abra uma comp e selecione uma layer.' });
-		var sel = comp.selectedLayers;
-		if (!sel.length) return bin_json({ error: 'selecione ao menos uma layer na comp.' });
+		var comp = bin_activeComp();
+		if (!comp) return bin_json({ error: 'abra uma comp e selecione uma layer.' });
+		if (!comp.selectedLayers.length) return bin_json({ error: 'selecione ao menos uma layer na comp.' });
+		return bin_json({ mode: 'layers', comp: bin_compInfo(comp), layers: bin_layerList(comp, true), ae: app.version });
+	} catch (e) {
+		return bin_error(e);
+	}
+}
 
-		var list = [];
-		for (var i = 0; i < sel.length; i++) list.push(sel[i]);
-		list.sort(function (a, b) { return a.index - b.index; });
-
-		var layers = [];
-		for (var j = 0; j < list.length; j++) layers.push(bin_layer(list[j]));
-
-		return bin_json({
-			comp: {
-				name: comp.name, width: comp.width, height: comp.height, pixelAspect: comp.pixelAspect,
-				duration: comp.duration, frameRate: comp.frameRate, bgColor: comp.bgColor
-			},
-			layers: layers,
-			ae: app.version
-		});
+// a comp ativa inteira, com todas as precomps usadas dentro dela
+function bin_captureComp() {
+	try {
+		var comp = bin_activeComp();
+		if (!comp) return bin_json({ error: 'abra uma comp (ou selecione uma no painel Project).' });
+		var comps = [];
+		bin_compTree(comp, {}, comps);
+		return bin_json({ mode: 'comp', root: comp.id, comps: comps, ae: app.version });
 	} catch (e) {
 		return bin_error(e);
 	}
@@ -464,39 +510,41 @@ function bin_undo() {
 	}
 }
 
+// ----------------------------------------------------------- expressões --
+function bin_propPath(p) {
+	var names = [];
+	while (p && p.parentProperty) { names.unshift(p.name); p = p.parentProperty; }
+	return names.join(' › ');
+}
+
+function bin_pushExpr(out, layer, p) {
+	try {
+		if (p.propertyType === PropertyType.PROPERTY && p.expression !== '') out.push({ layer: layer.name, path: bin_propPath(p), name: p.name, x: p.expression });
+	} catch (e) { }
+}
+
+function bin_collectExpr(out, layer, group) {
+	for (var i = 1; i <= group.numProperties; i++) {
+		var p = group.property(i);
+		if (p.propertyType === PropertyType.PROPERTY) bin_pushExpr(out, layer, p);
+		else bin_collectExpr(out, layer, p);
+	}
+}
+
 // expressões das propriedades selecionadas (ou de todas as layers selecionadas)
 function bin_expressions() {
 	try {
-		var comp = app.project.activeItem;
-		if (!(comp instanceof CompItem)) return bin_json({ error: 'abra uma comp e selecione uma propriedade com expressão.' });
+		var comp = bin_activeComp();
+		if (!comp) return bin_json({ error: 'abra uma comp e selecione uma propriedade com expressão.' });
 		var sel = comp.selectedLayers;
 		if (!sel.length) return bin_json({ error: 'selecione uma propriedade com expressão.' });
-		var out = [];
+		var out = [], i, j;
 
-		function pathOf(p) {
-			var names = [];
-			while (p && p.parentProperty) { names.unshift(p.name); p = p.parentProperty; }
-			return names.join(' › ');
-		}
-		function collect(group, layer) {
-			for (var i = 1; i <= group.numProperties; i++) {
-				var p = group.property(i);
-				if (p.propertyType === PropertyType.PROPERTY) {
-					try { if (p.expression !== '') out.push({ layer: layer.name, path: pathOf(p), name: p.name, x: p.expression }); } catch (e) { }
-				} else collect(p, layer);
-			}
-		}
-
-		for (var i = 0; i < sel.length; i++) {
+		for (i = 0; i < sel.length; i++) {
 			var props = sel[i].selectedProperties;
-			for (var j = 0; j < props.length; j++) {
-				var p = props[j];
-				if (p.propertyType === PropertyType.PROPERTY) {
-					try { if (p.expression !== '') out.push({ layer: sel[i].name, path: pathOf(p), name: p.name, x: p.expression }); } catch (e) { }
-				}
-			}
+			for (j = 0; j < props.length; j++) bin_pushExpr(out, sel[i], props[j]);
 		}
-		if (!out.length) for (var k = 0; k < sel.length; k++) collect(sel[k], sel[k]);
+		if (!out.length) for (i = 0; i < sel.length; i++) bin_collectExpr(out, sel[i], sel[i]);
 		if (!out.length) return bin_json({ error: 'nenhuma expressão na seleção.' });
 		return bin_json({ items: out });
 	} catch (e) {

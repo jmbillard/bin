@@ -34,11 +34,18 @@
 			<div id="empty" class="empty">
 				<div class="stack"><span></span><span></span><span></span></div>
 				<b>selecione uma layer na comp</b>
-				<small>o BIN lê a layer selecionada e gera o script que recria ela</small>
-				<button class="btn" id="captureBtn"><i data-icon="target"></i>capturar seleção</button>
+				<small>o BIN lê a layer selecionada (ou a comp inteira) e gera o script que recria ela</small>
+				<div class="empty-acts">
+					<button class="btn" id="captureBtn" title="capturar seleção&#10;as layers selecionadas na comp ativa"><i data-icon="target"></i>capturar seleção</button>
+					<button class="btn ghost" id="captureCompBtn" title="capturar comp inteira&#10;todas as layers da comp ativa, com as precomps"><i data-icon="monitor"></i>comp inteira</button>
+				</div>
 			</div>
 
 			<div id="propsView" class="hidden">
+				<div class="seg mode-seg" id="modeSeg" title="o que capturar&#10;troca e captura de novo">
+					<button data-value="layers"><i data-icon="layers"></i>layers selecionadas</button>
+					<button data-value="comp"><i data-icon="monitor"></i>comp inteira</button>
+				</div>
 				<div class="bar">
 					<label class="search" title="filtrar&#10;por nome da propriedade ou do grupo"><i data-icon="search"></i><input id="query" placeholder="filtrar propriedades" spellcheck="false"></label>
 					<button class="icon-btn" id="expandAll" title="expandir tudo"><i data-icon="expand"></i></button>
@@ -63,7 +70,8 @@
 			</div>
 			<div class="code" id="codeBox"><pre id="codeView"></pre></div>
 			<div class="opts">
-				<div class="opt"><span>recriar em</span>
+				<div class="opt" id="compRow"><span>cria a comp e as precomps no projeto<small>desmarque uma precomp para usar a que já existe</small></span></div>
+				<div class="opt" id="targetRow"><span>recriar em</span>
 					<div class="seg" id="targetSeg"><button data-value="active">comp ativa</button><button data-value="new">nova comp</button></div>
 				</div>
 				<label class="opt"><span>envolver em função<small id="fnHint">uma função por layer</small></span><input type="checkbox" class="sw" id="optWrap"></label>

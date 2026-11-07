@@ -242,6 +242,7 @@ class Property extends PropertyBase {
 		this._value = clone(this._keys[0].v);
 	}
 	_k(i) { if (i < 1 || i > this._keys.length) throw new Error('key index out of range'); return this._keys[i - 1]; }
+	removeKey(i) { this._k(i); this._keys.splice(i - 1, 1); if (this._keys.length) this._value = clone(this._keys[0].v); }
 	keyTime(i) { return this._k(i).t; }
 	keyValue(i) { return clone(this._k(i).v); }
 	nearestKeyIndex(t) {
@@ -415,7 +416,7 @@ class LightLayer extends Layer {
 class SolidSource { constructor(color) { this.color = color; } }
 class FileSource { constructor(file) { this.file = file; } }
 let nextId = 1;
-class Item { constructor(name) { this.name = name; this.id = nextId++; this.selected = false; } }
+class Item { constructor(name) { this.name = name; this.id = nextId++; this.selected = false; this.comment = ''; this.label = 0; } }
 class FootageItem extends Item {
 	constructor(name, w, h, main) { super(name); this.width = w; this.height = h; this.pixelAspect = 1; this.duration = 0; this.mainSource = main; }
 }
@@ -423,6 +424,11 @@ class CompItem extends Item {
 	constructor(project, name, w, h, pa, dur, fps) {
 		super(name); this._project = project; this.width = w; this.height = h; this.pixelAspect = pa; this.duration = dur; this.frameRate = fps;
 		this.bgColor = [0, 0, 0]; this._layers = [];
+		this.displayStartTime = 0; this.workAreaStart = 0; this.workAreaDuration = dur; this.motionBlur = false; this.frameBlending = false;
+		this.hideShyLayers = false; this.draft3d = false; this.shutterAngle = 180; this.shutterPhase = -90; this.motionBlurSamplesPerFrame = 16;
+		this.motionBlurAdaptiveSampleLimit = 128; this.preserveNestedFrameRate = false; this.preserveNestedResolution = false;
+		this.resolutionFactor = [1, 1]; this.renderer = 'ADBE Advanced 3d'; this.comment = ''; this.label = 15;
+		this.markerProperty = new Property(P('ADBE Marker', 'Marker', VT.MARKER, null), null);
 		const self = this;
 		this.layers = {
 			_push(l) { self._layers.unshift(l); l.selected = false; return l; },

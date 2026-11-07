@@ -63,13 +63,14 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	await shot('02-propriedades');
 
 	// desliga o efeito Glow e confere o código
-	const glowRow = await page.$('xpath=//div[contains(@class,"card")][.//b[text()="effects"]]//div[contains(@class,"row") and .//span[text()="Glow"]]//input');
+	// cards fechados não desenham as linhas: abre antes de procurar
 	await (await page.$('xpath=//div[contains(@class,"card-head")][.//b[text()="effects"]]')).click();
 	await page.waitForTimeout(100);
+	const glowRow = await page.$('xpath=//div[contains(@class,"card")][.//b[text()="effects"]]//div[contains(@class,"row") and .//span[text()="Glow"]]//input');
 	await glowRow.click();
 	await page.click('.tab[data-tab=code]');
 	await page.waitForTimeout(400);
-	const code = await page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.cap, { excluded: window.BIN.state.ex }));
+	const code = await page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.m, { excluded: window.BIN.state.ex }));
 	check(!/ADBE Glo2/.test(code) && /ADBE Fill/.test(code), 'desmarcar o Glow tira o efeito do código');
 	check(await page.isVisible('#foldHelpers'), 'funções auxiliares recolhidas na prévia');
 	await shot('03-codigo');
@@ -112,7 +113,43 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	check(/var logoPng = '\\x89PNG/.test(await page.textContent('#binOut pre')), 'arquivo → binário');
 	await shot('07-utilitarios');
 
-	// 6 · tema claro
+	// 6 · comp inteira
+	await page.click('.tab[data-tab=props]');
+	await page.click('#modeSeg [data-value=comp]');
+	await page.waitForFunction(() => document.getElementById('chipType').textContent === 'COMP');
+	await page.waitForTimeout(300);
+	check((await page.textContent('#chipName')) === 'ABERTURA_v03', 'captura da comp inteira');
+	check((await page.$$('.comp-head')).length === 3, 'comp principal + 2 precomps na árvore');
+	await page.evaluate(() => window.BIN.ui.hideToast());
+	await (await page.$('xpath=//div[contains(@class,"layer-head")][.//span[text()="TITULO_principal"]]')).click();
+	await page.waitForTimeout(200);
+	await shot('09-comp');
+	const items = ctx.app.project.numItems;
+	await page.click('#runBtn');
+	await page.waitForSelector('#runBtn.done', { timeout: 5000 });
+	const newComps = ctx.app.project._items.slice(items).filter((i) => i.constructor.name === 'CompItem');
+	check(newComps.length === 3 && ctx.app.project.activeItem === newComps[2] && newComps[2].numLayers === comp.numLayers, 'recriar a comp cria a principal e as precomps');
+	await page.waitForTimeout(200);
+	await shot('10-comp-recriada');
+	await page.evaluate(() => window.BIN.ui.hideToast());
+
+	// desmarcar a precomp do meio tira também a de dentro
+	ctx.app.project.activeItem = comp;
+	await page.click('#chip');
+	await page.waitForTimeout(400);
+	await (await page.$('xpath=//div[contains(@class,"comp-head")][.//span[contains(text(),"PRE logo")]]//input')).click();
+	await page.waitForTimeout(200);
+	const offs = await page.$$eval('.comp-head.off', (els) => els.length);
+	check(offs === 2 && /recriar comp$/.test(await page.textContent('#runTxt')), 'desmarcar uma precomp tira as que só ela usa');
+	await page.evaluate(() => window.BIN.ui.hideToast());
+
+	// 7 · tema claro
+	await page.click('#modeSeg [data-value=layers]');
+	select(['CTRL_titulo', 'TITULO_principal', 'CRÉDITO direção']);
+	await page.waitForTimeout(300);
+	await page.click('#chip');
+	await page.waitForTimeout(400);
+	await page.evaluate(() => window.BIN.ui.hideToast());
 	await page.click('.tab[data-tab=props]');
 	await page.click('#themeBtn');
 	await page.waitForTimeout(700);
@@ -124,7 +161,7 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	await page.waitForTimeout(200);
 	const saved = await page.evaluate(() => window.__saved);
 	check(Object.keys(saved).some((k) => /criar_abertura_v03\.jsx$/.test(k)), 'exportar .jsx');
-	await shot('09-codigo-claro');
+	await shot('11-codigo-claro');
 
 	await browser.close();
 	process.exit(failed ? 1 : 0);

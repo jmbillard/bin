@@ -3,9 +3,26 @@
 
 function scene(ctx) {
 	const { app, Shape, TextDocument, KeyframeEase, MarkerValue, BlendingMode, TrackMatteType, MaskMode, KeyframeInterpolationType: KI, ParagraphJustification, LightType } = ctx;
+	// precomps aninhadas: ABERTURA > PRE logo > PRE icone
+	const icon = app.project.items.addComp('PRE icone', 200, 200, 1, 5, 29.97);
+	const dot = icon.layers.addSolid([1, 0.4, 0.2], 'bolinha', 200, 200, 1);
+	dot.property('ADBE Transform Group').property('ADBE Scale').setValue([40, 40, 100]);
 	const pre = app.project.items.addComp('PRE logo', 800, 800, 1, 5, 29.97);
+	pre.bgColor = [1, 1, 1];
+	pre.workAreaDuration = 3;
+	pre.workAreaStart = 1;
+	const ell = pre.layers.addShape();
+	ell.name = 'circulo';
+	const eg = ell.property('ADBE Root Vectors Group').addProperty('ADBE Vector Group');
+	eg.property('ADBE Vectors Group').addProperty('ADBE Vector Shape - Ellipse').property('ADBE Vector Ellipse Size').setValue([300, 300]);
+	const iconLayer = pre.layers.add(icon);
+	iconLayer.property('ADBE Transform Group').property('ADBE Position').setValue([600, 200, 0]);
+	iconLayer.parent = ell;
 	const comp = app.project.items.addComp('ABERTURA_v03', 1920, 1080, 1, 10, 29.97);
 	comp.bgColor = [0.05, 0.05, 0.08];
+	comp.motionBlur = true;
+	comp.shutterAngle = 270;
+	comp.markerProperty.setValueAtTime(2, new MarkerValue('troca de cena'));
 	app.project.activeItem = comp;
 	const L = comp.layers;
 

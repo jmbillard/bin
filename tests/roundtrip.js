@@ -1,6 +1,7 @@
-// Teste de ida e volta: monta uma comp no mock do After Effects, captura as layers com o
-// host.jsx, gera o script com o codegen, executa o script (em uma comp nova) e captura de novo.
-// As duas capturas precisam ser idênticas.
+// Teste de ida e volta: monta uma comp no mock do After Effects, captura com o host.jsx,
+// gera o script com o codegen, executa o script e captura de novo. As capturas precisam bater.
+//  - layers: as layers selecionadas, recriadas em uma comp nova;
+//  - comp: a comp inteira com as precomps aninhadas.
 // uso: node tests/roundtrip.js [pasta de saída]
 'use strict';
 const fs = require('fs');
@@ -12,106 +13,146 @@ const scene = require('./scene');
 
 const outDir = path.resolve(process.argv[2] || path.join(__dirname, 'out'));
 fs.mkdirSync(outDir, { recursive: true });
+const NOW = new Date(2026, 10, 7, 14, 30);
 
-function capture(ctx) {
-	const res = JSON.parse(ctx.bin_capture());
-	if (res.error) throw new Error('captura: ' + res.error);
+let failed = false;
+const report = (ok, label, extra) => {
+	console.log((ok ? 'ok    ' : 'FALHA ') + label + (extra ? ' · ' + extra : ''));
+	if (!ok) failed = true;
+};
+
+function setup() {
+	const ctx = createContext();
+	loadHost(ctx, path.join(__dirname, '../bin-cep/jsx/host.jsx'));
+	const comp = scene(ctx);
+	return { ctx, comp };
+}
+
+function call(ctx, fn) {
+	const res = JSON.parse(ctx[fn]());
+	if (res.error) throw new Error(fn + ': ' + res.error);
 	return res;
 }
 
 function diff(a, b, p, out) {
 	if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b) || (a && !b) || (!a && b)) { out.push(p + ': ' + JSON.stringify(a) + ' ≠ ' + JSON.stringify(b)); return out; }
 	if (a && typeof a === 'object') {
-		const keys = new Set(Object.keys(a).concat(Object.keys(b)));
-		keys.forEach((k) => diff(a[k], b[k], p + '.' + k, out));
+		new Set(Object.keys(a).concat(Object.keys(b))).forEach((k) => diff(a[k], b[k], p + '.' + k, out));
 	} else if (typeof a === 'number') {
 		if (Math.abs(a - b) > 1e-3) out.push(p + ': ' + a + ' ≠ ' + b);
 	} else if (a !== b) out.push(p + ': ' + JSON.stringify(a) + ' ≠ ' + JSON.stringify(b));
 	return out;
 }
 
-function run(opts, label) {
-	const ctx = createContext();
-	loadHost(ctx, path.join(__dirname, '../bin-cep/jsx/host.jsx'));
-	const comp = scene(ctx);
-	comp._layers.forEach((l) => { l.selected = true; });
-	const before = capture(ctx);
-	fs.writeFileSync(path.join(outDir, label + '-captura.json'), JSON.stringify(before, null, 1));
+// tira o que muda naturalmente entre o original e a cópia (ids de item do projeto)
+function strip(raw) {
+	const c = JSON.parse(JSON.stringify(raw));
+	const layers = (list) => list.forEach((L) => { if (L.source) delete L.source.id; });
+	if (c.comps) c.comps.forEach((C) => { delete C.id; layers(C.layers); });
+	else { delete c.comp.id; layers(c.layers); }
+	delete c.root;
+	return c;
+}
 
-	CG.prepare(before);
-	const code = CG.generate(before, Object.assign({ target: 'new', now: new Date(2026, 10, 7, 14, 30) }, opts));
+function run(ctx, code, label) {
 	fs.writeFileSync(path.join(outDir, label + '.jsx'), code);
-
-	// o script tem que ser ES3 válido o bastante para o ExtendScript: sem let/const/arrow/template
+	// o ExtendScript é ES3: nada de let/const/arrow/template no script gerado
 	if (/\b(let|const)\s|=>|`/.test(code)) throw new Error('código gerado usa sintaxe moderna');
-
 	ctx.$.global.BIN_PANEL = true;
+	ctx.$.global.BIN_LAST = null;
 	vm.runInContext(code, ctx, { filename: label + '.jsx' });
 	const last = ctx.$.global.BIN_LAST;
-	if (!last || !last.ok) throw new Error('script não terminou');
-	const newComp = ctx.app.project.activeItem;
-	if (newComp === comp) throw new Error('a comp nova não foi criada');
-
-	const after = capture(ctx);
-	const a = JSON.parse(JSON.stringify(before)), b = JSON.parse(JSON.stringify(after));
-	[a, b].forEach((c) => c.layers.forEach((L) => { delete L.id; delete L.attrsId; delete L.markersId; (function strip(ns) { ns.forEach((n) => { delete n.id; delete n.dup; if (n.kids) strip(n.kids); }); })(L.groups); }));
-	// o solid recriado ganha outro nome de item no projeto
-	const d = diff(a.layers, b.layers, 'layers', []);
-	return { code, errors: last.errors, diff: d, layers: last.layers };
+	if (!last || !last.ok) throw new Error('o script não terminou');
+	return last;
 }
 
-let failed = false;
-[
-	['funcoes', {}],
-	['inline', { wrap: false, comments: false }]
-].forEach(([label, opts]) => {
-	const r = run(opts, label);
-	const lines = r.code.split('\n').length;
-	console.log(`[${label}] ${r.layers.length} layers recriadas · ${lines} linhas · ${r.errors.length} erro(s) no script · ${r.diff.length} diferença(s)`);
-	r.errors.forEach((e) => console.log('   erro:', e));
-	r.diff.slice(0, 30).forEach((e) => console.log('   ≠', e));
-	if (r.errors.length || r.diff.length) failed = true;
+// ---------------------------------------------------------- layers ------
+[['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
+	const { ctx, comp } = setup();
+	comp._layers.forEach((l) => { l.selected = true; });
+	const before = call(ctx, 'bin_capture');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(before))), Object.assign({ target: 'new', now: NOW }, opts));
+	const last = run(ctx, code, label);
+	const newComp = ctx.app.project.activeItem;
+	const after = call(ctx, 'bin_capture');
+	const d = diff(strip(before), strip(after), 'cap', []);
+	report(newComp !== comp && !last.errors.length && !d.length, `[${label}] ${last.layers.length} layers recriadas`, `${code.split('\n').length} linhas · ${last.errors.length} erro(s) · ${d.length} diferença(s)`);
+	last.errors.forEach((e) => console.log('   erro:', e));
+	d.slice(0, 20).forEach((e) => console.log('   ≠', e));
 });
 
-// opções: sem keyframes nem expressões
-{
-	const ctx = createContext();
-	loadHost(ctx, path.join(__dirname, '../bin-cep/jsx/host.jsx'));
-	const comp = scene(ctx);
-	comp._layers.forEach((l) => { l.selected = true; });
-	const cap = CG.prepare(capture(ctx));
-	const code = CG.generate(cap, { keys: false, expr: false });
-	const ok = !/bin\.keys\(/.test(code) && !/bin\.expr\(/.test(code);
-	console.log(`[sem keys/expr] ${ok ? 'ok' : 'FALHOU'}`);
-	if (!ok) failed = true;
+// ------------------------------------------------------------ comp ------
+[['comp-funcoes', {}], ['comp-inline', { wrap: false }]].forEach(([label, opts]) => {
+	const { ctx, comp } = setup();
+	const before = call(ctx, 'bin_captureComp');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(before))), Object.assign({ now: NOW }, opts));
+	const n = ctx.app.project.numItems;
+	const last = run(ctx, code, label);
+	const newComp = ctx.app.project.activeItem;
+	const after = call(ctx, 'bin_captureComp');
+	const d = diff(strip(before), strip(after), 'cap', []);
+	const created = ctx.app.project._items.slice(n).filter((i) => i.constructor.name === 'CompItem').length;
+	const ok = newComp !== comp && created === before.comps.length && !last.errors.length && !d.length;
+	report(ok, `[${label}] ${created} comps criadas (${before.comps.map((c) => c.name).join(' > ')})`, `${last.count} layers na principal · ${code.split('\n').length} linhas · ${last.errors.length} erro(s) · ${d.length} diferença(s)`);
+	last.errors.forEach((e) => console.log('   erro:', e));
+	d.slice(0, 20).forEach((e) => console.log('   ≠', e));
+});
 
-	// exclusões: tira o efeito Glow e a layer da luz
-	const shp = cap.layers.find((L) => L.name === 'TITULO_principal');
-	const fx = shp.groups.find((g) => g.mn === 'ADBE Effect Parade');
-	const glow = fx.kids.find((k) => k.mn === 'ADBE Glo2');
-	const light = cap.layers.find((L) => L.type === 'light');
-	const ex = {}; ex[glow.id] = true; ex[light.id] = true;
-	const code2 = CG.generate(cap, { excluded: ex });
-	const ok2 = !/ADBE Glo2/.test(code2) && !/addLight/.test(code2) && /ADBE Fill/.test(code2);
-	console.log(`[exclusões] ${ok2 ? 'ok' : 'FALHOU'}`);
-	if (!ok2) failed = true;
+// precomp desmarcada: a layer passa a usar a comp que já existe no projeto
+{
+	const { ctx, comp } = setup();
+	const m = CG.prepare(call(ctx, 'bin_captureComp'));
+	const pre = m.comps.find((C) => C.name === 'PRE logo');
+	const ex = {}; ex[pre.key] = true;
+	const code = CG.generate(m, { excluded: ex });
+	const n = ctx.app.project.numItems;
+	const last = run(ctx, code, 'comp-sem-precomp');
+	const created = ctx.app.project._items.slice(n).filter((i) => i.constructor.name === 'CompItem');
+	const preLayer = ctx.app.project.activeItem._layers.find((l) => l.name === 'PRE logo');
+	report(created.length === 1 && preLayer && preLayer.source === ctx.app.project._items.find((i) => i.name === 'PRE logo') && !last.errors.length,
+		'[comp sem precomp] só a principal é criada e a precomp original é reaproveitada');
+	void comp;
 }
 
-// utilitários
+// --------------------------------------------------------- opções -------
+{
+	const { ctx, comp } = setup();
+	comp._layers.forEach((l) => { l.selected = true; });
+	const m = CG.prepare(call(ctx, 'bin_capture'));
+	const code = CG.generate(m, { keys: false, expr: false });
+	report(!/bin\.keys\(/.test(code) && !/bin\.expr\(/.test(code), '[sem keys/expr]');
+
+	const C = m.comps[0];
+	const shp = C.layers.find((L) => L.name === 'TITULO_principal');
+	const glow = shp.groups.find((g) => g.mn === 'ADBE Effect Parade').kids.find((k) => k.mn === 'ADBE Glo2');
+	const light = C.layers.find((L) => L.type === 'light');
+	const ex = {}; ex[glow.id] = true; ex[light.id] = true; ex[shp.attrsId + '/parent'] = true;
+	const code2 = CG.generate(m, { excluded: ex });
+	report(!/ADBE Glo2/.test(code2) && !/addLight/.test(code2) && /ADBE Fill/.test(code2) && (code2.match(/bin\.parent\(/g) || []).length === 1, '[exclusões]');
+
+	const s = CG.stats(m, { excluded: ex });
+	report(s.layers === C.layers.length - 1 && s.comps === 1, '[contagem]', `${s.layers} layers · ${s.props} props · ${s.keys} keys · ${s.expr} expr`);
+}
+
+// os auxiliares do script gerado precisam ser ES3 puro
+{
+	const h = CG.helpers();
+	report(!/\b(let|const)\s|=>|`/.test(h) && /^var bin = \{/m.test(h), '[auxiliares ES3]', h.split('\n').length + ' linhas');
+}
+
+// ------------------------------------------------------ utilitários -----
 {
 	const ex = CG.expressions([{ layer: 'TITULO', path: 'Transform › Rotation', name: 'Rotation', x: 'var a = "x";\nwiggle(2, a);' }]);
-	const ctx = vm.createContext({});
-	vm.runInContext(ex, ctx);
-	const ok = ctx.expRotation === 'var a = "x";\nwiggle(2, a);';
-	console.log(`[expressão → string] ${ok ? 'ok' : 'FALHOU'}`);
-	if (!ok) failed = true;
+	const c = vm.createContext({});
+	vm.runInContext(ex, c);
+	report(c.expRotation === 'var a = "x";\nwiggle(2, a);', '[expressão → string]');
 
-	const bytes = new Uint8Array(256); for (let i = 0; i < 256; i++) bytes[i] = i;
+	const bytes = new Uint8Array(256);
+	for (let i = 0; i < 256; i++) bytes[i] = i;
 	const s = vm.runInNewContext(CG.binaryString(bytes));
-	let ok2 = s.length === 256;
-	for (let i = 0; i < 256 && ok2; i++) if (s.charCodeAt(i) !== i) ok2 = false;
-	console.log(`[arquivo → binário] ${ok2 ? 'ok' : 'FALHOU'}`);
-	if (!ok2) failed = true;
+	let ok = s.length === 256;
+	for (let i = 0; i < 256 && ok; i++) if (s.charCodeAt(i) !== i) ok = false;
+	report(ok, '[arquivo → binário]');
 }
 
 process.exit(failed ? 1 : 0);
