@@ -46,7 +46,21 @@ Serve para transformar um layout pronto em ferramenta: o script gerado pode vira
 
 **1.2** o instalador confere o que é necessário. se a escrita de arquivos estiver bloqueada, use o link **› abrir preferências de scripts e expressões**, marque *Allow Scripts to Write Files and Access Network* e clique em **› verificar de novo**.
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/img/01-instalador-boas-vindas.png" width="380"><br><sub>1.1 · boas-vindas</sub></td>
+    <td align="center"><img src="docs/img/02-instalador-checagem.png" width="380"><br><sub>1.2 · checagem</sub></td>
+  </tr>
+</table>
+
 **1.3** escolha **instalar** (ou **atualizar** / **reinstalar**; **remover** desinstala) e **reinicie o After Effects**.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/img/03-instalador-acao.png" width="380"><br><sub>1.3 · ação</sub></td>
+    <td align="center"><img src="docs/img/04-instalador-concluido.png" width="380"><br><sub>1.3 · concluído</sub></td>
+  </tr>
+</table>
 
 **1.4** abra o painel em `Window` > `Extensions` > `BIN`.
 
@@ -203,6 +217,7 @@ node tests/roundtrip.js      # ida e volta com 8 tipos de layer
 node tests/run_panel.js      # painel de ponta a ponta + capturas de tela em tests/out
 node tests/make_icons.js     # ícones da aba e logo
 node tests/make_banner.js    # banner do instalador
+node tests/installer_preview.js  # roda o instalador num ScriptUI simulado e desenha cada passo
 ```
 
 para depurar o painel dentro do After Effects, com o `PlayerDebugMode` ligado, abra `http://localhost:8098` no Chrome.
