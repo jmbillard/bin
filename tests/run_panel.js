@@ -132,9 +132,25 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	check((await page.textContent('#chipName')) === 'ABERTURA_v03', 'captura da comp inteira');
 	check((await page.$$('.comp-head')).length === 3, 'comp principal + 2 precomps na árvore');
 	await page.evaluate(() => window.BIN.ui.hideToast());
-	await (await page.$('xpath=//div[contains(@class,"layer-head")][.//span[text()="TITULO_principal"]]')).click();
-	await page.waitForTimeout(200);
+	// lista de layers: uma linha cada
+	check((await page.$$('.layer-row')).length === comp.numLayers + 3, 'comp: uma linha por layer (principal + precomps)');
 	await shot('09-comp');
+
+	// o olho da linha tira a layer; clicar na linha abre o detalhe
+	const camRow = 'xpath=//div[contains(@class,"layer-row") and .//span[text()="Camera 1"]]';
+	await page.hover(camRow);
+	await page.click(camRow + '//button[contains(@class,"eye")]');
+	const semCam = await page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.m, { excluded: window.BIN.state.ex }));
+	check(!/addCamera/.test(semCam) && await page.$eval(camRow, (e) => e.classList.contains('off')), 'comp: o olho tira a layer do script');
+	await page.click(camRow + '//button[contains(@class,"eye")]');
+
+	await page.click('xpath=//div[contains(@class,"layer-row") and .//span[text()="TITULO_principal"]]');
+	await page.waitForSelector('.focus-head');
+	check((await page.textContent('.focus-head .lname')).indexOf('TITULO_principal') === 0 && (await page.$$('.layer-row')).length === 0, 'comp: clicar na linha abre o detalhe da layer');
+	await shot('09b-comp-layer');
+	await page.click('.back');
+	await page.waitForSelector('.layer-row');
+	check(!(await page.$('.focus-head')), 'comp: voltar retorna para a lista');
 	const items = ctx.app.project.numItems;
 	await page.click('#runBtn');
 	await page.waitForSelector('#runBtn.done', { timeout: 5000 });

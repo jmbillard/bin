@@ -119,11 +119,12 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
 
 <p align="center">
   <img src="docs/img/09-comp.png" width="280" alt="comp inteira">
+  <img src="docs/img/09b-comp-layer.png" width="280" alt="detalhe de uma layer da comp">
   <img src="docs/img/10-comp-recriada.png" width="280" alt="comp recriada">
 </p>
 
 - cada comp aparece com o card **comp · configurações** (tamanho, duração e frame rate, mais o que for diferente do padrão: cor de fundo, work area, motion blur, shutter, renderizador…) e os **markers da comp**;
-- as layers começam recolhidas: clique no cabeçalho para abrir;
+- as layers aparecem como uma **lista, uma linha cada**, com o tipo e as marcas de keyframes e expressões. clique na linha para abrir o detalhe da layer (no mesmo formato do modo layer) e em **‹ voltar** para retornar. o olho, ao passar o mouse, tira a layer do script;
 - **tire uma precomp** (olho no cabeçalho dela) para não recriá-la: as layers que a usam procuram a comp original no projeto pelo nome. as precomps que só ela usava saem junto;
 - a comp principal sempre entra.
 

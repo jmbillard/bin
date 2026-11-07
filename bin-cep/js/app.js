@@ -257,6 +257,7 @@
 			state.m = CG.prepare(raw);
 			state.ex = {};
 			state.open = {};
+			state.focus = null;
 			indexNodes();
 			document.body.classList.remove('is-empty');
 			$('empty').classList.add('hidden');
@@ -476,15 +477,42 @@
 		}
 		html += cardHTML(C.settingsId, 'comp · configurações', 'monitor', false, q);
 		if (C.markers.length) html += cardHTML(C.markersId, 'markers da comp', 'marker', false, q);
-		C.layers.forEach(function (L) { html += layerHTML(L, false, q); });
+		var rows = C.layers.map(function (L) { return layerRowHTML(L, q); }).join('');
+		if (rows) html += '<div class="card list"><div class="list-head">layers<span class="faint">' + C.layers.length + '</span></div><div class="rows">' + rows + '</div></div>';
 		return html;
+	}
+
+	// uma linha por layer: clicar abre o detalhe; o olho tira a layer do script
+	function layerRowHTML(L, q) {
+		if (!visible(L.id, q)) return '';
+		var c = counts(L.id);
+		var off = excluded(L.id) ? ' off' : '';
+		var marks = '';
+		if (c.keys) marks += '<i title="keyframes"><span class="dot k"></span>' + c.keys + '</i>';
+		if (c.expr) marks += '<i title="expressões"><span class="dot e"></span>' + c.expr + '</i>';
+		return '<div class="row layer-row' + off + '" data-open="' + L.id + '" title="abrir ' + esc(L.name) + '">' +
+			'<span class="n">' + esc(L.name) + '</span>' +
+			'<span class="cnt">' + marks + '</span><span class="lt">' + esc(TYPE_NAME[L.type] || L.type) + '</span>' +
+			eyeHTML(L.id) + UI.icon('chevron', 'go') + '</div>';
+	}
+
+	// detalhe de uma layer da comp: mesmo formato do modo layer, com "voltar"
+	function focusHTML(L, C, q) {
+		return '<button class="back" data-back="1">' + UI.icon('chevron', 'back-ico') + esc(C.name) + '</button>' +
+			'<div class="focus-head' + (excluded(L.id) ? ' off' : '') + '"><span class="ltype t-' + L.type + '">' + (TYPE_LABEL[L.type] || '') + '</span>' +
+			'<span class="lname">' + esc(L.name) + '<small>#' + L.index + '</small></span>' + eyeHTML(L.id) + '</div>' +
+			layerCards(L, true, q);
 	}
 
 	function renderTree() {
 		var m = state.m;
 		var q = $('query').value.trim().toLowerCase();
 		var html = '';
-		if (m.mode === 'comp') {
+		var focus = m.mode === 'comp' && state.focus && state.nodes[state.focus];
+		if (focus) {
+			var FC = m.comps.filter(function (C) { return C.layers.indexOf(focus.node) >= 0; })[0];
+			html = focusHTML(focus.node, FC, q);
+		} else if (m.mode === 'comp') {
 			var inScript = {};
 			CG.compsIn(m, state.ex).forEach(function (C) { inScript[C.key] = true; });
 			// a principal primeiro, depois as precomps de fora para dentro
@@ -751,6 +779,20 @@
 				// parcial (alguns filhos fora): o clique inclui tudo
 				setIncluded(id0, !on || anyExcludedBelow(id0));
 				changed();
+				return;
+			}
+			if (e.target.closest('[data-back]')) {
+				state.focus = null;
+				renderTree();
+				$('tab-props').scrollTop = state.listScroll || 0;
+				return;
+			}
+			var row = e.target.closest('[data-open]');
+			if (row) {
+				state.listScroll = $('tab-props').scrollTop;
+				state.focus = row.dataset.open;
+				renderTree();
+				$('tab-props').scrollTop = 0;
 				return;
 			}
 			var t = e.target.closest('[data-toggle]');
