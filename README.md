@@ -238,6 +238,7 @@ tests/
   scene.js            comp de exemplo usada nos testes
   installer_preview.js  instalador num ScriptUI simulado
   pill_align.js       mede o alinhamento vertical do texto nas pílulas
+  tab_ink.js          confere o fundo da aba ativa depois da captura
 ```
 
 ```bash

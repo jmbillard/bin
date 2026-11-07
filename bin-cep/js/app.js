@@ -545,6 +545,8 @@
 		badge.textContent = st.props;
 		badge.classList.remove('hidden');
 		if (prev && prev !== String(st.props)) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+		// a largura da aba acompanha o contador: o fundo da aba ativa precisa acompanhar também
+		if (prev !== String(st.props)) placeTabInk();
 
 		var parts = [];
 		if (m.mode === 'comp') {
