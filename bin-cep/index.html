@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="utf-8">
+	<title>BIN</title>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="is-empty">
+	<!-- ============================================================ TOPO -->
+	<header class="top">
+		<span class="logo" id="logo" title="BIN 3.0&#10;engenharia reversa de layer"></span>
+		<span class="logo-name">BIN</span>
+		<button id="chip" class="chip" title="capturar a seleção de novo&#10;lê as layers selecionadas na comp ativa">
+			<span id="chipType" class="ltype">SHAPE</span>
+			<span class="chip-text"><b id="chipName"></b><small id="chipMeta"></small></span>
+			<i data-icon="swap" class="chip-swap"></i>
+		</button>
+		<button id="helpBtn" class="icon-btn" title="ajuda&#10;abre o guia do BIN no navegador"><i data-icon="help"></i></button>
+		<button id="themeBtn" class="icon-btn theme-btn" data-mode="auto" title="tema">
+			<i data-icon="themeAuto"></i><i data-icon="sun"></i><i data-icon="moon"></i>
+		</button>
+	</header>
+
+	<nav class="tabs" role="tablist">
+		<span class="tab-ink"></span>
+		<button class="tab active" data-tab="props" role="tab" title="propriedades&#10;o que a layer tem e o que entra no script"><i data-icon="layers"></i><span>propriedades</span><b id="propBadge" class="pill hidden"></b></button>
+		<button class="tab" data-tab="code" role="tab" title="código&#10;o script que recria a layer"><i data-icon="code"></i><span>código</span></button>
+		<button class="tab" data-tab="tools" role="tab" title="utilitários&#10;expressão → string e arquivo → binário"><i data-icon="tools"></i><span>utilitários</span></button>
+	</nav>
+
+	<main>
+		<!-- ================================================= PROPRIEDADES -->
+		<section id="tab-props" class="panel active">
+			<div id="empty" class="empty">
+				<div class="stack"><span></span><span></span><span></span></div>
+				<b>selecione uma layer na comp</b>
+				<small>o BIN lê a layer selecionada e gera o script que recria ela</small>
+				<button class="btn" id="captureBtn"><i data-icon="target"></i>capturar seleção</button>
+			</div>
+
+			<div id="propsView" class="hidden">
+				<div class="bar">
+					<label class="search" title="filtrar&#10;por nome da propriedade ou do grupo"><i data-icon="search"></i><input id="query" placeholder="filtrar propriedades" spellcheck="false"></label>
+					<button class="icon-btn" id="expandAll" title="expandir tudo"><i data-icon="expand"></i></button>
+					<button class="icon-btn" id="collapseAll" title="recolher tudo"><i data-icon="collapse"></i></button>
+					<span class="sep-v"></span>
+					<button class="icon-btn toggle on" id="optKeys" title="keyframes e easing&#10;desligado: usa o valor do primeiro keyframe"><i data-icon="key"></i></button>
+					<button class="icon-btn toggle on" id="optExpr" title="expressões&#10;desligado: o script ignora as expressões"><i data-icon="expr"></i></button>
+				</div>
+				<div id="tree"></div>
+			</div>
+		</section>
+
+		<!-- ======================================================= CÓDIGO -->
+		<section id="tab-code" class="panel">
+			<div class="bar">
+				<span id="fileName" class="file-name"></span>
+				<span class="spacer"></span>
+				<span id="lineCount" class="faint"></span>
+				<button class="icon-btn toggle" id="wrapBtn" title="quebra de linha"><i data-icon="wrap"></i></button>
+				<button class="icon-btn" id="copyBtn" title="copiar o código"><i data-icon="copy"></i></button>
+				<button class="icon-btn" id="exportBtn" title="exportar .jsx&#10;salva o script para rodar em File › Scripts"><i data-icon="save"></i></button>
+			</div>
+			<div class="code" id="codeBox"><pre id="codeView"></pre></div>
+			<div class="opts">
+				<div class="opt"><span>recriar em</span>
+					<div class="seg" id="targetSeg"><button data-value="active">comp ativa</button><button data-value="new">nova comp</button></div>
+				</div>
+				<label class="opt"><span>envolver em função<small id="fnHint">uma função por layer</small></span><input type="checkbox" class="sw" id="optWrap"></label>
+				<label class="opt"><span>manter parentesco<small>parent e track matte entre as layers</small></span><input type="checkbox" class="sw" id="optParent"></label>
+				<label class="opt"><span>comentários no código</span><input type="checkbox" class="sw" id="optComments"></label>
+			</div>
+		</section>
+
+		<!-- =================================================== UTILITÁRIOS -->
+		<section id="tab-tools" class="panel">
+			<div class="tool">
+				<span class="tool-ico"><i data-icon="expr"></i></span>
+				<div class="tool-body">
+					<b>expressão → string</b>
+					<p>formata a expressão da propriedade selecionada (ou de todas as layers selecionadas) como string JS, pronta para colar em um script.</p>
+					<button class="btn small" id="exprBtn"><i data-icon="target"></i>pegar da seleção</button>
+					<div class="out hidden" id="exprOut">
+						<div class="out-bar"><span id="exprInfo" class="faint"></span><span class="spacer"></span>
+							<button class="icon-btn" data-copy="expr" title="copiar"><i data-icon="copy"></i></button>
+							<button class="icon-btn" data-save="expr" title="exportar"><i data-icon="save"></i></button>
+						</div>
+						<pre></pre>
+					</div>
+				</div>
+			</div>
+
+			<div class="tool">
+				<span class="tool-ico"><i data-icon="binary"></i></span>
+				<div class="tool-body">
+					<b>arquivo → binário</b>
+					<p>converte arquivos (PNG, WAV, FFX…) em strings para embutir no script. ScriptUI usa a string de um PNG direto como imagem.</p>
+					<div class="drop" id="binDrop" role="button" tabindex="0"><i data-icon="upload"></i><b>arraste arquivos aqui</b><small>ou clique para escolher</small></div>
+					<div class="out hidden" id="binOut">
+						<div class="out-bar"><span id="binInfo" class="faint"></span><span class="spacer"></span>
+							<button class="icon-btn" data-copy="bin" title="copiar"><i data-icon="copy"></i></button>
+							<button class="icon-btn" data-save="bin" title="exportar"><i data-icon="save"></i></button>
+						</div>
+						<pre></pre>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<!-- ======================================================== RODAPÉ -->
+	<footer class="foot">
+		<div id="toast" class="toast"></div>
+		<div class="sum" id="sum">
+			<span id="sumText" class="sum-text"></span>
+			<button id="warnPill" class="warn-pill hidden"><i data-icon="alert"></i><span></span></button>
+		</div>
+		<button id="runBtn" class="cta" disabled title="recriar&#10;roda o script dentro de um único undo"><span class="cta-fill"></span><i data-icon="sparkle"></i><span id="runTxt">recriar layer</span></button>
+	</footer>
+
+	<script src="js/cep.js"></script>
+	<script src="js/ui.js"></script>
+	<script src="js/codegen.js"></script>
+	<script src="js/app.js"></script>
+</body>
+</html>
