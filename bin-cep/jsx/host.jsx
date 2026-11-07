@@ -552,6 +552,60 @@ function bin_expressions() {
 	}
 }
 
+// ----------------------------------------------------- template do padeiro --
+// arquivos do template ao lado do projeto, com a mesma regra do padeiro:
+// '<projeto>_config.json', '<projeto>_preview.png', '_script.js' e a pasta 'FONTS'.
+// sem config com o nome do projeto, procura na pasta um '_config.json' cuja comp principal seja a comp ativa.
+function bin_readText(f) {
+	f.encoding = 'UTF-8';
+	f.open('r');
+	var t = f.read();
+	f.close();
+	return t;
+}
+
+function bin_templateInfo() {
+	try {
+		var proj = app.project.file;
+		if (!proj) return bin_json({ project: null });
+		var comp = bin_activeComp();
+		var folder = proj.parent;
+		var base = proj.name.replace(/\.[^.]+$/, '');
+		base = decodeURI(base);
+		var cfg = new File(folder.fsName + '/' + base + '_config.json');
+		var text = null;
+
+		if (cfg.exists) text = bin_readText(cfg);
+		else if (comp) {
+			var list = folder.getFiles('*_config.json');
+			for (var i = 0; i < list.length && !text; i++) {
+				try {
+					var t = bin_readText(list[i]);
+					if (t.indexOf('"' + comp.name + '"') >= 0) { text = t; cfg = list[i]; }
+				} catch (e) { }
+			}
+		}
+
+		var cfgBase = text ? cfg.fsName.replace(/_config\.json$/, '') : folder.fsName + '/' + base;
+		var out = {
+			project: proj.fsName,
+			config: text,
+			configPath: text ? cfg.fsName : null,
+			preview: new File(cfgBase + '_preview.png').exists ? cfgBase + '_preview.png' : null,
+			script: new File(cfgBase + '_script.js').exists,
+			fonts: []
+		};
+		var fonts = new Folder(folder.fsName + '/FONTS');
+		if (fonts.exists) {
+			var ff = fonts.getFiles();
+			for (var j = 0; j < ff.length; j++) if (ff[j] instanceof File) out.fonts.push(decodeURI(ff[j].name));
+		}
+		return bin_json(out);
+	} catch (e) {
+		return bin_error(e);
+	}
+}
+
 // fallback para salvar quando o painel não tem acesso ao disco
 function bin_saveText(text, name) {
 	try {

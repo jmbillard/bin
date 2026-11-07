@@ -254,6 +254,7 @@
 		logo.classList.remove('spin'); void logo.offsetWidth; logo.classList.add('spin');
 		var mode = S.mode;
 		return BIN.callHostJSON(mode === 'comp' ? 'bin_captureComp' : 'bin_capture').then(function (raw) {
+			state.raw = JSON.parse(JSON.stringify(raw)); // cópia antes de preparar (o pacote de documentação usa a captura original)
 			state.m = CG.prepare(raw);
 			state.ex = {};
 			state.open = {};
@@ -694,6 +695,40 @@
 		}).catch(function (e) { UI.toast(esc(e.message), 'error'); });
 	}
 
+	// pacote para o app de documentação de templates (docs-app): captura original, script gerado e,
+	// se a comp for um template do padeiro, o _config.json, o preview e as fontes da pasta do template
+	function bytesToBase64(bytes) {
+		var s = '', chunk = 0x8000;
+		for (var i = 0; i < bytes.length; i += chunk) s += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+		return btoa(s);
+	}
+
+	function exportPack() {
+		BIN.callHostJSON('bin_templateInfo').catch(function () { return {}; }).then(function (info) {
+			var template = null;
+			if (info && info.project) {
+				template = { project: info.project, configPath: info.configPath, script: info.script, fonts: info.fonts || [] };
+				try { template.config = info.config ? JSON.parse(info.config) : null; } catch (e) { template.config = null; template.configError = String(e.message || e); }
+				if (info.preview) {
+					try { template.preview = 'data:image/png;base64,' + bytesToBase64(BIN.fs.readBinary(info.preview)); } catch (e) { }
+				}
+			}
+			var pack = {
+				format: 'bin-doc-pack',
+				version: 1,
+				created: new Date().toISOString(),
+				ae: state.m.ae,
+				capture: state.raw,
+				template: template,
+				code: CG.generate(state.m, { wrap: true, comments: true, parent: true, keys: true, expr: true, target: 'new' })
+			};
+			var name = CG.snake(state.m.rootComp.name) + '_doc.json';
+			return saveText(JSON.stringify(pack), name).then(function (p) {
+				if (p && template && !template.config) UI.toast('pacote salvo, mas sem _config.json: a comp não parece ser um template do padeiro.', 'warn');
+			});
+		});
+	}
+
 	function copyText(text, what) {
 		BIN.copy(text).then(function (ok) {
 			UI.toast(ok ? what + ' copiado.' : 'não foi possível copiar: selecione o texto e use Ctrl/Cmd+C.', ok ? 'ok' : 'warn', { life: 1600 });
@@ -876,6 +911,7 @@
 		};
 		$('copyBtn').onclick = function () { if (state.m) copyText(CG.generate(state.m, opts()), 'código'); };
 		$('exportBtn').onclick = function () { if (state.m) saveText(CG.generate(state.m, opts()), fileName()); };
+		$('packBtn').onclick = function () { if (state.m) exportPack(); };
 	}
 
 	function bindTools() {

@@ -194,6 +194,8 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
 
 1. **arquivo** → nome sugerido para exportar e quantidade de linhas.
 2. **copiar e exportar** → `Ctrl/⌘ + Shift + C` copia, `Ctrl/⌘ + S` salva o `.jsx`.
+
+ao lado de copiar e exportar fica o **pacote para documentação**: um `.json` com a captura, o script e os arquivos do template do padeiro, para o [BIN docs](#-documentar-templates-do-padeiro).
 3. **funções auxiliares** → recolhidas na prévia; clique para ver.
 4. **opções** → veja a tabela abaixo.
 
@@ -325,6 +327,18 @@ com o painel em foco:
 ---
 
 
+## 📚 documentar templates do padeiro
+
+o **[BIN docs](docs-app/README.md)** é um app web que transforma o pacote para documentação do BIN, junto com prints dos controles, num rascunho de documentação escrito por um agente (workflow do n8n com a OpenAI). você revisa, pede ajustes e exporta o `.md` (ou um `.zip` com as imagens, para o AFFiNE).
+
+<p align="center">
+  <img src="docs/img/docs-4-revisao.png" width="640" alt="BIN docs: revisão do rascunho">
+</p>
+
+<br>
+
+---
+
 ## 🧩 o que é recriado
 
 | | |
@@ -378,6 +392,7 @@ node tests/make_banner.js    # banner do instalador
 node tests/installer_preview.js  # roda o instalador num ScriptUI simulado e desenha cada passo
 node tests/make_docs.js      # capturas do README com os destaques numerados
 node tests/make_demo.js      # grava o uso simulado e gera docs/img/demo.gif (precisa do ffmpeg)
+node tests/docs_app.js       # BIN docs de ponta a ponta com um webhook falso
 ```
 
 para depurar o painel dentro do After Effects, com o `PlayerDebugMode` ligado, abra `http://localhost:8098` no Chrome.

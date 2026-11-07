@@ -1,0 +1,198 @@
+{
+  "name": "BIN docs · documentação de templates do padeiro",
+  "nodes": [
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0001",
+      "name": "recebe o pacote",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "6b1d0c50-0000-4000-8000-000000000001",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bin-docs",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "BIN docs · X-Bin-Token"
+        }
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0002",
+      "name": "monta o pedido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// troque pelo modelo da OpenAI com visão que preferir\nconst MODEL = 'gpt-4o';\nconst PROMPT = \"você escreve a documentação dos templates do After Effects usados pelo **O PADEIRO**, a ferramenta que preenche templates em massa na PROMO.\\n\\nquem lê é quem vai **preencher** o template no padeiro (designers e editores), não programadores. explique o que cada coisa faz na tela, não como o código funciona.\\n\\n## o que você recebe\\n\\n- a **ficha técnica** do template, gerada a partir do projeto: configuração do padeiro (`_config.json`), layers preenchidos pelo padeiro, controles de expressão e o que cada um afeta (lido das expressões), expressões, layers, textos, precomps e mídias;\\n- **prints** com legenda (Effect Controls, Essential Graphics, telas do template) e o preview do template;\\n- **notas do autor**, quando houver. elas têm prioridade sobre o que você deduzir.\\n\\n## como escrever\\n\\n- português do Brasil, frases curtas, no estilo da documentação do padeiro: texto em minúsculas (exceto nomes próprios, nomes de layers, controles e comps, que vão exatamente como no projeto), títulos de seção com `📍`, observações em `> 🚩 *obs:*`.\\n- explique cada controle pelo efeito visual (\\\"aumenta o tremor do título\\\", \\\"liga a barra inferior\\\"), deduzindo pelo nome, pelo tipo, pelo valor e pelas expressões que o usam. diga o valor padrão e, quando der, a faixa que faz sentido.\\n- **não invente.** quando não tiver certeza, escreva o que deduziu e marque com `✎ confirmar:` para o autor revisar. melhor um `✎ confirmar` do que uma explicação errada.\\n- não copie código nem expressões para a documentação; no máximo cite o nome de um layer ou controle entre crases.\\n- use as imagens com **exatamente** os caminhos informados (ex.: `![controles do layer CONTROLE](imagens/print-1.png)`), perto do trecho que elas ilustram. a legenda do print diz o que ele mostra. não cite imagens que não foram enviadas.\\n- se a ficha tiver avisos (sem `_config.json`, layer editável não encontrada…), trate-os na seção de cuidados.\\n\\n## estrutura\\n\\n```\\n# 🥖 <nome da configuração>\\n\\n<uma ou duas frases: para que serve e o que o template produz>\\n\\n![preview](imagens/preview.png)   ← só se o preview foi enviado\\n\\n## 📍 como preencher\\n- como o input vira comps (cada bloco separado por uma linha vazia vira uma comp), o separador entre as informações, a caixa de texto aplicada e o prefixo do nome das comps.\\n- tabela: | ordem | layer | o que escrever |\\n- o exemplo de preenchimento, em bloco de código.\\n\\n## 📍 controles\\n- tabela: | controle | onde fica | o que faz | padrão |\\n- depois da tabela, os prints dos controles, cada um com uma frase.\\n- sem controles: diga que o template não tem ajustes além do texto.\\n\\n## 📍 variações de layout      ← só se houver inputFx\\n## 📍 mídias e fontes          ← fontes da pasta FONTS, footages que precisam ser trocadas\\n## 📍 cuidados                 ← o que não mexer, limites (tamanho de texto, quantidade de linhas), avisos da ficha\\n\\n## 📍 texto para as dicas do padeiro\\num bloco de código com 2 a 6 linhas curtas, prontas para colar no campo \\\"dicas\\\" do `_config.json` (cada linha vira um item da lista de dicas no padeiro).\\n```\\n\\n## formato da resposta\\n\\nresponda **somente** com o markdown da documentação, sem comentários antes ou depois e sem envolver tudo num bloco de código.\\n\\n## pedidos de ajuste\\n\\nquando a mensagem trouxer \\\"documentação atual\\\" e um \\\"pedido\\\", reescreva a documentação aplicando só o que foi pedido, mantendo o resto do texto, as imagens e as marcações `✎ confirmar` que o pedido não resolver. responda com o markdown completo.\\n\";\n\nconst item = $input.first();\nconst b = item.json.body || {};\nconst mode = b.mode === 'revise' ? 'revise' : 'draft';\nlet images = [];\ntry { images = JSON.parse(b.images || '[]'); } catch (e) { images = []; }\nconst imageList = images.length\n  ? images.map((i) => '- ' + i.file + ': ' + (i.caption || '(sem legenda)')).join('\\n')\n  : '(nenhuma imagem)';\n\nconst content = [];\nif (mode === 'draft') {\n  content.push({ type: 'text', text: [\n    'escreva a documentação do template \"' + (b.template_name || '') + '\" (comp principal \"' + (b.comp_name || '') + '\").',\n    '',\n    b.ficha || '',\n    '',\n    '## notas do autor',\n    b.notes || '(nenhuma)',\n    '',\n    '## imagens anexadas (use exatamente estes caminhos)',\n    imageList\n  ].join('\\n') });\n  for (const img of images) {\n    const bin = item.binary && item.binary[img.field];\n    if (!bin) continue;\n    const buf = await this.helpers.getBinaryDataBuffer(0, img.field);\n    content.push({ type: 'text', text: 'imagem ' + img.file + ': ' + (img.caption || '(sem legenda)') });\n    content.push({ type: 'image_url', image_url: { url: 'data:' + (bin.mimeType || 'image/png') + ';base64,' + buf.toString('base64'), detail: 'high' } });\n  }\n} else {\n  content.push({ type: 'text', text: [\n    'ajuste a documentação do template \"' + (b.template_name || '') + '\".',\n    '',\n    '## pedido',\n    b.instruction || '',\n    '',\n    '## documentação atual',\n    b.markdown || '',\n    '',\n    '## ficha técnica (referência)',\n    b.ficha || '',\n    '',\n    '## imagens disponíveis (use exatamente estes caminhos)',\n    imageList\n  ].join('\\n') });\n}\n\nreturn [{ json: { mode, payload: { model: MODEL, temperature: 0.3, messages: [{ role: 'system', content: PROMPT }, { role: 'user', content }] } } }];\n"
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0003",
+      "name": "OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "timeout": 240000
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0004",
+      "name": "extrai o markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json || {};\nif (r.error) {\n  const msg = typeof r.error === 'string' ? r.error : (r.error.message || JSON.stringify(r.error));\n  return [{ json: { error: 'OpenAI: ' + msg, status: 502 } }];\n}\nlet md = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || '';\nmd = String(md).replace(/^\\s*```(?:markdown|md)?\\s*\\n([\\s\\S]*?)\\n```\\s*$/, '$1').trim();\nif (!md) return [{ json: { error: 'a OpenAI respondeu sem texto.', status: 502 } }];\nreturn [{ json: { markdown: md, model: r.model || '', usage: r.usage || null, status: 200 } }];\n"
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0005",
+      "name": "responde ao app",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.error ? { error: $json.error } : { markdown: $json.markdown, model: $json.model }) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}"
+        }
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0006",
+      "name": "healthcheck",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        220
+      ],
+      "webhookId": "6b1d0c50-0000-4000-8000-000000000002",
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bin-docs-health",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "a1d0c6f2-1b7e-4d7e-9a51-2f6a7c1b0007",
+      "name": "responde ok",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        220
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\": true}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "recebe o pacote": {
+      "main": [
+        [
+          {
+            "node": "monta o pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "monta o pedido": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "extrai o markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extrai o markdown": {
+      "main": [
+        [
+          {
+            "node": "responde ao app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "healthcheck": {
+      "main": [
+        [
+          {
+            "node": "responde ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

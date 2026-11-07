@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>BIN docs · templates do padeiro</title>
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234c9dff'/%3E%3Cpath d='M7.5 7.5 3.8 12l3.7 4.5M16.5 7.5l3.7 4.5-3.7 4.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M12 8.5 15.5 12 12 15.5 8.5 12z' fill='%23fff'/%3E%3C/svg%3E">
+	<link rel="stylesheet" href="css/styles.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body data-phase="upload">
+	<header class="top">
+		<div class="brand">
+			<span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5 1.8 12l4.7 5.5M17.5 6.5l4.7 5.5-4.7 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.2 16.8 12 12 16.8 7.2 12z" fill="currentColor"/></svg></span>
+			<div>
+				<b>BIN docs</b>
+				<small>documentação dos templates do padeiro</small>
+			</div>
+		</div>
+		<div class="top-right">
+			<span class="health" id="health" title="workflow do n8n"><i></i><span>verificando…</span></span>
+			<button class="icon-btn" id="settingsBtn" title="configurações do webhook"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+		</div>
+	</header>
+
+	<ol class="steps" aria-label="etapas">
+		<li data-step="upload"><span>1</span>pacote e prints</li>
+		<li data-step="processing"><span>2</span>rascunho do agente</li>
+		<li data-step="review"><span>3</span>revisar e exportar</li>
+	</ol>
+
+	<main>
+		<!-- ======================================================== 1 · ENVIO -->
+		<section class="phase" id="phase-upload">
+			<div class="col">
+				<h2>pacote do template</h2>
+				<p class="hint">no BIN: abra a comp principal do template, capture em <b>comp inteira</b> e use <b>pacote para documentação</b> na aba código.</p>
+				<label class="drop" id="packDrop" tabindex="0">
+					<input type="file" id="packInput" accept=".json,application/json" hidden>
+					<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="M9.5 13.5 12 11l2.5 2.5"/></svg>
+					<b>arraste o pacote .json</b>
+					<small>ou clique para escolher</small>
+				</label>
+
+				<div class="card template hidden" id="templateCard">
+					<img id="tplPreview" alt="preview do template">
+					<div class="tpl-info">
+						<b id="tplName"></b>
+						<small id="tplMeta"></small>
+						<div class="chips" id="tplChips"></div>
+						<button class="link" id="swapPack">trocar pacote</button>
+					</div>
+				</div>
+				<ul class="warnings hidden" id="tplWarnings"></ul>
+				<details class="ficha hidden" id="fichaBox">
+					<summary>ficha técnica enviada ao agente</summary>
+					<pre id="fichaText"></pre>
+				</details>
+			</div>
+
+			<div class="col">
+				<h2>prints dos controles</h2>
+				<p class="hint">cole (<kbd>Ctrl</kbd>+<kbd>V</kbd>) ou arraste prints do Effect Controls, do Essential Graphics ou de qualquer tela que ajude. escreva uma legenda curta em cada um.</p>
+				<label class="drop small" id="shotDrop" tabindex="0">
+					<input type="file" id="shotInput" accept="image/*" multiple hidden>
+					<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/></svg>
+					<b>cole ou arraste imagens</b>
+					<small>PNG, JPG ou WebP</small>
+				</label>
+				<ul class="shots" id="shots"></ul>
+
+				<h2>notas para o agente <small>opcional</small></h2>
+				<textarea id="notes" rows="4" placeholder="ex.: usado nas aberturas de domingo; o controle “amp” é a intensidade do tremor do título; não mexer no layer MATTE."></textarea>
+
+				<div class="actions">
+					<button class="btn ghost" id="localBtn" disabled title="monta um esqueleto a partir da ficha, sem IA">rascunho sem IA</button>
+					<button class="btn primary" id="sendBtn" disabled>gerar rascunho</button>
+				</div>
+			</div>
+		</section>
+
+		<!-- ================================================== 2 · PROCESSANDO -->
+		<section class="phase" id="phase-processing">
+			<div class="working">
+				<span class="spinner"></span>
+				<b>o agente está escrevendo o rascunho</b>
+				<small id="elapsed">0 s</small>
+				<button class="btn ghost" id="cancelBtn">cancelar</button>
+			</div>
+		</section>
+
+		<!-- ===================================================== 3 · REVISÃO -->
+		<section class="phase" id="phase-review">
+			<div class="toolbar">
+				<button class="btn ghost" id="backBtn">‹ pacote e prints</button>
+				<span class="spacer"></span>
+				<span class="saved" id="savedInfo"></span>
+				<button class="btn ghost hidden" id="undoBtn">desfazer ajuste</button>
+				<button class="btn ghost" id="copyBtn">copiar</button>
+				<button class="btn ghost" id="mdBtn">baixar .md</button>
+				<button class="btn primary" id="zipBtn" title=".md + pasta imagens (para importar no AFFiNE)">baixar .zip</button>
+			</div>
+			<div class="editor">
+				<div class="pane">
+					<div class="pane-head">markdown</div>
+					<textarea id="md" spellcheck="true"></textarea>
+				</div>
+				<div class="pane">
+					<div class="pane-head">prévia</div>
+					<article class="preview" id="preview"></article>
+				</div>
+			</div>
+			<form class="revise" id="reviseForm">
+				<input id="reviseInput" placeholder="pedir um ajuste ao agente: ex. “explique melhor o controle amp e encurte a introdução”" autocomplete="off">
+				<button class="btn primary" id="reviseBtn">pedir ajuste</button>
+			</form>
+		</section>
+	</main>
+
+	<div class="toast" id="toast" role="status"></div>
+
+	<dialog id="settings">
+		<form method="dialog">
+			<h2>configurações</h2>
+			<label>webhook do rascunho (n8n)<input id="cfgUrl" placeholder="https://n8n.exemplo.com/webhook/bin-docs"></label>
+			<label>healthcheck<input id="cfgHealth" placeholder="https://n8n.exemplo.com/webhook/bin-docs-health"></label>
+			<label>token (cabeçalho X-Bin-Token)<input id="cfgToken" type="password" placeholder="opcional"></label>
+			<p class="hint">ficam salvas só neste navegador.</p>
+			<div class="actions">
+				<button class="btn ghost" value="cancel">cancelar</button>
+				<button class="btn primary" value="save" id="cfgSave">salvar</button>
+			</div>
+		</form>
+	</dialog>
+
+	<script src="js/ficha.js"></script>
+	<script src="js/app.js"></script>
+</body>
+</html>
