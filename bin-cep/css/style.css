@@ -128,6 +128,8 @@ button { cursor: pointer; }
 
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* o Chromium do CEP 9 não conhece :focus-visible: o anel aparece ao navegar com Tab */
+body.kb :focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* ------------------------------------------------------------------ topo */
 .top {
@@ -496,7 +498,7 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 }
 
 .eye .ico { width: 14px; height: 14px; }
-.row:hover > .eye, .card-head:hover > .eye, .layer-head:hover > .eye, .comp-head:hover > .eye, .eye:focus-visible { opacity: 1; }
+.row:hover > .eye, .card-head:hover > .eye, .layer-head:hover > .eye, .comp-head:hover > .eye, .eye:focus { opacity: 1; }
 .eye:hover { background: var(--surface-3); color: var(--txt); }
 .eye.off { opacity: 1; color: var(--muted); }
 .eye.mixed { color: var(--accent); }
@@ -659,22 +661,53 @@ body.is-empty .sum { visibility: hidden; }
 	position: fixed;
 	z-index: 50;
 	max-width: 240px;
-	padding: 6px 9px;
-	border-radius: 7px;
+	padding: 7px 10px;
+	border-radius: 9px;
 	background: var(--tip-bg);
-	color: #f2f3f5;
-	font-size: 11px;
-	line-height: 1.4;
+	color: #f1f3f6;
+	font-size: 11.5px;
+	line-height: 1.35;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .06);
 	pointer-events: none;
 	opacity: 0;
-	transform: translateY(-3px);
-	transition: opacity .15s, transform .15s;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+	transform: translateY(var(--from-y, 4px)) scale(.96);
+	transform-origin: var(--ax, 50%) 100%;
+	transition: opacity .14s ease, transform .22s var(--spring);
 }
 
+.tip.down { --from-y: -4px; transform-origin: var(--ax, 50%) 0; }
 .tip.show { opacity: 1; transform: none; }
-.tip b { display: block; font-weight: 600; }
-.tip span { display: block; color: #a8aeb6; margin-top: 2px; }
+.tip-head { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.tip.rich .tip-head span:first-child { font-weight: 600; }
+.tip-body { color: #b6bcc5; margin-top: 2px; }
+.tip-list { margin: 5px 0 0; padding: 0; list-style: none; color: #b6bcc5; }
+.tip-list li { margin: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.tip-list li::before { content: ''; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin: 0 7px 2px 1px; vertical-align: middle; }
+.tip-kbd { display: inline-flex; gap: 3px; flex: none; }
+
+.tip kbd {
+	min-width: 17px;
+	padding: 1px 5px;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, .1);
+	box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .08);
+	color: #dde1e6;
+	font-weight: 600; font-size: 10px; line-height: 15px;
+	text-align: center;
+}
+
+.tip-arrow {
+	position: absolute;
+	left: calc(var(--ax, 50%) - 5px);
+	width: 10px;
+	height: 10px;
+	background: var(--tip-bg);
+	transform: rotate(45deg);
+	border-radius: 2px;
+}
+
+.tip.up .tip-arrow { bottom: -4px; }
+.tip.down .tip-arrow { top: -4px; }
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation: none !important; transition: none !important; }

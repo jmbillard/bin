@@ -411,6 +411,8 @@
 		return '';
 	}
 
+	function fixedKind(n) { return n.kind === 'cinfo' || n.kind === 'group'; }
+
 	function rowHTML(id, depth, q) {
 		var n = state.nodes[id];
 		if (!visible(id, q)) return '';
@@ -427,7 +429,17 @@
 		}
 
 		var name = n.kind === 'marker' ? fmtTime(n.node.t) : esc(label(n));
-		var title = n.kind === 'prop' ? ' title="' + esc(n.node.mn) + '"' : '';
+		var title = '';
+		if (!fixedKind(n)) {
+			var tipLines = [label(n)];
+			if (n.kind === 'prop') {
+				tipLines.push(n.node.mn);
+				if (n.node.keys) tipLines.push('• ' + plural(n.node.keys.length, 'keyframe', 'keyframes'));
+				if (n.node.x) tipLines.push('• expressão' + (n.node.xoff ? ' (desligada)' : '') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
+			}
+			tipLines.push(excluded(id) ? 'clique para incluir no script' : 'clique para tirar do script');
+			title = ' title="' + esc(tipLines.join('\n')) + '"';
+		}
 		// a linha inteira liga / desliga (tamanho, duração e fps da comp sempre entram)
 		var fixed = n.kind === 'cinfo';
 		return '<div class="row' + (fixed ? '' : ' leaf') + off + hit + '"' + (fixed ? '' : ' data-id="' + id + '"') + d + title + '><span class="n">' + name + '</span><span class="v">' + rowValue(n) + '</span>' + eyeHTML(id, fixed) + '</div>';
@@ -490,7 +502,11 @@
 		var marks = '';
 		if (c.keys) marks += '<i title="keyframes"><span class="dot k"></span>' + c.keys + '</i>';
 		if (c.expr) marks += '<i title="expressões"><span class="dot e"></span>' + c.expr + '</i>';
-		return '<div class="row layer-row' + off + '" data-open="' + L.id + '" title="abrir ' + esc(L.name) + '">' +
+		var tipLines = [L.name, (TYPE_NAME[L.type] || L.type) + ' · #' + L.index];
+		if (c.keys) tipLines.push('• ' + plural(c.keys, 'keyframe', 'keyframes'));
+		if (c.expr) tipLines.push('• ' + plural(c.expr, 'expressão', 'expressões'));
+		tipLines.push('clique para abrir');
+		return '<div class="row layer-row' + off + '" data-open="' + L.id + '" title="' + esc(tipLines.join('\n')) + '">' +
 			'<span class="n">' + esc(L.name) + '</span>' +
 			'<span class="cnt">' + marks + '</span><span class="lt">' + esc(TYPE_NAME[L.type] || L.type) + '</span>' +
 			eyeHTML(L.id) + UI.icon('chevron', 'go') + '</div>';
@@ -556,7 +572,7 @@
 			});
 		});
 		var f = Object.keys(fonts), e = Object.keys(fx);
-		if (f.length) add((f.length === 1 ? 'fonte usada: ' : 'fontes usadas: ') + f.join(', ') + '. precisam estar instaladas onde o script rodar.');
+		if (f.length) add(f.length === 1 ? 'fonte usada: ' + f[0] + '. precisa estar instalada onde o script rodar.' : 'fontes usadas: ' + f.join(', ') + '. precisam estar instaladas onde o script rodar.');
 		if (e.length) add((e.length === 1 ? 'efeito que pode ser plug-in de terceiro: ' : 'efeitos que podem ser plug-ins de terceiros: ') + e.join(', ') + '.');
 		return out;
 	}
@@ -589,7 +605,7 @@
 		var pill = $('warnPill');
 		pill.classList.toggle('hidden', !state.warnings.length);
 		pill.querySelector('span').textContent = plural(state.warnings.length, 'aviso', 'avisos');
-		UI.setTip(pill, plural(state.warnings.length, 'aviso', 'avisos') + '\nclique para ver');
+		UI.setTip(pill, plural(state.warnings.length, 'aviso', 'avisos') + '\n' + state.warnings.map(function (w) { return '• ' + w; }).join('\n') + '\nclique para ver tudo');
 
 		if (m.mode === 'comp') $('runTxt').textContent = st.comps > 1 ? 'recriar comp + ' + plural(st.comps - 1, 'precomp', 'precomps') : 'recriar comp';
 		else $('runTxt').textContent = st.layers > 1 ? 'recriar ' + st.layers + ' layers' : 'recriar layer';
@@ -890,6 +906,28 @@
 		});
 	}
 
+	// atalhos (o painel só recebe teclas quando está em foco)
+	function bindKeys() {
+		document.addEventListener('keydown', function (e) {
+			var mod = e.metaKey || e.ctrlKey;
+			var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
+			var k = e.key;
+			if (k === 'Escape') {
+				if (typing && $('query').value) { $('query').value = ''; renderTree(); return; }
+				if (state.focus) { state.focus = null; renderTree(); return; }
+				UI.hideToast();
+				return;
+			}
+			if (mod && (k === 'f' || k === 'F')) { e.preventDefault(); showTab('props'); $('query').focus(); $('query').select(); return; }
+			if (mod && (k === 'l' || k === 'L')) { e.preventDefault(); capture(false); return; }
+			if (!state.m) return;
+			if (mod && k === 'Enter') { e.preventDefault(); if (!$('runBtn').disabled) run(); return; }
+			if (mod && (k === 's' || k === 'S')) { e.preventDefault(); $('exportBtn').click(); return; }
+			if (mod && e.shiftKey && (k === 'c' || k === 'C')) { e.preventDefault(); $('copyBtn').click(); return; }
+			if (!mod && !typing && /^[123]$/.test(k)) showTab(TABS[+k - 1]);
+		});
+	}
+
 	function bind() {
 		$('logo').innerHTML = UI.logo;
 		UI.hydrateIcons();
@@ -917,6 +955,7 @@
 		};
 
 		bindTree();
+		bindKeys();
 		bindOptions();
 		bindCode();
 		bindTools();

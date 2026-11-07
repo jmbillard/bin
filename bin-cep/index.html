@@ -10,7 +10,7 @@
 	<header class="top">
 		<span class="logo" id="logo" title="BIN 3.0&#10;engenharia reversa de layer"></span>
 		<span class="logo-name">BIN</span>
-		<button id="chip" class="chip" title="capturar a seleção de novo&#10;lê as layers selecionadas na comp ativa">
+		<button id="chip" class="chip" data-kbd="mod+L" title="capturar de novo&#10;lê de novo a seleção (ou a comp inteira) no After Effects">
 			<span id="chipType" class="ltype">SHAPE</span>
 			<span class="chip-text"><b id="chipName"></b><small id="chipMeta"></small></span>
 			<i data-icon="swap" class="chip-swap"></i>
@@ -23,9 +23,9 @@
 
 	<nav class="tabs" role="tablist">
 		<span class="tab-ink"></span>
-		<button class="tab active" data-tab="props" role="tab" title="propriedades&#10;o que a layer tem e o que entra no script"><i data-icon="layers"></i><span>propriedades</span><b id="propBadge" class="pill hidden"></b></button>
-		<button class="tab" data-tab="code" role="tab" title="código&#10;o script que recria a layer"><i data-icon="code"></i><span>código</span></button>
-		<button class="tab" data-tab="tools" role="tab" title="utilitários&#10;expressão → string e arquivo → binário"><i data-icon="tools"></i><span>utilitários</span></button>
+		<button class="tab active" data-tab="props" role="tab" data-kbd="1" title="propriedades&#10;o que foi capturado e o que entra no script"><i data-icon="layers"></i><span>propriedades</span><b id="propBadge" class="pill hidden"></b></button>
+		<button class="tab" data-tab="code" role="tab" data-kbd="2" title="código&#10;o script que recria o que foi capturado"><i data-icon="code"></i><span>código</span></button>
+		<button class="tab" data-tab="tools" role="tab" data-kbd="3" title="utilitários&#10;• expressão → string&#10;• arquivo → binário"><i data-icon="tools"></i><span>utilitários</span></button>
 	</nav>
 
 	<main>
@@ -42,18 +42,18 @@
 			</div>
 
 			<div id="propsView" class="hidden">
-				<div class="seg mode-seg" id="modeSeg" title="o que capturar&#10;troca e captura de novo">
-					<button data-value="layers"><i data-icon="layers"></i>layers selecionadas</button>
-					<button data-value="comp"><i data-icon="monitor"></i>comp inteira</button>
+				<div class="seg mode-seg" id="modeSeg">
+					<button data-value="layers" title="layers selecionadas&#10;só as layers selecionadas na comp ativa"><i data-icon="layers"></i>layers selecionadas</button>
+					<button data-value="comp" title="comp inteira&#10;todas as layers da comp ativa, com as precomps"><i data-icon="monitor"></i>comp inteira</button>
 				</div>
 				<div class="bar">
-					<label class="search" title="filtrar&#10;por nome da propriedade ou do grupo"><i data-icon="search"></i><input id="query" placeholder="filtrar propriedades" spellcheck="false"></label>
-					<button class="icon-btn" id="expandAll" title="expandir tudo"><i data-icon="expand"></i></button>
-					<button class="icon-btn" id="collapseAll" title="recolher tudo"><i data-icon="collapse"></i></button>
+					<label class="search" data-kbd="mod+F" title="filtrar&#10;pelo nome da propriedade, do grupo ou da layer"><i data-icon="search"></i><input id="query" placeholder="filtrar propriedades" spellcheck="false"></label>
+					<button class="icon-btn" id="expandAll" title="expandir tudo&#10;abre todos os grupos"><i data-icon="expand"></i></button>
+					<button class="icon-btn" id="collapseAll" title="recolher tudo&#10;fecha todos os grupos"><i data-icon="collapse"></i></button>
 					<span class="sep-v"></span>
 					<span class="toggles">
-						<button class="icon-btn toggle on" id="optKeys" title="keyframes e easing&#10;desligado: usa o valor do primeiro keyframe"><i data-icon="key"></i></button>
-						<button class="icon-btn toggle on" id="optExpr" title="expressões&#10;desligado: o script ignora as expressões"><i data-icon="expr"></i></button>
+						<button class="icon-btn toggle on" id="optKeys" title="keyframes&#10;• ligado: keys com easing e tangentes&#10;• desligado: só o valor do primeiro key"><i data-icon="key"></i></button>
+						<button class="icon-btn toggle on" id="optExpr" title="expressões&#10;• ligado: o script recria as expressões&#10;• desligado: só os valores"><i data-icon="expr"></i></button>
 					</span>
 				</div>
 				<div id="tree"></div>
@@ -66,9 +66,9 @@
 				<span id="fileName" class="file-name"></span>
 				<span class="spacer"></span>
 				<span id="lineCount" class="faint"></span>
-				<button class="icon-btn toggle" id="wrapBtn" title="quebra de linha"><i data-icon="wrap"></i></button>
-				<button class="icon-btn" id="copyBtn" title="copiar o código"><i data-icon="copy"></i></button>
-				<button class="icon-btn" id="exportBtn" title="exportar .jsx&#10;salva o script para rodar em File › Scripts"><i data-icon="save"></i></button>
+				<button class="icon-btn toggle" id="wrapBtn" title="quebra de linha&#10;linhas longas continuam embaixo"><i data-icon="wrap"></i></button>
+				<button class="icon-btn" id="copyBtn" data-kbd="mod+Shift+C" title="copiar o código"><i data-icon="copy"></i></button>
+				<button class="icon-btn" id="exportBtn" data-kbd="mod+S" title="exportar .jsx&#10;salva o script para rodar em File › Scripts"><i data-icon="save"></i></button>
 			</div>
 			<div class="code" id="codeBox"><pre id="codeView"></pre></div>
 			<div class="opts">
@@ -125,7 +125,7 @@
 			<span id="sumText" class="sum-text"></span>
 			<button id="warnPill" class="warn-pill hidden"><i data-icon="alert"></i><span></span></button>
 		</div>
-		<button id="runBtn" class="cta" disabled title="recriar&#10;roda o script dentro de um único undo"><span class="cta-fill"></span><i data-icon="sparkle"></i><span id="runTxt">recriar layer</span></button>
+		<button id="runBtn" class="cta" disabled data-kbd="mod+Enter" title="recriar&#10;roda o script dentro de um único undo"><span class="cta-fill"></span><i data-icon="sparkle"></i><span id="runTxt">recriar layer</span></button>
 	</footer>
 
 	<script src="js/cep.js"></script>

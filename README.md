@@ -188,6 +188,24 @@ function criar_titulo_principal(comp) {
 
 ---
 
+### ⌨️ atalhos
+
+passe o mouse sobre qualquer botão para ver a dica com o que ele faz e o atalho. com o painel em foco:
+
+| atalho | o que faz |
+|---|---|
+| `1` `2` `3` | abas propriedades, código e utilitários |
+| `Ctrl/⌘ + L` | capturar de novo |
+| `Ctrl/⌘ + F` | filtrar propriedades |
+| `Ctrl/⌘ + Enter` | recriar |
+| `Ctrl/⌘ + S` | exportar .jsx |
+| `Ctrl/⌘ + Shift + C` | copiar o código |
+| `Esc` | limpa o filtro, volta da layer aberta ou fecha o aviso |
+
+<br>
+
+---
+
 ## 7 · utilitários
 
 <p align="center">
@@ -240,6 +258,7 @@ tests/
   installer_preview.js  instalador num ScriptUI simulado
   pill_align.js       mede o alinhamento vertical do texto nas pílulas
   tab_ink.js          confere o fundo da aba ativa depois da captura
+  tooltips.js         dicas (conteúdo, posição, modo aquecido) e atalhos de teclado
 ```
 
 ```bash

@@ -84,49 +84,139 @@
 	};
 
 	// ------------------------------------------------------------ dicas ----
-	// qualquer elemento com title vira dica própria; a 1ª linha fica em destaque
+	// Mesmo tooltip do ABRIDOR. O texto vem do title (ou data-tip):
+	//   1ª linha      → título (em destaque quando há mais linhas)
+	//   linhas        → descrição
+	//   linhas "• …"  → lista com marcador (na ordem em que aparecem)
+	// data-kbd="mod+S" mostra o atalho ao lado do título (mod = ⌘ no Mac, Ctrl no Windows).
 	UI.tooltips = function () {
 		var tip = document.createElement('div');
+		tip.id = 'tip';
 		tip.className = 'tip';
+		tip.setAttribute('role', 'tooltip');
 		document.body.appendChild(tip);
-		var timer = null, current = null;
 
-		function hide() { clearTimeout(timer); tip.classList.remove('show'); current = null; }
+		var cur = null, showTimer = null, coolTimer = null, warm = false;
+		var mac = /Mac/i.test(global.navigator.platform || '');
+		var esc = UI.esc;
+
+		function kbd(k) {
+			return k.replace('mod', mac ? '⌘' : 'Ctrl').split('+').map(function (x) { return '<kbd>' + esc(x) + '</kbd>'; }).join('');
+		}
+
+		function findTarget(el) {
+			while (el && el !== document && el.getAttribute) {
+				if (el.hasAttribute('title') || el.hasAttribute('data-tip')) return el;
+				el = el.parentNode;
+			}
+			return null;
+		}
+
+		// o title vira data-tip na hora do hover (assim títulos alterados depois também funcionam)
+		function textOf(el) {
+			if (el.hasAttribute('title')) {
+				var t = el.getAttribute('title');
+				if (t) el.setAttribute('data-tip', t);
+				el.removeAttribute('title');
+			}
+			return el.getAttribute('data-tip') || '';
+		}
+
+		function render(el) {
+			var lines = textOf(el).split('\n').filter(function (l) { return l.replace(/\s/g, '').length; });
+			if (!lines.length) return false;
+			var html = '<div class="tip-head"><span>' + esc(lines[0]) + '</span>' +
+				(el.getAttribute('data-kbd') ? '<span class="tip-kbd">' + kbd(el.getAttribute('data-kbd')) + '</span>' : '') + '</div>';
+			// na ordem em que foi escrito: linhas "• …" seguidas viram uma lista
+			var list = [];
+			var flush = function () { if (list.length) { html += '<ul class="tip-list">' + list.join('') + '</ul>'; list = []; } };
+			lines.slice(1).forEach(function (l) {
+				if (/^\s*•\s/.test(l)) list.push('<li>' + esc(l.replace(/^\s*•\s*/, '')) + '</li>');
+				else { flush(); html += '<div class="tip-body">' + esc(l) + '</div>'; }
+			});
+			flush();
+			tip.innerHTML = html + '<i class="tip-arrow"></i>';
+			tip.classList.toggle('rich', lines.length > 1);
+			return true;
+		}
+
+		// acima do elemento, se couber; senão abaixo. a seta acompanha o centro do elemento
+		function place(el) {
+			var r = el.getBoundingClientRect();
+			var vw = global.innerWidth, vh = global.innerHeight;
+			tip.style.left = '0px';
+			tip.style.top = '0px';
+			var w = tip.offsetWidth, h = tip.offsetHeight;
+			var gap = 8;
+			var up = r.top - h - gap > 6 && !(r.top < vh * 0.28 && r.bottom + h + gap < vh - 6);
+			var top = up ? r.top - h - gap : r.bottom + gap;
+			var cx = r.left + r.width / 2;
+			var left = Math.max(6, Math.min(vw - w - 6, cx - w / 2));
+			tip.style.left = Math.round(left) + 'px';
+			tip.style.top = Math.round(Math.max(6, Math.min(vh - h - 6, top))) + 'px';
+			tip.style.setProperty('--ax', Math.round(Math.max(10, Math.min(w - 10, cx - left))) + 'px');
+			tip.classList.toggle('up', up);
+			tip.classList.toggle('down', !up);
+		}
+
 		function show(el) {
-			var text = el.dataset.tip;
-			if (!text) return;
-			var lines = text.split('\n');
-			tip.innerHTML = '<b>' + UI.esc(lines[0]) + '</b>' + (lines.length > 1 ? '<span>' + lines.slice(1).map(UI.esc).join('<br>') + '</span>' : '');
-			tip.style.left = '0px'; tip.style.top = '0px';
+			if (!el.isConnected || !render(el)) return;
+			cur = el;
+			place(el);
+			tip.classList.remove('show');
+			void tip.offsetWidth;
 			tip.classList.add('show');
-			var r = el.getBoundingClientRect(), t = tip.getBoundingClientRect();
-			var x = Math.max(8, Math.min(global.innerWidth - t.width - 8, r.left + r.width / 2 - t.width / 2));
-			var y = r.bottom + 6;
-			if (y + t.height > global.innerHeight - 6) y = r.top - t.height - 6;
-			tip.style.left = x + 'px';
-			tip.style.top = y + 'px';
+			warm = true;
+			clearTimeout(coolTimer);
+		}
+
+		function hide() {
+			clearTimeout(showTimer);
+			if (!cur) return;
+			cur = null;
+			tip.classList.remove('show');
+			// por um instante os próximos tooltips aparecem sem espera
+			clearTimeout(coolTimer);
+			coolTimer = setTimeout(function () { warm = false; }, 500);
 		}
 
 		document.addEventListener('mouseover', function (e) {
-			var el = e.target.closest ? e.target.closest('[title],[data-tip]') : null;
-			if (el && el.hasAttribute('title')) {
-				el.dataset.tip = el.getAttribute('title');
-				el.removeAttribute('title');
-			}
-			if (el === current) return;
-			hide();
-			if (!el) return;
-			current = el;
-			timer = setTimeout(function () { if (current === el) show(el); }, 450);
+			var el = findTarget(e.target);
+			if (el === cur) return;
+			if (!el) { hide(); return; }
+			textOf(el);
+			clearTimeout(showTimer);
+			if (cur) { show(el); return; }
+			showTimer = setTimeout(function () { show(el); }, warm ? 40 : 480);
 		});
-		document.addEventListener('mousedown', hide);
-		document.addEventListener('wheel', hide, true);
+		document.addEventListener('mouseout', function (e) {
+			if (!e.relatedTarget || !findTarget(e.relatedTarget)) hide();
+		});
+		['mousedown', 'wheel', 'keydown', 'dragstart'].forEach(function (ev) {
+			document.addEventListener(ev, function () { hide(); warm = false; }, true);
+		});
+		global.addEventListener('blur', hide);
+		global.addEventListener('scroll', hide, true);
+
+		// teclado: o foco mostra a dica (o Chromium do CEP 9 não conhece :focus-visible)
+		document.addEventListener('focusin', function (e) {
+			var el = findTarget(e.target);
+			var kb = false;
+			try { kb = e.target.matches(':focus-visible'); } catch (err) { kb = UI.keyboardNav; }
+			if (el && kb) show(el);
+		});
+		document.addEventListener('focusout', hide);
+		document.addEventListener('keydown', function (e) { if (e.key === 'Tab') { UI.keyboardNav = true; document.body.classList.add('kb'); } }, true);
+		document.addEventListener('mousedown', function () { UI.keyboardNav = false; document.body.classList.remove('kb'); }, true);
+
+		UI.tip = { show: show, hide: hide };
 	};
 
-	// atualiza o texto de uma dica (inclusive a que está aberta)
+	// troca o texto de uma dica (inclusive a que está aberta)
 	UI.setTip = function (el, text) {
 		el.removeAttribute('title');
-		el.dataset.tip = text;
+		el.setAttribute('data-tip', text);
+		if (UI.tip && el.matches && el.matches(':hover')) UI.tip.show(el);
 	};
 
 	// ------------------------------------------------------------ toast ----
