@@ -238,6 +238,7 @@
 		return out.join('\n');
 	};
 
+	// registra nos dois lugares (uma página com Node integrado também tem 'module')
+	if (typeof window !== 'undefined') window.Ficha = F;
 	if (typeof module !== 'undefined' && module.exports) module.exports = F;
-	else root.Ficha = F;
 })(typeof window !== 'undefined' ? window : this);

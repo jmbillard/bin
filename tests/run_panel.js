@@ -30,6 +30,11 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 		if (typeof ctx[fn] !== 'function') return JSON.stringify({ error: 'função inexistente: ' + fn });
 		return ctx[fn].apply(null, args);
 	});
+	// como no CEP (--enable-nodejs + --mixed-context): a página tem 'module' e 'require' do Node
+	await page.addInitScript(() => {
+		window.module = { exports: {} };
+		window.require = (m) => { throw new Error('require("' + m + '") não disponível no teste'); };
+	});
 	await page.addInitScript(({ logo }) => {
 		try { localStorage.setItem('bin.settings', JSON.stringify({ theme: 'dark' })); } catch (e) { }
 		window.__saved = {};

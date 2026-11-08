@@ -17,6 +17,11 @@ async function setup(page, settings) {
 		if (typeof ctx[fn] !== 'function') return JSON.stringify({ error: 'função inexistente: ' + fn });
 		return ctx[fn].apply(null, args);
 	});
+	// como no CEP (--enable-nodejs + --mixed-context): a página tem 'module' e 'require' do Node
+	await page.addInitScript(() => {
+		window.module = { exports: {} };
+		window.require = (m) => { throw new Error('require("' + m + '") não disponível no teste'); };
+	});
 	await page.addInitScript(({ settings, LOGO }) => {
 		try { localStorage.setItem('bin.settings', JSON.stringify(settings)); } catch (e) { }
 		window.__saved = {};

@@ -834,6 +834,8 @@
 		return (n / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
 	};
 
+	// no painel o CEP roda com Node.js (--enable-nodejs + --mixed-context): a página TAMBÉM tem 'module'.
+	// por isso registra nos dois lugares, nunca um ou outro
+	if (typeof window !== 'undefined') (window.BIN = window.BIN || {}).codegen = CG;
 	if (typeof module !== 'undefined' && module.exports) module.exports = CG;
-	else (root.BIN = root.BIN || {}).codegen = CG;
 })(typeof window !== 'undefined' ? window : this);
