@@ -83,7 +83,7 @@ const OUT = path.join(ROOT, 'docs/img');
 	await shot('03-codigo', [
 		{ sel: '#fileName', n: 1, pad: 2, side: 'bottom' },
 		{ sel: '#copyBtn', n: 2, pad: 0 },
-		{ sel: '#foldHelpers', n: 3, pad: 0, radius: 3 },
+		{ sel: '.tk-fold', n: 3, pad: 1, radius: 3 },
 		{ sel: '.opts', n: 4, pad: 2 }
 	]);
 

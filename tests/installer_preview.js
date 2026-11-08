@@ -56,7 +56,7 @@ function ctrl(type, text, props) {
 const calls = [];
 const ctx = {
 	$: { os: 'Windows', fileName: script }, File, Folder, decodeURI, encodeURI,
-	app: { version: '25.1.0', preferences: { getPrefAsLong: () => 1 }, executeCommand() { } },
+	app: { version: '25.1.0', preferences: { getPrefAsLong: () => (global.__writeBlocked ? 0 : 1) }, executeCommand() { } },
 	system: { callSystem: (c) => { calls.push(c); return ''; } },
 	Window: function (t, title) { win = ctrl('window', title); return win; }
 };
@@ -133,19 +133,41 @@ const next = () => {
 (async () => {
 	const browser = await chromium.launch();
 	const pg = await browser.newPage({ deviceScaleFactor: 2 });
-	const shots = ['01-instalador-boas-vindas', '02-instalador-checagem', '03-instalador-acao', '04-instalador-concluido'];
-	for (let i = 0; i < shots.length; i++) {
-		if (i) next();
+	const shot = async (name) => {
 		await pg.setContent(page());
-		await (await pg.$('#stage')).screenshot({ path: path.join(outDir, shots[i] + '.png'), omitBackground: true });
-	}
+		await (await pg.$('#stage')).screenshot({ path: path.join(outDir, name + '.png'), omitBackground: true });
+	};
+	const pageNow = () => win.children[1].children.findIndex((p) => p.visible);
+	let flow = true;
+
+	// tudo certo: 'começar' pula a checagem e vai direto para a ação
+	await shot('01-instalador-boas-vindas');
+	next();
+	flow = pageNow() === 2 && flow;
+	console.log((pageNow() === 2 ? 'ok    ' : 'FALHA ') + 'tudo certo: começar vai direto para instalar / atualizar');
+	await shot('03-instalador-acao');
+	buttons['anterior'].onClick(); // a checagem continua a um clique
+	flow = pageNow() === 1 && flow;
+	console.log((pageNow() === 1 ? 'ok    ' : 'FALHA ') + "a checagem continua acessível em 'anterior'");
+	await shot('02-instalador-checagem');
+	next();
+	next();
+	await shot('04-instalador-concluido');
 	await browser.close();
 
 	const dest = path.join(userData, 'Adobe/CEP/extensions/com.jmbillard.bin');
 	const ok = fs.existsSync(path.join(dest, 'CSXS/manifest.xml')) && fs.existsSync(path.join(dest, 'jsx/host.jsx')) && fs.existsSync(path.join(dest, 'icons/icon_normal.png'));
+	// escrita de arquivos bloqueada: 'começar' para na checagem
+	global.__writeBlocked = true;
+	Object.keys(buttons).forEach((k) => delete buttons[k]);
+	vm.runInContext(src, ctx, { filename: 'INSTALAR O BIN.jsx' });
+	next();
+	const stays = pageNow() === 1 && buttons['começar'].enabled === false; // o botão é criado como 'começar'
+	console.log((stays ? 'ok    ' : 'FALHA ') + 'com algo errado: começar para na checagem, sem avançar');
+	if (!stays || !flow) process.exitCode = 1;
 	console.log('janela:', win.text);
 	console.log('extensão copiada:', ok ? 'ok' : 'FALHOU', '(' + dest.replace(userData, '<userData>') + ')');
 	console.log('PlayerDebugMode:', calls.filter((c) => /PlayerDebugMode/.test(c)).length, 'versões do CSXS');
 	fs.rmSync(userData, { recursive: true, force: true });
-	process.exit(ok ? 0 : 1);
+	process.exit(ok && process.exitCode !== 1 ? 0 : 1);
 })();

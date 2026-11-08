@@ -479,7 +479,9 @@ function bin_runFile(path) {
 	try {
 		$.global.BIN_LAST = null;
 		$.global.BIN_PANEL = true;
-		$.evalFile(new File(path));
+		// um único undo, também para scripts digitados à mão na aba código
+		app.beginUndoGroup('BIN · script');
+		try { $.evalFile(new File(path)); } finally { app.endUndoGroup(); }
 		$.global.BIN_PANEL = false;
 		return bin_json($.global.BIN_LAST || { ok: true });
 	} catch (e) {
@@ -492,7 +494,8 @@ function bin_run(code) {
 	try {
 		$.global.BIN_LAST = null;
 		$.global.BIN_PANEL = true;
-		eval(code);
+		app.beginUndoGroup('BIN · script');
+		try { eval(code); } finally { app.endUndoGroup(); }
 		$.global.BIN_PANEL = false;
 		return bin_json($.global.BIN_LAST || { ok: true });
 	} catch (e) {

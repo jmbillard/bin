@@ -39,6 +39,7 @@
 					<button class="btn" id="captureBtn" title="capturar seleção&#10;as layers selecionadas na comp ativa"><i data-icon="target"></i>capturar seleção</button>
 					<button class="btn ghost" id="captureCompBtn" title="capturar comp inteira&#10;todas as layers da comp ativa, com as precomps"><i data-icon="monitor"></i>comp inteira</button>
 				</div>
+				<button class="link-btn" id="scriptBtn" title="aba código&#10;digite e execute qualquer script do After Effects">ou digite um script na aba código</button>
 			</div>
 
 			<div id="propsView" class="hidden">
@@ -71,8 +72,15 @@
 				<button class="icon-btn" id="packBtn" title="pacote para documentação&#10;salva um .json para o app de documentação de templates (docs-app)"><i data-icon="file"></i></button>
 				<button class="icon-btn" id="exportBtn" data-kbd="mod+S" title="exportar .jsx&#10;salva o script para rodar em File › Scripts"><i data-icon="save"></i></button>
 			</div>
-			<div class="code" id="codeBox"><pre id="codeView"></pre></div>
-			<div class="opts">
+			<div class="code" id="codeBox">
+				<div class="code-gutter" id="gutter" aria-hidden="true"></div>
+				<div class="code-area">
+					<pre id="codeView" aria-hidden="true"></pre>
+					<textarea id="codeEdit" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" placeholder="// digite um script do After Effects (ExtendScript)&#10;// e execute com Ctrl/⌘ + Enter"></textarea>
+				</div>
+			</div>
+			<div class="code-note hidden" id="codeNote"><span>código editado à mão: mudanças nas propriedades e nas opções não chegam mais aqui.</span><button class="btn small" id="discardBtn">descartar edições</button></div>
+			<div class="opts" id="optsBox">
 				<div class="opt" id="compRow"><span>cria a comp e as precomps no projeto<small>desmarque uma precomp para usar a que já existe</small></span></div>
 				<div class="opt" id="targetRow"><span>recriar em</span>
 					<div class="seg" id="targetSeg"><button data-value="active">comp ativa</button><button data-value="new">nova comp</button></div>

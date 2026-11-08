@@ -15,7 +15,8 @@ um pendrive, a rede ou o download). Para atualizar, rode o instalador da versão
 Passo a passo:
   1. boas-vindas;
   2. checagem: versão do After Effects, escrita de arquivos (com atalho para as preferências) e
-     arquivos da extensão ao lado do instalador;
+     arquivos da extensão ao lado do instalador. com tudo certo, 'começar' pula esta tela e vai
+     direto para a ação (ela continua a um clique, em 'anterior');
   3. ação: instalar / atualizar ou remover;
   4. andamento e conclusão.
 
@@ -291,12 +292,12 @@ Instalar / atualizar:
 
 	// 2 · ação
 	var p2 = page();
-	var actionMsg = 'tudo pronto! o que você quer fazer?';
+	var actionMsg = 'tudo certo nas checagens! o que você quer fazer?';
 
 	if (installed) {
 		actionMsg = 'o BIN' + (oldVersion ? ' v' + oldVersion : '') + ' já está instalado neste computador';
 		if (newVersion && oldVersion && newVersion !== oldVersion) actionMsg += ' (esta pasta tem a v' + newVersion + ')';
-		actionMsg += '. o que você quer fazer?';
+		actionMsg += ' e tudo certo nas checagens. o que você quer fazer?';
 	}
 
 	text(p2, actionMsg, 34);
@@ -474,6 +475,13 @@ Instalar / atualizar:
 			if (removeRdo.value) doRemove();
 			else doInstall();
 
+			return;
+		}
+
+		// boas-vindas → se tudo passar nas checagens, vai direto para instalar / atualizar
+		// (a tela de checagem continua a um clique, em 'anterior')
+		if (current === 0 && runChecks()) {
+			showPage(2);
 			return;
 		}
 

@@ -23,7 +23,8 @@ async function setup(page, settings) {
 		window.require = (m) => { throw new Error('require("' + m + '") não disponível no teste'); };
 	});
 	await page.addInitScript(({ settings, LOGO }) => {
-		try { localStorage.setItem('bin.settings', JSON.stringify(settings)); } catch (e) { }
+		// só na primeira carga: recarregar a página mantém o que o painel salvou (ex.: a última aba)
+		try { if (!localStorage.getItem('bin.settings')) localStorage.setItem('bin.settings', JSON.stringify(settings)); } catch (e) { }
 		window.__saved = {};
 		window.BIN_MOCK = {
 			callHost: (fn, args) => window.__host(fn, args),

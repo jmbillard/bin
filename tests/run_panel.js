@@ -88,7 +88,8 @@ const check = (ok, label) => { console.log((ok ? 'ok   ' : 'FALHA') + ' ' + labe
 	await page.waitForTimeout(400);
 	const code = await page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.m, { excluded: window.BIN.state.ex }));
 	check(!/ADBE Glo2/.test(code) && /ADBE Fill/.test(code), 'desmarcar o Glow tira o efeito do código');
-	check(await page.isVisible('#foldHelpers'), 'funções auxiliares recolhidas na prévia');
+	const edText = await page.inputValue('#codeEdit');
+	check(/⋯ funções auxiliares do BIN/.test(edText) && !/var bin = \{/.test(edText), 'funções auxiliares recolhidas numa linha no editor');
 	await shot('03-codigo');
 
 	// 3 · recriar

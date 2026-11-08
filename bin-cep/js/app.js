@@ -21,7 +21,7 @@
 	var HELP_URL = 'https://github.com/jmbillard/bin#readme';
 
 	// ------------------------------------------------------ preferências ----
-	var DEFAULTS = { theme: 'auto', mode: 'layers', target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, codeWrap: false };
+	var DEFAULTS = { theme: 'auto', tab: 'props', mode: 'layers', target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, codeWrap: false };
 	var S = (function () {
 		var s = {};
 		try { s = JSON.parse(localStorage.getItem('bin.settings') || '{}') || {}; } catch (e) { s = {}; }
@@ -38,7 +38,7 @@
 		tab: 'props',
 		code: '',
 		warnings: [],
-		helpersOpen: false,
+		ed: { edited: false, scratch: false },   // editor da aba código
 		tools: { expr: '', bin: '', binName: 'arquivos_bin.jsxinc' }
 	};
 	BIN.state = state;
@@ -165,6 +165,7 @@
 	function showTab(name) {
 		var from = TABS.indexOf(state.tab), to = TABS.indexOf(name);
 		state.tab = name;
+		if (S.tab !== name) { S.tab = name; saveSettings(); } // o painel abre na última aba usada
 		each(document.querySelectorAll('.tab'), function (t) { t.classList.toggle('active', t.dataset.tab === name); });
 		each(document.querySelectorAll('.panel'), function (p) {
 			var i = TABS.indexOf(p.id.replace('tab-', ''));
@@ -259,6 +260,7 @@
 			state.ex = {};
 			state.open = {};
 			state.focus = null;
+			state.ed.edited = false;
 			indexNodes();
 			document.body.classList.remove('is-empty');
 			$('empty').classList.add('hidden');
@@ -611,6 +613,7 @@
 		if (m.mode === 'comp') $('runTxt').textContent = st.comps > 1 ? 'recriar comp + ' + plural(st.comps - 1, 'precomp', 'precomps') : 'recriar comp';
 		else $('runTxt').textContent = st.layers > 1 ? 'recriar ' + st.layers + ' layers' : 'recriar layer';
 		$('runBtn').disabled = m.mode === 'layers' && !st.layers;
+		updateRun();
 
 		var first = CG.layersIn(m.rootComp, state.ex)[0] || m.rootComp.layers[0];
 		$('fnHint').textContent = S.wrap ? (first ? 'criar_' + CG.snake(first.name) + '(comp)' : 'uma função por layer') : 'código corrido, sem funções';
@@ -619,9 +622,7 @@
 	}
 
 	// ------------------------------------------------------- código --------
-	var TOKEN = /(\/\/.*$)|('(?:[^'\\]|\\.)*')|(\b(?:var|function|return|if|else|try|catch|for|new|true|false|null|in)\b)|(\bbin\.\w+|\b(?:app|comp)\b)|(-?\b\d+(?:\.\d+)?\b)/g;
-	var MAX_PREVIEW_LINES = 4000;
-
+	var TOKEN = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(\b(?:var|function|return|if|else|try|catch|for|new|true|false|null|in)\b)|(\bbin\.\w+|\b(?:app|comp)\b)|(-?\b\d+(?:\.\d+)?\b)/g;
 	function highlight(line) {
 		var out = '', last = 0, mt;
 		TOKEN.lastIndex = 0;
@@ -634,39 +635,138 @@
 		return out + esc(line.slice(last));
 	}
 
-	function renderCode() {
-		if (!state.m) {
-			$('codeView').innerHTML = '<span class="l"><span class="tk-c">// capture uma layer ou uma comp na aba propriedades</span></span>';
-			$('lineCount').textContent = '';
-			$('fileName').textContent = '';
-			return;
-		}
-		var lines = (state.code || CG.generate(state.m, opts())).split('\n');
-		var start = -1, end = -1;
+	// ------------------------------------------------------- editor --------
+	// a aba código é um editor: com uma captura, mostra o código gerado (que pode ser editado);
+	// sem captura, é um rascunho livre para digitar e executar qualquer script.
+	// as funções auxiliares do BIN ficam numa linha só e voltam ao rodar, copiar e exportar.
+	var HELPERS_START = /\/\/ ---- funções auxiliares do BIN/;
+	var MARKER = /^([ \t]*)\/\/ ⋯ funções auxiliares do BIN.*$/m;
+	var SCRATCH_KEY = 'bin.scratch';
+	var BIG = 3000; // acima disso, sem cores (o editor continua leve)
+
+	function collapse(code) {
+		var lines = code.split('\n'), start = -1, end = -1;
 		lines.forEach(function (l, i) {
-			if (start < 0 && /\/\/ ---- funções auxiliares do BIN/.test(l)) start = i;
-			if (start >= 0 && end < 0 && i > start && /^\t\};$/.test(l)) end = i;
+			if (start < 0 && HELPERS_START.test(l)) start = i;
+			if (start >= 0 && end < 0 && i > start && /^[ \t]*\};$/.test(l)) end = i;
 		});
-		var html = [];
-		for (var i = 0; i < lines.length && html.length < MAX_PREVIEW_LINES; i++) {
-			if (i === start && !state.helpersOpen && end > start) {
-				html.push('<span class="fold" id="foldHelpers" title="mostrar as funções auxiliares">funções auxiliares do BIN · ' + (end - start + 1) + ' linhas</span>');
-				i = end;
-				continue;
-			}
-			html.push('<span class="l">' + (highlight(lines[i]) || ' ') + '</span>');
-		}
-		if (i < lines.length) html.push('<span class="l"><span class="tk-c">// … mais ' + (lines.length - i) + ' linhas: use copiar ou exportar</span></span>');
-		$('codeView').innerHTML = html.join('');
-		$('codeBox').classList.toggle('wrap', S.codeWrap);
+		if (start < 0 || end < 0) return code;
+		var indent = lines[start].match(/^[ \t]*/)[0];
+		lines.splice(start, end - start + 1, indent + '// ⋯ funções auxiliares do BIN (' + (end - start + 1) + ' linhas): entram ao rodar, copiar e exportar');
+		return lines.join('\n');
+	}
+
+	// devolve o código completo e onde as auxiliares entraram (para corrigir o número da linha dos erros)
+	function expand(text) {
+		var m = MARKER.exec(text);
+		if (!m) return { code: text, at: 0, extra: 0 };
+		var h = CG.helpers().split('\n');
+		var block = h.map(function (l) { return l ? m[1] + l : ''; }).join('\n');
+		return { code: text.slice(0, m.index) + block + text.slice(m.index + m[0].length), at: text.slice(0, m.index).split('\n').length, extra: h.length - 1 };
+	}
+
+	function editorText() { return $('codeEdit').value; }
+	function freeMode() { return !state.m || state.ed.edited; }
+
+	// o código que roda / copia / exporta
+	function codeToRun() {
+		if (!freeMode()) return { code: CG.generate(state.m, opts()), at: 0, extra: 0 };
+		return expand(editorText());
+	}
+
+	function loadScratch() { try { return localStorage.getItem(SCRATCH_KEY) || ''; } catch (e) { return ''; } }
+	function saveScratch() { try { localStorage.setItem(SCRATCH_KEY, editorText()); } catch (e) { } }
+
+	var paintQueued = false;
+	function paintEditor() {
+		if (paintQueued) return;
+		paintQueued = true;
+		(global.requestAnimationFrame || setTimeout)(function () { paintQueued = false; paintNow(); });
+	}
+
+	function paintNow() {
+		var lines = editorText().split('\n');
+		var big = lines.length > BIG;
+		$('codeView').innerHTML = lines.map(function (l) {
+			if (MARKER.test(l)) { MARKER.lastIndex = 0; return '<span class="tk-fold">' + esc(l) + '</span>'; }
+			return big ? esc(l) : highlight(l);
+		}).join('\n') + '\n ';
+		var g = [];
+		for (var i = 1; i <= lines.length; i++) g.push(i);
+		$('gutter').textContent = g.join('\n') + '\n ';
 		$('lineCount').textContent = plural(lines.length, 'linha', 'linhas');
+		syncScroll();
+	}
+
+	function syncScroll() {
+		var t = $('codeEdit');
+		$('codeView').scrollTop = t.scrollTop;
+		$('codeView').scrollLeft = t.scrollLeft;
+		$('gutter').scrollTop = t.scrollTop;
+	}
+
+	function setEditor(text) {
+		$('codeEdit').value = text;
+		paintNow();
+	}
+
+	function renderCode() {
+		$('codeBox').classList.toggle('wrap', S.codeWrap);
+		$('codeEdit').setAttribute('wrap', S.codeWrap ? 'soft' : 'off');
+		if (state.m && !state.ed.edited) setEditor(collapse(state.code || CG.generate(state.m, opts())));
+		else if (!state.m && !state.ed.scratch) { state.ed.scratch = true; setEditor(loadScratch()); }
+		else paintEditor();
 		$('fileName').textContent = fileName();
-		var fold = $('foldHelpers');
-		if (fold) fold.onclick = function () { state.helpersOpen = true; renderCode(); };
+		$('codeNote').classList.toggle('hidden', !(state.m && state.ed.edited));
+		// opções de geração: sem captura não existem; com o código editado à mão, não valem mais
+		$('optsBox').classList.toggle('hidden', !state.m);
+		$('optsBox').classList.toggle('dim', !!(state.m && state.ed.edited));
+		$('packBtn').disabled = !state.m;
+		updateRun();
+	}
+
+	// rótulo e estado do botão principal quando o código é livre (sem captura ou editado)
+	function updateRun() {
+		var b = $('runBtn');
+		if (b.classList.contains('working') || b.classList.contains('done')) return;
+		if (!state.m) {
+			$('runTxt').textContent = 'executar script';
+			b.disabled = !editorText().trim();
+		} else if (state.ed.edited) {
+			$('runTxt').textContent = 'executar código editado';
+			b.disabled = !editorText().trim();
+		}
+	}
+
+	// "(linha 230)" do ExtendScript conta as auxiliares, que no editor são uma linha só
+	function mapError(msg, info) {
+		var line = 0;
+		var out = String(msg).replace(/\(linha (\d+)\)/, function (all, n) {
+			n = +n;
+			if (!info.at || n < info.at) { line = n; return '(linha ' + n + ')'; }
+			if (n <= info.at + info.extra) return '(nas funções auxiliares do BIN)';
+			line = n - info.extra;
+			return '(linha ' + line + ')';
+		});
+		return { msg: out, line: line };
+	}
+
+	function selectLine(n) {
+		var t = $('codeEdit'), lines = editorText().split('\n');
+		if (!n || n > lines.length) return;
+		var start = 0;
+		for (var i = 0; i < n - 1; i++) start += lines[i].length + 1;
+		showTab('code');
+		t.focus();
+		t.setSelectionRange(start, start + lines[n - 1].length);
+		var lh = parseFloat(global.getComputedStyle(t).lineHeight) || 17.6;
+		t.scrollTop = Math.max(0, (n - 4) * lh);
+		syncScroll();
 	}
 
 	function fileName() {
 		var m = state.m;
+		if (!m) return 'script.jsx';
 		if (m.mode === 'comp') return 'criar_comp_' + CG.snake(m.rootComp.name) + '.jsx';
 		var L = CG.layersIn(m.rootComp, state.ex);
 		return 'criar_' + CG.snake(L.length === 1 ? L[0].name : m.rootComp.name) + '.jsx';
@@ -762,10 +862,14 @@
 		var b = $('runBtn');
 		if (b.classList.contains('working')) return;
 		if (b.classList.contains('done')) { resetRun(); return; }
-		var code = CG.generate(state.m, opts());
+		var free = freeMode();
+		var info = codeToRun();
+		var code = info.code;
+		if (!code.trim()) return;
 		UI.hideToast();
 		b.classList.add('working');
-		$('runTxt').textContent = 'recriando…';
+		$('runTxt').textContent = free ? 'executando…' : 'recriando…';
+		var after = function () { resetRun(); if (state.m) renderSummary(); else updateRun(); };
 
 		var tmp = BIN.fs.tmpFile('bin_run.jsx');
 		var p = tmp && BIN.fs.writeText(tmp, code) ? BIN.callHostJSON('bin_runFile', [tmp]) : BIN.callHostJSON('bin_run', [code]);
@@ -774,21 +878,27 @@
 			b.classList.remove('working');
 			b.classList.add('done');
 			b.querySelector('.ico').outerHTML = UI.icon('check');
-			$('runTxt').textContent = state.m.mode === 'comp' ? 'comp criada' : ((r.layers || []).length > 1 ? r.layers.length + ' layers criadas' : 'layer criada');
 			var errs = r.errors || [];
-			UI.toast(runMessage(r), errs.length ? 'warn' : 'ok', {
+			if (free && !(r.layers || r.comps)) $('runTxt').textContent = 'script executado';
+			else $('runTxt').textContent = state.m && state.m.mode === 'comp' ? 'comp criada' : ((r.layers || []).length > 1 ? r.layers.length + ' layers criadas' : 'layer criada');
+			var msg = free && !(r.layers || r.comps) ? 'script executado.' : runMessage(r);
+			UI.toast(msg, errs.length ? 'warn' : 'ok', {
 				sticky: true,
 				details: errs,
 				actions: [
-					{ label: 'desfazer', icon: 'undo', run: function () { BIN.callHostJSON('bin_undo').then(function () { UI.toast('desfeito.', 'info', { life: 1400 }); resetRun(); renderSummary(); }); } },
+					{ label: 'desfazer', icon: 'undo', run: function () { BIN.callHostJSON('bin_undo').then(function () { UI.toast('desfeito.', 'info', { life: 1400 }); after(); }); } },
 					{ label: 'exportar .jsx', icon: 'save', run: function () { saveText(code, fileName()); } }
 				]
 			});
-			resetRun.t = setTimeout(function () { resetRun(); renderSummary(); }, 4000);
+			resetRun.t = setTimeout(after, 4000);
 		}).catch(function (e) {
 			b.classList.remove('working');
-			renderSummary();
-			UI.toast(esc(e.message), 'error', { sticky: true });
+			after();
+			var err = mapError(e.message, info);
+			UI.toast(esc(err.msg), 'error', {
+				sticky: true,
+				actions: err.line && free ? [{ label: 'ir para a linha ' + err.line, icon: 'code', run: function () { selectLine(err.line); } }] : []
+			});
 		});
 	}
 
@@ -909,8 +1019,31 @@
 			$('wrapBtn').classList.toggle('on', S.codeWrap);
 			$('codeBox').classList.toggle('wrap', S.codeWrap);
 		};
-		$('copyBtn').onclick = function () { if (state.m) copyText(CG.generate(state.m, opts()), 'código'); };
-		$('exportBtn').onclick = function () { if (state.m) saveText(CG.generate(state.m, opts()), fileName()); };
+		$('copyBtn').onclick = function () { var c = codeToRun().code; if (c.trim()) copyText(c, 'código'); };
+		$('exportBtn').onclick = function () { var c = codeToRun().code; if (c.trim()) saveText(c, fileName()); };
+
+		var ed = $('codeEdit');
+		ed.addEventListener('input', function () {
+			if (state.m) {
+				if (!state.ed.edited) { state.ed.edited = true; $('codeNote').classList.remove('hidden'); }
+			} else saveScratch();
+			$('optsBox').classList.toggle('dim', !!(state.m && state.ed.edited));
+			resetRun();
+			paintEditor();
+			updateRun();
+		});
+		ed.addEventListener('scroll', syncScroll);
+		ed.addEventListener('keydown', function (e) {
+			// Tab insere tabulação (Shift+Tab continua saindo do campo)
+			if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+				e.preventDefault();
+				var a = ed.selectionStart, z = ed.selectionEnd;
+				ed.value = ed.value.slice(0, a) + '	' + ed.value.slice(z);
+				ed.selectionStart = ed.selectionEnd = a + 1;
+				ed.dispatchEvent(new Event('input'));
+			}
+		});
+		$('discardBtn').onclick = function () { state.ed.edited = false; renderCode(); renderSummary(); };
 		$('packBtn').onclick = function () { if (state.m) exportPack(); };
 	}
 
@@ -949,14 +1082,13 @@
 			var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
 			var k = e.key;
 			if (k === 'Escape') {
-				if (typing && $('query').value) { $('query').value = ''; renderTree(); return; }
+				if (e.target && e.target.id === 'query' && $('query').value) { $('query').value = ''; renderTree(); return; }
 				if (state.focus) { state.focus = null; renderTree(); return; }
 				UI.hideToast();
 				return;
 			}
 			if (mod && (k === 'f' || k === 'F')) { e.preventDefault(); showTab('props'); $('query').focus(); $('query').select(); return; }
 			if (mod && (k === 'l' || k === 'L')) { e.preventDefault(); capture(false); return; }
-			if (!state.m) return;
 			if (mod && k === 'Enter') { e.preventDefault(); if (!$('runBtn').disabled) run(); return; }
 			if (mod && (k === 's' || k === 'S')) { e.preventDefault(); $('exportBtn').click(); return; }
 			if (mod && e.shiftKey && (k === 'c' || k === 'C')) { e.preventDefault(); $('copyBtn').click(); return; }
@@ -987,6 +1119,7 @@
 		$('chip').onclick = function () { capture(false); };
 		$('captureBtn').onclick = function () { setMode('layers'); capture(false); };
 		$('captureCompBtn').onclick = function () { setMode('comp'); capture(false); };
+		$('scriptBtn').onclick = function () { showTab('code'); $('codeEdit').focus(); };
 		$('runBtn').onclick = run;
 		$('warnPill').onclick = function () {
 			UI.toast(plural(state.warnings.length, 'aviso', 'avisos') + ' sobre o script gerado:', 'warn', { sticky: true, details: state.warnings });
@@ -998,10 +1131,11 @@
 		bindCode();
 		bindTools();
 		renderCode();
+		if (S.tab && S.tab !== 'props' && TABS.indexOf(S.tab) >= 0) showTab(S.tab);
 		capture(true);
 	}
 
-	BIN.app = { capture: capture, showTab: showTab, state: state };
+	BIN.app = { capture: capture, showTab: showTab, state: state, mapError: mapError, collapse: collapse, expand: expand };
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
 	else bind();

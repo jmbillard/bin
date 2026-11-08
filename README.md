@@ -54,6 +54,8 @@ Serve para transformar um layout pronto em ferramenta: o script gerado pode vira
   </tr>
 </table>
 
+com tudo certo, **começar** pula a checagem e vai direto para instalar / atualizar (a checagem continua em **anterior**). se algo falhar, o instalador para nela e explica o que resolver.
+
 **1.3** escolha **instalar** (ou **atualizar** / **reinstalar**; **remover** desinstala) e **reinicie o After Effects**.
 
 <table>
@@ -196,7 +198,7 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
 2. **copiar e exportar** → `Ctrl/⌘ + Shift + C` copia, `Ctrl/⌘ + S` salva o `.jsx`.
 
 ao lado de copiar e exportar fica o **pacote para documentação**: um `.json` com a captura, o script e os arquivos do template do padeiro, para o [BIN docs](#-documentar-templates-do-padeiro).
-3. **funções auxiliares** → recolhidas na prévia; clique para ver.
+3. **funções auxiliares** → recolhidas numa linha só; voltam inteiras ao rodar, copiar e exportar.
 4. **opções** → veja a tabela abaixo.
 
   </td>
@@ -209,6 +211,17 @@ ao lado de copiar e exportar fica o **pacote para documentação**: um `.json` c
 | **envolver em função** | uma função `criar_nome_da_layer(comp)` por layer, fácil de reaproveitar (no modo comp, mais uma `criar_comp_nome()` por comp). desligado, gera o código corrido. |
 | **manter parentesco** | refaz parent e track matte. se o parent não foi capturado junto, o script procura uma layer com o mesmo nome na comp. |
 | **comentários no código** | separa os blocos com comentários. |
+
+a aba código é um **editor**: dá para mexer no código gerado antes de rodar. a partir da primeira edição, um aviso lembra que mudanças nas propriedades e nas opções não chegam mais ao código, e **descartar edições** volta ao código gerado.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/img/12-editor-livre.png" width="280"><br><sub>script livre, sem captura</sub></td>
+    <td align="center"><img src="docs/img/13-editor-editado.png" width="280"><br><sub>código gerado editado à mão</sub></td>
+  </tr>
+</table>
+
+sem nenhuma captura, o editor vira um **rascunho livre**: digite qualquer script do After Effects (ExtendScript) e execute com **executar script** ou `Ctrl/⌘ + Enter`. o rascunho fica salvo no painel, e o painel abre na última aba usada. no estado vazio, **ou digite um script na aba código** leva direto para lá. todo script roda dentro de um único undo, e um erro mostra a linha certa do editor (com o botão **ir para a linha**).
 
 o script gerado é **autônomo**: roda em `File` > `Scripts` > `Run Script File...` em qualquer projeto, sem o painel. ele traz um pequeno objeto `bin` com funções auxiliares que aplicam cada propriedade separadamente. se uma propriedade não existir na versão do After Effects de destino, ela é pulada e listada no final, sem derrubar o resto.
 
@@ -287,7 +300,8 @@ com o painel em foco:
 | `1` `2` `3` | abas propriedades, código e utilitários |
 | `Ctrl/⌘ + L` | capturar de novo |
 | `Ctrl/⌘ + F` | filtrar propriedades |
-| `Ctrl/⌘ + Enter` | recriar |
+| `Ctrl/⌘ + Enter` | recriar (ou executar o script da aba código) |
+| `Tab` (no editor) | insere tabulação |
 | `Ctrl/⌘ + S` | exportar .jsx |
 | `Ctrl/⌘ + Shift + C` | copiar o código |
 | `Esc` | limpa o filtro, volta da layer aberta ou fecha o aviso |
@@ -379,6 +393,7 @@ tests/
   pill_align.js       mede o alinhamento vertical do texto nas pílulas
   tab_ink.js          confere o fundo da aba ativa depois da captura
   tooltips.js         dicas (conteúdo, posição, modo aquecido) e atalhos de teclado
+  code_editor.js      aba código como editor: script livre, código editado, erros e atalhos
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado
