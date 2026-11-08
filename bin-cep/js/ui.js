@@ -38,9 +38,9 @@
 		x: '<path d="M6 6l12 12M18 6 6 18"/>',
 		alert: '<path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/>',
 		info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
-		copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
-		save: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v6M9.5 14l2.5 2.5 2.5-2.5"/>',
-		wrap: '<path d="M3 6h18M3 12h15a3 3 0 0 1 0 6h-4"/><path d="M3 18h6"/><path d="m14 15-3 3 3 3"/>',
+		copy: '<g class="mv"><rect x="8" y="8" width="12" height="12" rx="2"/></g><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+		save: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><g class="mv"><path d="M12 10.5v6M9.5 14l2.5 2.5 2.5-2.5"/></g>',
+		wrap: '<path d="M3 6h18M3 12h15a3 3 0 0 1 0 6h-4"/><path d="M3 18h6"/><g class="mv"><path d="m14 15-3 3 3 3"/></g>',
 		target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
 		binary: '<rect x="4" y="3" width="6" height="8" rx="3"/><path d="M15 3v8M13.5 4.5 15 3"/><rect x="14" y="13" width="6" height="8" rx="3"/><path d="M6 13v8M4.5 14.5 6 13"/>',
 		undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
@@ -57,7 +57,7 @@
 		audio: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/>',
 		cube: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
 		file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
-		upload: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="M9.5 13.5 12 11l2.5 2.5"/>',
+		upload: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><g class="mv"><path d="M12 17v-6"/><path d="M9.5 13.5 12 11l2.5 2.5"/></g>',
 		trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
 		link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
 	};

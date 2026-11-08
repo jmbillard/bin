@@ -816,15 +816,6 @@ label:hover .i-collapse,
 .chip:hover .i-collapse,
 .layer-head:hover .i-collapse,
 .comp-head:hover .i-collapse { transform: scaleY(.8); }
-button:hover .i-wrap,
-.drop:hover .i-wrap,
-.card-head:hover .i-wrap,
-.search:hover .i-wrap,
-label:hover .i-wrap,
-.row:hover .i-wrap,
-.chip:hover .i-wrap,
-.layer-head:hover .i-wrap,
-.comp-head:hover .i-wrap { transform: translateX(1.5px); }
 button:hover .i-open,
 .drop:hover .i-open,
 .card-head:hover .i-open,
@@ -943,42 +934,16 @@ label:hover .i-link,
 .layer-head:hover .i-link,
 .comp-head:hover .i-link { transform: rotate(-12deg); }
 
-@keyframes ico-copy { 50% { transform: translate(-1.5px, -1.5px); } }
-@keyframes ico-drop { 40% { transform: translateY(2px); } 70% { transform: translateY(-.5px); } }
+@keyframes ico-copy { 45% { transform: translate(1.5px, 1.5px); } }
+@keyframes ico-drop { 40% { transform: translateY(2.5px); } 70% { transform: translateY(-.5px); } }
 @keyframes ico-lift { 40% { transform: translateY(-2.5px); } 70% { transform: translateY(.5px); } }
+@keyframes ico-left { 40% { transform: translateX(-2.5px); } 70% { transform: translateX(.5px); } }
 @keyframes ico-wiggle { 25% { transform: rotate(-12deg); } 60% { transform: rotate(9deg); } 85% { transform: rotate(-3deg); } }
 @keyframes ico-blink { 45% { transform: scaleY(.12); } }
 @keyframes ico-pulse { 45% { transform: scale(1.18); } }
 @keyframes ico-bob { from { transform: translateY(1px); } to { transform: translateY(-2px); } }
 @keyframes ico-spin { 0% { transform: rotate(0); } 30%, 100% { transform: rotate(360deg); } }
 
-button:hover .i-copy,
-.drop:hover .i-copy,
-.card-head:hover .i-copy,
-.search:hover .i-copy,
-label:hover .i-copy,
-.row:hover .i-copy,
-.chip:hover .i-copy,
-.layer-head:hover .i-copy,
-.comp-head:hover .i-copy { animation: ico-copy .45s var(--ease); }
-button:hover .i-save,
-.drop:hover .i-save,
-.card-head:hover .i-save,
-.search:hover .i-save,
-label:hover .i-save,
-.row:hover .i-save,
-.chip:hover .i-save,
-.layer-head:hover .i-save,
-.comp-head:hover .i-save { animation: ico-drop .5s var(--ease); }
-button:hover .i-upload,
-.drop:hover .i-upload,
-.card-head:hover .i-upload,
-.search:hover .i-upload,
-label:hover .i-upload,
-.row:hover .i-upload,
-.chip:hover .i-upload,
-.layer-head:hover .i-upload,
-.comp-head:hover .i-upload { animation: ico-lift .5s var(--ease); }
 button:hover .i-help,
 .drop:hover .i-help,
 .card-head:hover .i-help,
@@ -1017,13 +982,53 @@ label:hover .i-info,
 .layer-head:hover .i-info,
 .comp-head:hover .i-info { animation: ico-wiggle .6s var(--ease); }
 
+/* ícones com uma parte que aponta para algum lado: só ela se move, no sentido dela
+   (a seta entra na pasta, sobe do arquivo, volta na quebra de linha; a folha da frente sai da de trás) */
+button:hover .i-save .mv,
+.drop:hover .i-save .mv,
+.card-head:hover .i-save .mv,
+.search:hover .i-save .mv,
+label:hover .i-save .mv,
+.row:hover .i-save .mv,
+.chip:hover .i-save .mv,
+.layer-head:hover .i-save .mv,
+.comp-head:hover .i-save .mv { animation: ico-drop .5s var(--ease); }
+button:hover .i-upload .mv,
+.drop:hover .i-upload .mv,
+.card-head:hover .i-upload .mv,
+.search:hover .i-upload .mv,
+label:hover .i-upload .mv,
+.row:hover .i-upload .mv,
+.chip:hover .i-upload .mv,
+.layer-head:hover .i-upload .mv,
+.comp-head:hover .i-upload .mv { animation: ico-lift .5s var(--ease); }
+button:hover .i-wrap .mv,
+.drop:hover .i-wrap .mv,
+.card-head:hover .i-wrap .mv,
+.search:hover .i-wrap .mv,
+label:hover .i-wrap .mv,
+.row:hover .i-wrap .mv,
+.chip:hover .i-wrap .mv,
+.layer-head:hover .i-wrap .mv,
+.comp-head:hover .i-wrap .mv { animation: ico-left .5s var(--ease); }
+button:hover .i-copy .mv,
+.drop:hover .i-copy .mv,
+.card-head:hover .i-copy .mv,
+.search:hover .i-copy .mv,
+label:hover .i-copy .mv,
+.row:hover .i-copy .mv,
+.chip:hover .i-copy .mv,
+.layer-head:hover .i-copy .mv,
+.comp-head:hover .i-copy .mv { animation: ico-copy .45s var(--ease); }
+
 /* aba ativa: o gesto soma com o destaque (escala) em vez de trocar */
 .tab.active:hover .i-layers { transform: scale(1.12) translateY(-1.5px); }
 .tab.active:hover .i-code { transform: scale(1.12) scaleX(1.15); }
 .tab.active:hover .i-tools { transform: scale(1.12) rotate(-15deg); }
 
 /* arrastando um arquivo: a seta sobe e desce enquanto ele está em cima */
-.drop.over .i-upload, .drop-all .ico { animation: ico-bob .6s var(--ease) infinite alternate; }
+.drop.over .i-upload .mv { animation: ico-bob .6s var(--ease) infinite alternate; }
+.drop-all .ico { animation: ico-bob .6s var(--ease) infinite alternate; }
 /* captura desatualizada: as setas giram de vez em quando, sem pressa */
 .chip.stale .chip-swap { animation: ico-spin 2.4s var(--ease) infinite; }
 .chip.stale:hover .chip-swap { animation: none; }

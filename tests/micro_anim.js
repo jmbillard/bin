@@ -87,8 +87,32 @@ async function animName(page, host, ico) {
 	await page.waitForTimeout(100);
 	check(!(await page.$eval('main', (e) => e.classList.contains('scrolled'))), 'trocar para uma aba no topo: a sombra some');
 
-	// copiar e exportar: gestos em dois tempos
-	check(await animName(page, '#copyBtn', '.i-copy') === 'ico-copy' && await animName(page, '#exportBtn', '.i-save') === 'ico-drop', 'copiar desloca a folha; exportar afunda a seta');
+	// ícones com direção: só a parte que aponta se move, no sentido dela
+	async function part(host, ico) {
+		await page.mouse.move(1, 1);
+		await page.waitForTimeout(600);
+		await page.hover(host);
+		await page.waitForTimeout(180); // perto do pico do gesto
+		return page.$eval(host + ' ' + ico, (svg) => {
+			const g = svg.querySelector('.mv').getBoundingClientRect(), s = svg.getBoundingClientRect();
+			return { icon: getComputedStyle(svg).transform, anim: getComputedStyle(svg.querySelector('.mv')).animationName, gy: g.top, gx: g.left, sy: s.top, sx: s.left };
+		});
+	}
+	const rest = async (host, ico) => { await page.mouse.move(1, 1); await page.waitForTimeout(700); return page.$eval(host + ' ' + ico + ' .mv', (g) => { const r = g.getBoundingClientRect(); return { y: r.top, x: r.left }; }); };
+	const saveRest = await rest('#exportBtn', '.i-save');
+	const save = await part('#exportBtn', '.i-save');
+	check(save.icon === 'none' && save.anim === 'ico-drop' && save.gy > saveRest.y + 0.5, 'exportar: a pasta fica parada e a seta desce para dentro dela');
+	const wrapRest = await rest('#wrapBtn', '.i-wrap');
+	const wrap = await part('#wrapBtn', '.i-wrap');
+	check(wrap.icon === 'none' && wrap.gx < wrapRest.x - 0.5, 'quebra de linha: só a seta de retorno vai para a esquerda');
+	const copyRest = await rest('#copyBtn', '.i-copy');
+	const copy = await part('#copyBtn', '.i-copy');
+	check(copy.icon === 'none' && copy.gx > copyRest.x + 0.3 && copy.gy > copyRest.y + 0.3, 'copiar: a folha da frente sai de cima da de trás');
+	await page.click('.tab[data-tab=tools]');
+	await page.waitForTimeout(300);
+	const upRest = await rest('#binDrop', '.i-upload');
+	const up = await part('#binDrop', '.i-upload');
+	check(up.icon === 'none' && up.gy < upRest.y - 0.5, 'arrastar arquivo: o arquivo fica parado e a seta sobe');
 	await page.close(); srv.close();
 
 	// reduzir movimento: nada se mexe
