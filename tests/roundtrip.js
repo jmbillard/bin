@@ -155,6 +155,61 @@ function run(ctx, code, label) {
 	report(ok, '[expressões no fim · ' + mode + '] aplicadas com todas as layers e comps já criadas', seen.length + ' expressões · ' + seen.map((x) => x.layers + '/' + x.items).join(' '));
 });
 
+// ---------------------------------------------------------- essential graphics
+// controles do essential graphics (com nome, ordem e o nome do template) e os valores mudados nas
+// essential properties das layers de precomp
+function egpScene() {
+	const { ctx, comp } = setup();
+	const pre = ctx.app.project._items.find((i) => i.name === 'PRE logo');
+	const circ = pre.layer('circulo');
+	circ.property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property(1).property('ADBE Vector Ellipse Size').addToMotionGraphicsTemplateAs(pre, 'Tamanho');
+	circ.property('ADBE Transform Group').property('ADBE Opacity').addToMotionGraphicsTemplateAs(pre, 'Opacidade');
+	comp.layer('CONTROLE').property('ADBE Effect Parade').property('amp').property('ADBE Slider Control-0001').addToMotionGraphicsTemplateAs(comp, 'Amplitude');
+	comp.layer('CRÉDITO direção').property('ADBE Text Properties').property('ADBE Text Document').addToMotionGraphicsTemplateAs(comp, 'Crédito');
+	comp.motionGraphicsTemplateName = 'Abertura v03';
+	comp.layer('PRE logo').property('ADBE Layer Overrides').property('Tamanho').setValue([500, 500]);
+	return { ctx, comp, pre };
+}
+{
+	const { ctx, comp } = egpScene();
+	const items = ctx.app.project.numItems;
+	const cap = call(ctx, 'bin_captureComp');
+	const root = cap.comps.find((C) => C.id === cap.root), preC = cap.comps.find((C) => C.name === 'PRE logo');
+	const capOk = ctx.app.project.numItems === items && root.egp.map((e) => e.name).join() === 'Amplitude,Crédito' && root.mgtName === 'Abertura v03' &&
+		preC.egp.map((e) => e.name).join() === 'Tamanho,Opacidade' && root.layers.find((L) => L.name === 'PRE logo').overrides.length === 1;
+	report(capOk, '[essential graphics · captura] controles das duas comps, nome do template e o valor mudado na precomp', 'itens no projeto ' + items + ' → ' + ctx.app.project.numItems + ' (a comp temporária some)');
+
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'new', now: NOW });
+	const last = run(ctx, code, 'egp-comp');
+	const nr = ctx.app.project.activeItem;
+	const np = nr._layers.find((l) => l.name === 'PRE logo').source;
+	const owner = (e) => e.prop.propertyGroup(e.prop.propertyDepth);
+	const made = nr !== comp && nr._egp.map((e) => e.name).join() === 'Amplitude,Crédito' && nr._egp.every((e) => owner(e).containingComp === nr) &&
+		owner(nr._egp[0]).name === 'CONTROLE' && nr._egp[1].prop.matchName === 'ADBE Text Document' && nr.motionGraphicsTemplateName === 'Abertura v03' &&
+		np !== ctx.app.project._items.find((i) => i.name === 'PRE logo') && np._egp.map((e) => e.name).join() === 'Tamanho,Opacidade' && owner(np._egp[0]).name === 'circulo';
+	const ov = nr._layers.find((l) => l.name === 'PRE logo').property('ADBE Layer Overrides').property('Tamanho').value;
+	report(made && ov[0] === 500 && !last.errors.length, '[essential graphics · comp] controles recriados nas comps novas, na ordem, e o valor da precomp', 'erros ' + last.errors.length + (last.errors.length ? ': ' + last.errors.join(' | ') : '') + ' · Tamanho ' + ov);
+
+	// excluir no painel: o card inteiro ou um controle
+	const m = CG.prepare(JSON.parse(JSON.stringify(cap)));
+	const R = m.rootComp;
+	const sem = CG.generate(m, { target: 'new', now: NOW, excluded: { [R.egp[1].id]: true } });
+	const nada = CG.generate(m, { target: 'new', now: NOW, excluded: { [R.egpId]: true } });
+	report(/'Amplitude'/.test(sem) && !/'Crédito'/.test(sem) && !/'Amplitude'/.test(nada) && /'Tamanho'/.test(nada), '[essential graphics · exclusões] um controle ou o card inteiro');
+}
+{
+	// modo layers: a layer de precomp recriada na comp ativa leva o valor mudado (a precomp é a mesma do projeto)
+	const { ctx, comp } = egpScene();
+	const orig = comp.layer('PRE logo');
+	comp._layers.forEach((l) => { l.selected = l === orig; });
+	const cap = call(ctx, 'bin_capture');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'active', now: NOW });
+	const last = run(ctx, code, 'egp-layers');
+	const copy = comp._layers[0];
+	const ov = copy.name === 'PRE logo' && copy !== orig ? copy.property('ADBE Layer Overrides').property('Tamanho').value : null;
+	report(!!ov && ov[0] === 500 && !last.errors.length && !cap.comp.egp.length, '[essential graphics · layers] a layer de precomp recriada leva o valor mudado', 'Tamanho ' + ov + ' · erros ' + last.errors.length);
+}
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();

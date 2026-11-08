@@ -19,6 +19,7 @@
 		monitor: '<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8.5 21h7M12 17v4"/>',
 		code: '<path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/>',
 		tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+		egp: '<path d="M5 4v3M5 11v9M12 4v9M12 17v3M19 4v1M19 9v11"/><g class="mv"><circle cx="5" cy="9" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="19" cy="7" r="2"/></g>',
 		refresh: '<path d="M4.5 11a7.6 7.6 0 0 1 13.2-4.2L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 13a7.6 7.6 0 0 1-13.2 4.2L4.5 15"/><path d="M4.5 19.5V15H9"/>',
 		swap: '<path d="M4 8h14l-3.5-3.5"/><path d="M20 16H6l3.5 3.5"/>',
 		help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01"/>',

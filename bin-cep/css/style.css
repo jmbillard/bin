@@ -1033,6 +1033,27 @@ label:hover .i-layers .dn,
 .layer-head:hover .i-layers .dn,
 .comp-head:hover .i-layers .dn { transform: translateY(1.5px); }
 
+/* essential graphics: os botões dos sliders deslizam (um sobe, o do meio desce) */
+.ico circle { transition: transform .35s var(--spring); }
+button:hover .i-egp circle:nth-child(odd),
+.drop:hover .i-egp circle:nth-child(odd),
+.card-head:hover .i-egp circle:nth-child(odd),
+.search:hover .i-egp circle:nth-child(odd),
+label:hover .i-egp circle:nth-child(odd),
+.row:hover .i-egp circle:nth-child(odd),
+.chip:hover .i-egp circle:nth-child(odd),
+.layer-head:hover .i-egp circle:nth-child(odd),
+.comp-head:hover .i-egp circle:nth-child(odd) { transform: translateY(2px); }
+button:hover .i-egp circle:nth-child(even),
+.drop:hover .i-egp circle:nth-child(even),
+.card-head:hover .i-egp circle:nth-child(even),
+.search:hover .i-egp circle:nth-child(even),
+label:hover .i-egp circle:nth-child(even),
+.row:hover .i-egp circle:nth-child(even),
+.chip:hover .i-egp circle:nth-child(even),
+.layer-head:hover .i-egp circle:nth-child(even),
+.comp-head:hover .i-egp circle:nth-child(even) { transform: translateY(-2px); }
+
 /* aba ativa: o gesto soma com o destaque (escala) em vez de trocar */
 .tab.active:hover .i-code { transform: scale(1.12) scaleX(1.15); }
 .tab.active:hover .i-tools { transform: scale(1.12) rotate(-15deg); }

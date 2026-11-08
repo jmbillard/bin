@@ -200,6 +200,17 @@ class Property extends PropertyBase {
 	get propertyType() { return PropertyType.PROPERTY; }
 	get value() { return clone(this._value); }
 	get numKeys() { return this._keys.length; }
+	// essential graphics: a propriedade vira um controle da comp da layer dela
+	canAddToMotionGraphicsTemplate(comp) {
+		const owner = this.propertyGroup(this.propertyDepth);
+		return comp instanceof CompItem && owner && owner.containingComp === comp && !comp._egp.some((e) => e.prop === this) && this.propertyValueType !== VT.NO_VALUE;
+	}
+	addToMotionGraphicsTemplateAs(comp, name) {
+		if (!this.canAddToMotionGraphicsTemplate(comp)) throw new Error('After Effects error: Can not add property "' + this.name + '" to the Essential Graphics of this composition');
+		comp._egp.push({ prop: this, name: name || this.name });
+		return true;
+	}
+	addToMotionGraphicsTemplate(comp) { return this.addToMotionGraphicsTemplateAs(comp, this.name); }
 	get isSpatial() { return this.propertyValueType === VT.TwoD_SPATIAL || this.propertyValueType === VT.ThreeD_SPATIAL; }
 	get canSetExpression() { return true; }
 	get canVaryOverTime() { return true; }
@@ -374,16 +385,43 @@ class AVLayer extends Layer {
 		this._addGroup(IG('ADBE Effect Parade', 'Effects', EFFECTS));
 	}
 	setTrackMatte(layer, type) { this.trackMatteLayer = layer; this.trackMatteType = type; }
+	// Essential Properties: aparece quando a comp de origem tem controles no essential graphics
+	property(n) {
+		if (n === 'ADBE Layer Overrides' || n === 'Essential Properties') return this._overrides();
+		return super.property(n);
+	}
+	_overrides() {
+		const src = this.source;
+		if (!(src instanceof CompItem) || !src._egp.length) return null;
+		this._ov = this._ov || {};
+		const layer = this;
+		const leaves = src._egp.map((e) => new OverrideProperty(layer, e));
+		return {
+			matchName: 'ADBE Layer Overrides', name: 'Essential Properties', propertyType: PropertyType.NAMED_GROUP,
+			numProperties: leaves.length, parentProperty: layer, propertyIndex: 0,
+			property: (n) => (typeof n === 'number' ? leaves[n - 1] : leaves.find((l) => l.name === n)) || null
+		};
+	}
 	// como no AE de verdade: shape e texto têm tudo de AVLayer, mas "instanceof AVLayer" dá false
 	static [Symbol.hasInstance](o) {
 		if (this !== AVLayer) return Function.prototype[Symbol.hasInstance].call(this, o);
 		return !!o && Function.prototype[Symbol.hasInstance].call(AVLayer, o) && !(o instanceof ShapeLayer) && !(o instanceof TextLayer);
 	}
 }
+class OverrideProperty {
+	constructor(layer, e) { this._layer = layer; this._e = e; this.name = e.name; this.matchName = 'ADBE Layer Overrides Property'; this.expression = ''; }
+	get propertyType() { return PropertyType.PROPERTY; }
+	get propertyValueType() { return this._e.prop.propertyValueType; }
+	get essentialPropertySource() { return this._e.prop; }
+	get numKeys() { return 0; }
+	get value() { const o = this._layer._ov[this.name]; return o !== undefined ? clone(o) : this._e.prop.value; }
+	setValue(v) { this._e.prop._check(v); this._layer._ov[this.name] = clone(this._e.prop._norm(v)); }
+}
 class ShapeLayer extends AVLayer {
 	constructor(comp) {
 		super(comp, 'Shape Layer 1');
 		this._kids.splice(2, 0, build(IG('ADBE Root Vectors Group', 'Contents', SHAPE_ITEMS), null));
+		this._kids[2]._layer = this;
 	}
 }
 class TextLayer extends AVLayer {
@@ -406,6 +444,7 @@ class TextLayer extends AVLayer {
 			tp.property('ADBE Text Document')._value = doc.clone();
 		}
 		this._kids.splice(2, 0, tp);
+		tp._layer = this;
 		this.threeDPerChar = false;
 	}
 }
@@ -454,6 +493,7 @@ class CompItem extends Item {
 		this.motionBlurAdaptiveSampleLimit = 128; this.preserveNestedFrameRate = false; this.preserveNestedResolution = false;
 		this.resolutionFactor = [1, 1]; this.renderer = 'ADBE Advanced 3d'; this.comment = ''; this.label = 15;
 		this.markerProperty = new Property(P('ADBE Marker', 'Marker', VT.MARKER, null), null);
+		this._egp = []; this.motionGraphicsTemplateName = '';
 		const self = this;
 		this.layers = {
 			_push(l) { self._layers.unshift(l); l.selected = false; return l; },
@@ -479,6 +519,10 @@ class CompItem extends Item {
 	layer(i) { if (typeof i === 'string') return this._layers.find((l) => l.name === i) || null; return this._layers[i - 1] || null; }
 	get selectedLayers() { return this._layers.filter((l) => l.selected); }
 	openInViewer() { this._project.activeItem = this; }
+	get motionGraphicsTemplateControllerCount() { return this._egp.length; }
+	getMotionGraphicsTemplateControllerName(i) { return this._egp[i - 1] ? this._egp[i - 1].name : null; }
+	get usedIn() { return this._project._items.filter((c) => c instanceof CompItem && c._layers.some((l) => l.source === this)); }
+	remove() { const i = this._project._items.indexOf(this); if (i >= 0) this._project._items.splice(i, 1); }
 }
 class Project {
 	constructor() {

@@ -183,6 +183,10 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
   </tr>
 </table>
 
+**essential graphics:** cada comp com controles no Essential Graphics ganha o card **essential graphics** (com o nome do template), listando os controles na ordem do painel e de onde vem cada um (`CONTROLE › Slider`). o script recria os controles com os mesmos nomes, na mesma ordem, e o nome do template. nas layers de precomp, o card **essential properties** traz os valores mudados ali (diferentes do valor dentro da precomp), e o script os aplica na layer recriada. como o resto, o olho tira um controle ou o card inteiro; se a layer de origem de um controle sair do script, o controle sai também e o painel avisa.
+
+> precisa do After Effects 2022 ou mais novo para saber de onde vem cada controle. para ler os controles de uma comp que não está dentro de nenhuma outra, o BIN cria uma comp temporária e a apaga em seguida (isso aparece no histórico de desfazer). grupos do Essential Graphics não são recriados: o After Effects não deixa criá-los por script, então os controles entram soltos.
+
 <br>
 
 ---
@@ -372,8 +376,9 @@ o **[BIN docs](docs-app/README.md)** é um app web que transforma o pacote para 
 | **markers** | comentário, duração, rótulo, capítulo, URL, cue point e parâmetros |
 | **entre layers** | parent (sem pular a posição) e track matte |
 | **comps** | tamanho, duração, frame rate, cor de fundo, início do timecode, work area, motion blur e shutter, frame blending, shy, draft 3D, renderizador, rótulo, comentário, markers e precomps aninhadas |
+| **essential graphics** | controles da comp (nome, ordem e de onde vêm), nome do template e os valores mudados nas essential properties das layers de precomp |
 
-**não recriados:** estilos de layer (a API do After Effects não permite adicioná-los), máscaras de efeito e essential properties. o painel avisa quando a layer usa algum deles.
+**não recriados:** estilos de layer (a API do After Effects não permite adicioná-los), máscaras de efeito e grupos do Essential Graphics. o painel avisa quando a layer usa algum deles.
 
 <br>
 
@@ -405,6 +410,7 @@ tests/
   selection_watch.js  o painel acompanha a seleção do AE e avisa no chip quando a captura fica para trás
   micro_anim.js       gestos dos ícones no hover, sombra da rolagem e "reduzir movimento"
   cep_bridge.js       ponte com o CEP: recarga do host, teclas reservadas e assinatura da versão
+  egp_panel.js        essential graphics no painel: cards, exclusões, avisos e recriação
   build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques

@@ -196,6 +196,10 @@
 					reg(C.markersId, C.key, 'markers', C);
 					C.markers.forEach(function (mk, i) { reg(C.markersId + '/' + i, C.markersId, 'marker', mk); });
 				}
+				if (C.egp.length) {
+					reg(C.egpId, C.key, 'egp', C);
+					C.egp.forEach(function (e) { reg(e.id, C.egpId, 'ctrl', e); });
+				}
 			}
 			C.layers.forEach(function (L) {
 				reg(L.id, cp, 'layer', L);
@@ -212,6 +216,10 @@
 				if (L.markers.length) {
 					reg(L.markersId, L.id, 'markers', L);
 					L.markers.forEach(function (mk, i) { reg(L.markersId + '/' + i, L.markersId, 'marker', mk); });
+				}
+				if (L.overrides.length) {
+					reg(L.overridesId, L.id, 'overrides', L);
+					L.overrides.forEach(function (o) { reg(o.id, L.overridesId, 'override', o); });
 				}
 			});
 		});
@@ -397,7 +405,7 @@
 				c.props++;
 				if (n.node.keys) c.keys += n.node.keys.length;
 				if (n.node.x) c.expr++;
-			} else if (n.kind === 'attr' || n.kind === 'marker' || n.kind === 'csetting' || n.kind === 'cinfo') c.props++;
+			} else if (n.kind === 'attr' || n.kind === 'marker' || n.kind === 'csetting' || n.kind === 'cinfo' || n.kind === 'ctrl' || n.kind === 'override') c.props++;
 			else if (n.kind === 'layer') c.layers++;
 			n.kids.forEach(walk);
 		})(id);
@@ -429,6 +437,8 @@
 			case 'csetting':
 			case 'cinfo': return COMP_LABEL[n.node.key] || n.node.key;
 			case 'marker': return n.node.comment || '';
+			case 'ctrl': return n.node.name;
+			case 'override': return n.node.names.join(' › ');
 			default: return (n.node && n.node.name) || '';
 		}
 	}
@@ -477,6 +487,11 @@
 			}
 			case 'marker':
 				return '<span class="vt">' + (v.comment ? '"' + esc(v.comment) + '"' : '<span class="faint">sem comentário</span>') + '</span>';
+			case 'ctrl':
+				if (v.missing) return '<span class="faint">origem desconhecida</span>';
+				return '<span class="vt">' + esc(v.layer.name) + ' › ' + esc(v.path[v.path.length - 1].name) + '</span>';
+			case 'override':
+				return preview(v.v);
 		}
 		return '';
 	}
@@ -502,6 +517,8 @@
 		var title = '';
 		if (!fixedKind(n)) {
 			var tipLines = [label(n)];
+			if (n.kind === 'ctrl') tipLines.push(n.node.missing ? 'este After Effects não diz de onde vem o controle (precisa do AE 2022 ou mais novo)' : 'controle do essential graphics: ' + n.node.layer.name + ' › ' + n.node.path.map(function (s) { return s.name; }).join(' › ') + (n.node.group ? '\ngrupo “' + n.node.group + '” (grupos não são recriados)' : ''));
+			if (n.kind === 'override') tipLines.push('valor mudado nas essential properties desta layer');
 			if (n.kind === 'prop') {
 				tipLines.push(n.node.mn);
 				if (n.node.keys) tipLines.push('• ' + plural(n.node.keys.length, 'keyframe', 'keyframes'));
@@ -535,6 +552,7 @@
 			html += cardHTML(g.id, t[0], t[1], def, q);
 		});
 		if (L.markers.length) html += cardHTML(L.markersId, 'markers', 'marker', false, q);
+		if (L.overrides.length) html += cardHTML(L.overridesId, 'essential properties', 'egp', false, q);
 		return html;
 	}
 
@@ -559,6 +577,7 @@
 		}
 		html += cardHTML(C.settingsId, 'comp · configurações', 'monitor', false, q);
 		if (C.markers.length) html += cardHTML(C.markersId, 'markers da comp', 'marker', false, q);
+		if (C.egp.length) html += cardHTML(C.egpId, 'essential graphics' + (C.mgtName ? ' · ' + C.mgtName : ''), 'egp', false, q);
 		var rows = C.layers.map(function (L) { return layerRowHTML(L, q); }).join('');
 		if (rows) html += '<div class="card list"><div class="list-head">layers<span class="faint">' + C.layers.length + '</span></div><div class="rows">' + rows + '</div></div>';
 		return html;
@@ -621,6 +640,16 @@
 		CG.compsIn(m, ex).forEach(function (C) { inScript[C.id] = true; });
 
 		CG.compsIn(m, ex).forEach(function (C) {
+			(C.warnings || []).forEach(add);
+			// controle do essential graphics cuja layer saiu do script
+			if (C.egp && !ex[C.egpId]) {
+				var inL = {};
+				CG.layersIn(C, ex).forEach(function (L) { inL[L.index] = L; });
+				C.egp.forEach(function (e) {
+					if (!ex[e.id] && e.layer && !(inL[e.layer.index] && inL[e.layer.index].name === e.layer.name)) add('essential graphics: “' + e.name + '” fica de fora porque a layer “' + e.layer.name + '” saiu do script.');
+					if (!ex[e.id] && e.group) add('essential graphics: o grupo “' + e.group + '” não é recriado (o After Effects não deixa criar grupos por script); os controles entram soltos.');
+				});
+			}
 			CG.layersIn(C, ex).forEach(function (L) {
 				L.warnings.forEach(add);
 				var src = L.source;

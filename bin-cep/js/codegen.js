@@ -135,12 +135,19 @@
 			C.markers = C.markers || [];
 			C.settingsId = C.key + '/comp';
 			C.markersId = C.key + '/markers';
+			C.warnings = C.warnings || [];
+			C.egp = C.egp || [];
+			C.egpId = C.key + '/egp';
+			C.egp.forEach(function (e, i) { e.id = C.egpId + '/' + i; });
 			C.layers.forEach(function (L, li) {
 				L.id = C.key + '/L' + li;
 				L.attrsId = L.id + '/attrs';
 				L.markersId = L.id + '/markers';
 				L.markers = L.markers || [];
 				L.warnings = L.warnings || [];
+				L.overrides = L.overrides || [];
+				L.overridesId = L.id + '/overrides';
+				L.overrides.forEach(function (o, i) { o.id = L.overridesId + '/' + i; });
 				(function walk(nodes, pid) {
 					var seen = {};
 					nodes.forEach(function (n) { seen[n.mn] = (seen[n.mn] || 0) + 1; });
@@ -318,6 +325,15 @@
 
 		L.groups.forEach(function (n) { self.node(n, lv, namer, ind, out); });
 
+		var ov = ex[L.overridesId] ? [] : L.overrides.filter(function (o) { return !ex[o.id]; });
+		if (ov.length) {
+			out.push('');
+			this.comment(out, ind, 'essential properties (valores mudados nesta layer)');
+			out.push(ind + 'bin.over(' + lv + ', [');
+			ov.forEach(function (o, i) { out.push(ind + I + '{ n: ' + lit(o.names) + ', v: ' + lit(o.v) + ' }' + (i < ov.length - 1 ? ',' : '')); });
+			out.push(ind + ']);');
+		}
+
 		if (L.markers.length && !ex[L.markersId]) {
 			out.push('');
 			this.comment(out, ind, 'markers');
@@ -466,11 +482,34 @@
 		if (links.length) { out.push(''); this.comment(out, ind, 'parentesco'); links.forEach(function (l) { out.push(l); }); }
 		if (mattes.length) { out.push(''); this.comment(out, ind, 'track matte'); mattes.forEach(function (l) { out.push(l); }); }
 		if (locks.length) { out.push(''); locks.forEach(function (l) { out.push(l); }); }
+
+		var egp = CG.egpIn(C, plans.map(function (p) { return p.L; }), ex);
+		if (egp.length) {
+			out.push('');
+			this.comment(out, ind, 'essential graphics (' + egp.length + (egp.length === 1 ? ' controle' : ' controles') + ')');
+			out.push(ind + 'bin.egp(comp, L, [');
+			egp.forEach(function (e, i) {
+				out.push(ind + I + '{ n: ' + str(e.name) + ', l: ' + obj({ index: e.layer.index, name: e.layer.name }) + ', p: ' +
+					'[' + e.path.map(function (s) { return obj({ name: s.name, mn: s.mn, i: s.i }); }).join(', ') + '] }' + (i < egp.length - 1 ? ',' : ''));
+			});
+			out.push(ind + ']' + (C.mgtName ? ', ' + str(C.mgtName) : '') + ');');
+		}
 	};
 
 	function hasRef(nodes, ex) {
 		return (nodes || []).some(function (n) { return !ex[n.id] && (n.lyr || hasRef(n.kids, ex)); });
 	}
+
+	// controles do essential graphics que entram: só no modo comp, com a layer de origem no script
+	CG.egpIn = function (C, layers, ex) {
+		ex = ex || {};
+		if (!C.egp || ex[C.egpId]) return [];
+		var on = {};
+		(layers || []).forEach(function (L) { on[L.index] = L; });
+		return C.egp.filter(function (e) {
+			return !e.missing && e.layer && !ex[e.id] && on[e.layer.index] && on[e.layer.index].name === e.layer.name;
+		});
+	};
 
 	Gen.prototype.compMarkers = function (C, ind, out) {
 		if (!C.markers.length || this.ex[C.markersId]) return;
@@ -799,6 +838,40 @@
 					try { bin.at(r).setValue(t.index); } catch (e) { bin.err(r.layer.name + ' > ' + r.info.name, e); }
 				}
 				bin.refs = rest;
+			},
+			// um nível do caminho até a propriedade: pelo nome, pelo índice ou pelo matchName (o que bater)
+			seg: function (g, s) {
+				var tries = [s.name, s.i, s.mn];
+				for (var t = 0; t < tries.length; t++) {
+					try { var q = g.property(tries[t]); if (q && q.matchName === s.mn) return q; } catch (e) { }
+				}
+				return null;
+			},
+			// controles do essential graphics da comp, na mesma ordem e com os mesmos nomes
+			egp: function (comp, made, list, title) {
+				if (title) try { comp.motionGraphicsTemplateName = title; } catch (e0) { }
+				for (var i = 0; i < list.length; i++) {
+					var e = list[i], p = made[e.l.index];
+					if (!p || p.name !== e.l.name) p = bin.find(comp, e.l.name, {});
+					for (var k = 0; p && k < e.p.length; k++) p = bin.seg(p, e.p[k]);
+					if (!p) { bin.err(e.n + ' (essential graphics)', 'propriedade não encontrada em "' + e.l.name + '"'); continue; }
+					try {
+						if (p.addToMotionGraphicsTemplateAs) p.addToMotionGraphicsTemplateAs(comp, e.n);
+						else p.addToMotionGraphicsTemplate(comp);
+					} catch (err) { bin.err(e.n + ' (essential graphics)', err); }
+				}
+			},
+			// valores mudados nas essential properties de uma layer de precomp
+			over: function (l, list) {
+				var g = null;
+				try { g = l.property('ADBE Layer Overrides'); } catch (e0) { }
+				if (!g) { bin.err(l.name + ' > essential properties', 'a precomp não tem controles no essential graphics'); return; }
+				for (var i = 0; i < list.length; i++) {
+					var p = g;
+					for (var k = 0; p && k < list[i].n.length; k++) { try { p = p.property(list[i].n[k]); } catch (e1) { p = null; } }
+					if (!p) { bin.err(l.name + ' > ' + list[i].n.join(' > '), 'essential property não encontrada'); continue; }
+					try { p.setValue(bin.val(p, list[i].v)); } catch (e2) { bin.err(l.name + ' > ' + list[i].n.join(' > '), e2); }
+				}
 			},
 			parent: function (l, p) {
 				if (!l || !p) return;

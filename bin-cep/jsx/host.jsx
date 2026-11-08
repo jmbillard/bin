@@ -438,7 +438,94 @@ function bin_layer(l) {
 
 	d.markers = bin_markers(l.property('ADBE Marker'));
 	d.groups = bin_walk(l, ctx, '');
+	if (type === 'precomp') {
+		var ov = bin_overrides(l, ctx);
+		if (ov.length) d.overrides = ov;
+	}
 	return d;
+}
+
+// ------------------------------------------------------ essential graphics --
+// folhas do grupo Essential Properties de uma layer de precomp, com o caminho de nomes até cada uma
+function bin_egpLeaves(g, names, out) {
+	for (var i = 1; i <= g.numProperties; i++) {
+		var p = g.property(i), here = names.concat([p.name]);
+		if (p.propertyType === PropertyType.PROPERTY) out.push({ p: p, names: here });
+		else bin_egpLeaves(p, here, out);
+	}
+	return out;
+}
+
+// valores mudados nas Essential Properties de uma layer de precomp (iguais ao da comp de dentro não entram)
+function bin_overrides(l, ctx) {
+	var g = null, out = [];
+	try { g = l.property('ADBE Layer Overrides'); } catch (e) { }
+	if (!g || !g.numProperties) return out;
+	var leaves = bin_egpLeaves(g, [], []);
+	for (var i = 0; i < leaves.length; i++) {
+		var p = leaves[i].p;
+		try {
+			var vt = p.propertyValueType;
+			if (vt === PropertyValueType.NO_VALUE || vt === PropertyValueType.CUSTOM_VALUE) continue;
+			var v = bin_json(bin_val(p, p.value)), src = bin_try(p, 'essentialPropertySource');
+			if (src && bin_json(bin_val(src, src.value)) === v) continue;
+			var o = { names: leaves[i].names, v: bin_val(p, p.value) };
+			if (p.expression) o.x = p.expression;
+			out.push(o);
+		} catch (e) { ctx.warnings.push('não foi possível ler a essential property "' + leaves[i].names.join(' › ') + '": ' + e.message); }
+	}
+	return out;
+}
+
+// caminho de uma propriedade até a layer: nome, matchName e índice em cada nível
+function bin_propRoute(p) {
+	var path = [], q = p;
+	while (q && q.parentProperty) {
+		path.unshift({ name: q.name, mn: q.matchName, i: q.propertyIndex });
+		q = q.parentProperty;
+	}
+	return { layer: q, path: path };
+}
+
+// controles do Essential Graphics de uma comp, na ordem do painel. A ligação controle → propriedade
+// (essentialPropertySource, AE 22+) só aparece numa layer que usa a comp: procura uma no projeto e,
+// se a comp não estiver em nenhuma, usa uma comp temporária, apagada logo depois.
+function bin_egp(comp, warnings) {
+	var n = bin_try(comp, 'motionGraphicsTemplateControllerCount');
+	if (!n) return [];
+	var inst = null, tmp = null, out = [], i, j;
+	var users = bin_try(comp, 'usedIn') || [];
+	for (i = 0; i < users.length && !inst; i++) {
+		for (j = 1; j <= users[i].numLayers; j++) {
+			var s = bin_try(users[i].layer(j), 'source');
+			if (s && s.id === comp.id) { inst = users[i].layer(j); break; }
+		}
+	}
+	try {
+		if (!inst) {
+			tmp = app.project.items.addComp('BIN · leitura do essential graphics', 16, 16, 1, 1, 1);
+			inst = tmp.layers.add(comp);
+		}
+		var g = inst.property('ADBE Layer Overrides');
+		var leaves = g ? bin_egpLeaves(g, [], []) : [];
+		for (i = 0; i < leaves.length; i++) {
+			var e = { name: leaves[i].p.name };
+			if (leaves[i].names.length > 1) e.group = leaves[i].names.slice(0, -1).join(' › ');
+			var src = bin_try(leaves[i].p, 'essentialPropertySource');
+			if (src) {
+				var pp = bin_propRoute(src);
+				e.layer = { index: pp.layer.index, name: pp.layer.name };
+				e.path = pp.path;
+			} else e.missing = true;
+			out.push(e);
+		}
+	} catch (err) {
+		warnings.push('não foi possível ler o essential graphics de "' + comp.name + '": ' + err.message);
+	} finally {
+		if (tmp) try { tmp.remove(); } catch (e2) { }
+	}
+	if (out.length && out[0].missing) warnings.push('essential graphics de "' + comp.name + '": este After Effects não diz de onde vem cada controle (precisa do AE 2022 ou mais novo); os controles não são recriados.');
+	return out;
 }
 
 // ----------------------------------------------------------------- comp --
@@ -446,7 +533,7 @@ var BIN_COMP_ATTRS = ['bgColor', 'displayStartTime', 'workAreaStart', 'workAreaD
 	'draft3d', 'shutterAngle', 'shutterPhase', 'motionBlurSamplesPerFrame', 'motionBlurAdaptiveSampleLimit', 'preserveNestedFrameRate',
 	'preserveNestedResolution', 'resolutionFactor', 'renderer', 'comment', 'label'];
 
-function bin_compInfo(comp) {
+function bin_compInfo(comp, withEgp) {
 	var d = {
 		id: comp.id, name: comp.name, width: comp.width, height: comp.height, pixelAspect: comp.pixelAspect,
 		duration: comp.duration, frameRate: comp.frameRate, settings: {}
@@ -456,6 +543,10 @@ function bin_compInfo(comp) {
 		if (v !== undefined && v !== null) d.settings[BIN_COMP_ATTRS[i]] = v;
 	}
 	d.markers = bin_markers(bin_try(comp, 'markerProperty')); // AE 14+
+	d.warnings = [];
+	d.egp = withEgp ? bin_egp(comp, d.warnings) : [];
+	var mgt = bin_try(comp, 'motionGraphicsTemplateName');
+	if (mgt) d.mgtName = mgt;
 	return d;
 }
 
@@ -477,7 +568,7 @@ function bin_compTree(comp, seen, out) {
 		var src = bin_try(comp.layer(i), 'source');
 		if (src instanceof CompItem) bin_compTree(src, seen, out);
 	}
-	var d = bin_compInfo(comp);
+	var d = bin_compInfo(comp, true); // a comp é recriada: os controles do essential graphics vão junto
 	d.layers = bin_layerList(comp, false);
 	out.push(d);
 }
