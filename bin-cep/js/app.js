@@ -1262,6 +1262,13 @@
 
 		$('chip').onclick = function () { capture(false); };
 		setInterval(pollSelection, 1000);
+		// sombra sob as abas quando o conteúdo da aba está rolado
+		var shade = function () {
+			var p = document.querySelector('.panel.active');
+			document.querySelector('main').classList.toggle('scrolled', !!p && p.scrollTop > 2);
+		};
+		each(document.querySelectorAll('.panel'), function (p) { p.addEventListener('scroll', shade, { passive: true }); });
+		document.querySelector('.tabs').addEventListener('click', function () { setTimeout(shade, 0); });
 		document.addEventListener('visibilitychange', function () { if (!document.hidden) pollSelection(); });
 		$('captureBtn').onclick = function () { setMode('layers'); capture(false); };
 		$('captureCompBtn').onclick = function () { setMode('comp'); capture(false); };

@@ -5,6 +5,7 @@
 :root {
 	--bg: #18191b;
 	--veil: rgba(24, 25, 27, .95);
+	--shade: rgba(0, 0, 0, .35);
 	--surface: #212326;
 	--surface-2: #2a2d31;
 	--surface-3: #33373c;
@@ -49,6 +50,7 @@
 :root[data-theme=light] {
 	--bg: #eef0f3;
 	--veil: rgba(238, 240, 243, .95);
+	--shade: rgba(30, 40, 60, .1);
 	--surface: #ffffff;
 	--surface-2: #e9ecf0;
 	--surface-3: #dfe3e8;
@@ -184,7 +186,7 @@ body:not(.is-empty) .logo-name { display: none; }
 }
 
 .chip:hover { border-color: var(--line-2); background: var(--surface-2); }
-.chip:hover .chip-swap { transform: rotate(180deg); color: var(--txt); }
+.chip:hover .chip-swap { color: var(--txt); }
 /* a seleção no AE mudou depois da captura: o aviso fica no próprio chip (nada se mexe na tela) */
 .chip.stale { border-color: var(--accent); background: var(--accent-soft); animation: stale-pulse 2.4s var(--ease) infinite; }
 .chip.stale .chip-swap { color: var(--accent); }
@@ -531,6 +533,7 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 
 /* --------------------------------------------------------------- código */
 .file-name { font-family: var(--mono); font-size: 11.5px; color: var(--muted); padding-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#lineCount { white-space: nowrap; flex: none; } /* "119 linhas" numa linha só; quem encolhe é o nome do arquivo */
 
 .code {
 	display: flex;
@@ -743,6 +746,296 @@ body.is-empty .sum { visibility: hidden; }
 
 .tip.up .tip-arrow { bottom: -7px; }
 .tip.down .tip-arrow { top: -7px; transform: rotate(225deg); }
+
+
+/* ---------------------------------------------------- micro animações
+   tudo que o mouse pode clicar, arrastar ou rolar dá um sinal pequeno: um gesto por ícone,
+   uma vez por hover (1–2 px ou alguns graus). "reduzir movimento" no sistema desliga tudo. */
+.ico { transition: transform .35s var(--spring); }
+
+button:hover .i-refresh,
+.drop:hover .i-refresh,
+.card-head:hover .i-refresh,
+.search:hover .i-refresh,
+label:hover .i-refresh,
+.row:hover .i-refresh,
+.chip:hover .i-refresh,
+.layer-head:hover .i-refresh,
+.comp-head:hover .i-refresh { transform: rotate(180deg); }
+button:hover .i-x,
+.drop:hover .i-x,
+.card-head:hover .i-x,
+.search:hover .i-x,
+label:hover .i-x,
+.row:hover .i-x,
+.chip:hover .i-x,
+.layer-head:hover .i-x,
+.comp-head:hover .i-x { transform: rotate(90deg); }
+button:hover .i-undo,
+.drop:hover .i-undo,
+.card-head:hover .i-undo,
+.search:hover .i-undo,
+label:hover .i-undo,
+.row:hover .i-undo,
+.chip:hover .i-undo,
+.layer-head:hover .i-undo,
+.comp-head:hover .i-undo { transform: rotate(-35deg); }
+button:hover .i-play,
+.drop:hover .i-play,
+.card-head:hover .i-play,
+.search:hover .i-play,
+label:hover .i-play,
+.row:hover .i-play,
+.chip:hover .i-play,
+.layer-head:hover .i-play,
+.comp-head:hover .i-play { transform: translateX(2px); }
+button:hover .i-search,
+.drop:hover .i-search,
+.card-head:hover .i-search,
+.search:hover .i-search,
+label:hover .i-search,
+.row:hover .i-search,
+.chip:hover .i-search,
+.layer-head:hover .i-search,
+.comp-head:hover .i-search { transform: rotate(-12deg) scale(1.08); }
+button:hover .i-expand,
+.drop:hover .i-expand,
+.card-head:hover .i-expand,
+.search:hover .i-expand,
+label:hover .i-expand,
+.row:hover .i-expand,
+.chip:hover .i-expand,
+.layer-head:hover .i-expand,
+.comp-head:hover .i-expand { transform: scaleY(1.2); }
+button:hover .i-collapse,
+.drop:hover .i-collapse,
+.card-head:hover .i-collapse,
+.search:hover .i-collapse,
+label:hover .i-collapse,
+.row:hover .i-collapse,
+.chip:hover .i-collapse,
+.layer-head:hover .i-collapse,
+.comp-head:hover .i-collapse { transform: scaleY(.8); }
+button:hover .i-wrap,
+.drop:hover .i-wrap,
+.card-head:hover .i-wrap,
+.search:hover .i-wrap,
+label:hover .i-wrap,
+.row:hover .i-wrap,
+.chip:hover .i-wrap,
+.layer-head:hover .i-wrap,
+.comp-head:hover .i-wrap { transform: translateX(1.5px); }
+button:hover .i-open,
+.drop:hover .i-open,
+.card-head:hover .i-open,
+.search:hover .i-open,
+label:hover .i-open,
+.row:hover .i-open,
+.chip:hover .i-open,
+.layer-head:hover .i-open,
+.comp-head:hover .i-open { transform: rotate(-8deg) translateY(-1px); }
+button:hover .i-file,
+.drop:hover .i-file,
+.card-head:hover .i-file,
+.search:hover .i-file,
+label:hover .i-file,
+.row:hover .i-file,
+.chip:hover .i-file,
+.layer-head:hover .i-file,
+.comp-head:hover .i-file { transform: translateY(-1.5px) rotate(3deg); }
+button:hover .i-sun,
+.drop:hover .i-sun,
+.card-head:hover .i-sun,
+.search:hover .i-sun,
+label:hover .i-sun,
+.row:hover .i-sun,
+.chip:hover .i-sun,
+.layer-head:hover .i-sun,
+.comp-head:hover .i-sun { transform: rotate(90deg); }
+button:hover .i-moon,
+.drop:hover .i-moon,
+.card-head:hover .i-moon,
+.search:hover .i-moon,
+label:hover .i-moon,
+.row:hover .i-moon,
+.chip:hover .i-moon,
+.layer-head:hover .i-moon,
+.comp-head:hover .i-moon { transform: rotate(-25deg); }
+button:hover .i-themeAuto,
+.drop:hover .i-themeAuto,
+.card-head:hover .i-themeAuto,
+.search:hover .i-themeAuto,
+label:hover .i-themeAuto,
+.row:hover .i-themeAuto,
+.chip:hover .i-themeAuto,
+.layer-head:hover .i-themeAuto,
+.comp-head:hover .i-themeAuto { transform: rotate(180deg); }
+button:hover .i-key,
+.drop:hover .i-key,
+.card-head:hover .i-key,
+.search:hover .i-key,
+label:hover .i-key,
+.row:hover .i-key,
+.chip:hover .i-key,
+.layer-head:hover .i-key,
+.comp-head:hover .i-key { transform: rotate(-20deg); }
+button:hover .i-expr,
+.drop:hover .i-expr,
+.card-head:hover .i-expr,
+.search:hover .i-expr,
+label:hover .i-expr,
+.row:hover .i-expr,
+.chip:hover .i-expr,
+.layer-head:hover .i-expr,
+.comp-head:hover .i-expr { transform: scaleX(1.15); }
+button:hover .i-layers,
+.drop:hover .i-layers,
+.card-head:hover .i-layers,
+.search:hover .i-layers,
+label:hover .i-layers,
+.row:hover .i-layers,
+.chip:hover .i-layers,
+.layer-head:hover .i-layers,
+.comp-head:hover .i-layers { transform: translateY(-1.5px); }
+button:hover .i-code,
+.drop:hover .i-code,
+.card-head:hover .i-code,
+.search:hover .i-code,
+label:hover .i-code,
+.row:hover .i-code,
+.chip:hover .i-code,
+.layer-head:hover .i-code,
+.comp-head:hover .i-code { transform: scaleX(1.15); }
+button:hover .i-tools,
+.drop:hover .i-tools,
+.card-head:hover .i-tools,
+.search:hover .i-tools,
+label:hover .i-tools,
+.row:hover .i-tools,
+.chip:hover .i-tools,
+.layer-head:hover .i-tools,
+.comp-head:hover .i-tools { transform: rotate(-15deg); }
+button:hover .i-monitor,
+.drop:hover .i-monitor,
+.card-head:hover .i-monitor,
+.search:hover .i-monitor,
+label:hover .i-monitor,
+.row:hover .i-monitor,
+.chip:hover .i-monitor,
+.layer-head:hover .i-monitor,
+.comp-head:hover .i-monitor { transform: translateY(-1px) scale(1.06); }
+button:hover .i-binary,
+.drop:hover .i-binary,
+.card-head:hover .i-binary,
+.search:hover .i-binary,
+label:hover .i-binary,
+.row:hover .i-binary,
+.chip:hover .i-binary,
+.layer-head:hover .i-binary,
+.comp-head:hover .i-binary { transform: scale(1.1); }
+button:hover .i-link,
+.drop:hover .i-link,
+.card-head:hover .i-link,
+.search:hover .i-link,
+label:hover .i-link,
+.row:hover .i-link,
+.chip:hover .i-link,
+.layer-head:hover .i-link,
+.comp-head:hover .i-link { transform: rotate(-12deg); }
+
+@keyframes ico-copy { 50% { transform: translate(-1.5px, -1.5px); } }
+@keyframes ico-drop { 40% { transform: translateY(2px); } 70% { transform: translateY(-.5px); } }
+@keyframes ico-lift { 40% { transform: translateY(-2.5px); } 70% { transform: translateY(.5px); } }
+@keyframes ico-wiggle { 25% { transform: rotate(-12deg); } 60% { transform: rotate(9deg); } 85% { transform: rotate(-3deg); } }
+@keyframes ico-blink { 45% { transform: scaleY(.12); } }
+@keyframes ico-pulse { 45% { transform: scale(1.18); } }
+@keyframes ico-bob { from { transform: translateY(1px); } to { transform: translateY(-2px); } }
+@keyframes ico-spin { 0% { transform: rotate(0); } 30%, 100% { transform: rotate(360deg); } }
+
+button:hover .i-copy,
+.drop:hover .i-copy,
+.card-head:hover .i-copy,
+.search:hover .i-copy,
+label:hover .i-copy,
+.row:hover .i-copy,
+.chip:hover .i-copy,
+.layer-head:hover .i-copy,
+.comp-head:hover .i-copy { animation: ico-copy .45s var(--ease); }
+button:hover .i-save,
+.drop:hover .i-save,
+.card-head:hover .i-save,
+.search:hover .i-save,
+label:hover .i-save,
+.row:hover .i-save,
+.chip:hover .i-save,
+.layer-head:hover .i-save,
+.comp-head:hover .i-save { animation: ico-drop .5s var(--ease); }
+button:hover .i-upload,
+.drop:hover .i-upload,
+.card-head:hover .i-upload,
+.search:hover .i-upload,
+label:hover .i-upload,
+.row:hover .i-upload,
+.chip:hover .i-upload,
+.layer-head:hover .i-upload,
+.comp-head:hover .i-upload { animation: ico-lift .5s var(--ease); }
+button:hover .i-help,
+.drop:hover .i-help,
+.card-head:hover .i-help,
+.search:hover .i-help,
+label:hover .i-help,
+.row:hover .i-help,
+.chip:hover .i-help,
+.layer-head:hover .i-help,
+.comp-head:hover .i-help { animation: ico-wiggle .6s var(--ease); }
+.eye:hover .i-eye, .eye:hover .i-eyeOff { animation: ico-blink .35s var(--ease); }
+button:hover .i-target,
+.drop:hover .i-target,
+.card-head:hover .i-target,
+.search:hover .i-target,
+label:hover .i-target,
+.row:hover .i-target,
+.chip:hover .i-target,
+.layer-head:hover .i-target,
+.comp-head:hover .i-target { animation: ico-pulse .45s var(--ease); }
+button:hover .i-alert,
+.drop:hover .i-alert,
+.card-head:hover .i-alert,
+.search:hover .i-alert,
+label:hover .i-alert,
+.row:hover .i-alert,
+.chip:hover .i-alert,
+.layer-head:hover .i-alert,
+.comp-head:hover .i-alert,
+button:hover .i-info,
+.drop:hover .i-info,
+.card-head:hover .i-info,
+.search:hover .i-info,
+label:hover .i-info,
+.row:hover .i-info,
+.chip:hover .i-info,
+.layer-head:hover .i-info,
+.comp-head:hover .i-info { animation: ico-wiggle .6s var(--ease); }
+
+/* aba ativa: o gesto soma com o destaque (escala) em vez de trocar */
+.tab.active:hover .i-layers { transform: scale(1.12) translateY(-1.5px); }
+.tab.active:hover .i-code { transform: scale(1.12) scaleX(1.15); }
+.tab.active:hover .i-tools { transform: scale(1.12) rotate(-15deg); }
+
+/* arrastando um arquivo: a seta sobe e desce enquanto ele está em cima */
+.drop.over .i-upload, .drop-all .ico { animation: ico-bob .6s var(--ease) infinite alternate; }
+/* captura desatualizada: as setas giram de vez em quando, sem pressa */
+.chip.stale .chip-swap { animation: ico-spin 2.4s var(--ease) infinite; }
+.chip.stale:hover .chip-swap { animation: none; }
+/* o ícone das abas e dos botões grandes afunda um pouco no clique */
+button:active > .ico { transition-duration: .1s; }
+
+/* rolagem: a barra aparece com o mouse em cima; com o conteúdo rolado, uma sombra sob as abas */
+.panel::-webkit-scrollbar-thumb, .code-area textarea::-webkit-scrollbar-thumb, .out pre::-webkit-scrollbar-thumb, .toast-list::-webkit-scrollbar-thumb { background: transparent; }
+.panel:hover::-webkit-scrollbar-thumb, .code-area textarea:hover::-webkit-scrollbar-thumb, .out pre:hover::-webkit-scrollbar-thumb, .toast-list:hover::-webkit-scrollbar-thumb { background: var(--scroll); }
+::-webkit-scrollbar-thumb:hover { background: var(--faint) !important; }
+main::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px; z-index: 5; pointer-events: none; background: linear-gradient(to bottom, var(--shade), transparent); opacity: 0; transition: opacity .25s; }
+main.scrolled::before { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation: none !important; transition: none !important; }

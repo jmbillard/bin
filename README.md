@@ -399,6 +399,7 @@ tests/
   code_editor.js      aba código como editor: script livre, código editado, erros e atalhos
   script_drop.js      abrir script no editor: arrastar o arquivo ou usar o botão abrir
   selection_watch.js  o painel acompanha a seleção do AE e avisa no chip quando a captura fica para trás
+  micro_anim.js       gestos dos ícones no hover, sombra da rolagem e "reduzir movimento"
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado

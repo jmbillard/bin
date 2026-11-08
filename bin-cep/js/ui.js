@@ -19,7 +19,7 @@
 		monitor: '<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8.5 21h7M12 17v4"/>',
 		code: '<path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m14 4-4 16"/>',
 		tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
-		refresh: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.8 4.5v4h-4"/>',
+		refresh: '<path d="M4.5 11a7.6 7.6 0 0 1 13.2-4.2L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 13a7.6 7.6 0 0 1-13.2 4.2L4.5 15"/><path d="M4.5 19.5V15H9"/>',
 		swap: '<path d="M4 8h14l-3.5-3.5"/><path d="M20 16H6l3.5 3.5"/>',
 		help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01"/>',
 		sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
@@ -66,7 +66,7 @@
 	UI.logo = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5 1.8 12l4.7 5.5M17.5 6.5l4.7 5.5-4.7 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="logo-layer" d="M12 7.2 16.8 12 12 16.8 7.2 12z" fill="currentColor"/><path d="M12 4.2v2M12 17.8v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></svg>';
 
 	UI.icon = function (name, cls) {
-		return '<svg class="ico ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (P[name] || '') + '</svg>';
+		return '<svg class="ico i-' + name + ' ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (P[name] || '') + '</svg>';
 	};
 
 	// substitui <i data-icon="nome"></i> pelo SVG
