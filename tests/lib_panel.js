@@ -39,6 +39,20 @@ async function setup(page, settings) {
 
 const url = 'file://' + path.join(ROOT, 'bin-cep/index.html');
 
+// o mesmo painel servido por http://127.0.0.1: no file:// o Chromium às vezes perde o localStorage ao recarregar
+function serve() {
+	const http = require('http');
+	const base = path.join(ROOT, 'bin-cep');
+	const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
+	const server = http.createServer((req, res) => {
+		const file = path.join(base, decodeURIComponent(req.url.split('?')[0]));
+		if (!file.startsWith(base) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
+		res.writeHead(200, { 'Content-Type': (types[path.extname(file)] || 'application/octet-stream') + '; charset=utf-8' });
+		fs.createReadStream(file).pipe(res);
+	});
+	return new Promise((ok) => server.listen(0, '127.0.0.1', () => ok({ url: 'http://127.0.0.1:' + server.address().port + '/index.html', close: () => server.close() })));
+}
+
 // destaques no mesmo estilo da documentação do ABRIDOR: contorno roxo e número
 async function annotate(page, marks) {
 	await page.evaluate((marks) => {
@@ -80,4 +94,4 @@ async function clearMarks(page) {
 	await page.evaluate(() => document.querySelectorAll('.__mark').forEach((e) => e.remove()));
 }
 
-module.exports = { setup, url, annotate, clearMarks, ROOT };
+module.exports = { setup, url, serve, annotate, clearMarks, ROOT };

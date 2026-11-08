@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const { setup, url } = require('./lib_panel');
+const { setup, serve } = require('./lib_panel');
 
 const outDir = path.resolve(process.argv[2] || path.join(__dirname, 'out'));
 fs.mkdirSync(outDir, { recursive: true });
@@ -24,7 +24,8 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 
 	// 1 · sem captura: o estado vazio leva ao editor
 	select([]);
-	await page.goto(url);
+	const srv = await serve();
+	await page.goto(srv.url);
 	await page.waitForTimeout(400);
 	check(await page.isDisabled('#runBtn'), 'sem captura e sem script: botão principal desligado');
 	await page.click('#scriptBtn');
@@ -39,10 +40,31 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	await page.waitForSelector('#runBtn.done');
 	check(hasComp('DIGITADA') && /script executado/.test(await toast()), 'Ctrl+Enter executa o script digitado');
 
-	// o rascunho e a aba ficam guardados
+	// um script gerado pelo BIN colado no editor, sem captura: a mensagem vem do resultado (antes: "reading 'mode'")
 	await page.evaluate(() => window.BIN.ui.hideToast());
-	// o Chromium grava o localStorage de páginas file:// com um pequeno atraso; recarregar na hora pode perdê-lo
-	await page.waitForTimeout(3000);
+	project.activeItem = comp;
+	select(['TITULO_principal']);
+	const genCode = await page.evaluate(async () => {
+		const raw = JSON.parse(await window.BIN_MOCK.callHost('bin_capture', []));
+		return window.BIN.codegen.generate(window.BIN.codegen.prepare(raw), {});
+	});
+	select([]);
+	const draft = await page.inputValue('#codeEdit');
+	await page.fill('#codeEdit', genCode);
+	await page.dispatchEvent('#codeEdit', 'input');
+	await page.waitForTimeout(4200); // o botão volta de "script executado"
+	const nBefore = comp.numLayers;
+	await page.click('#runBtn');
+	await page.waitForSelector('#runBtn.done');
+	check(comp.numLayers === nBefore + 1 && /criada/.test(await toast()) && /layer criada/.test(await page.textContent('#runTxt')), 'script gerado colado sem captura: roda e avisa a layer criada');
+	await page.evaluate(() => window.BIN.ui.hideToast());
+	comp._layers[0].name = 'COLADA'; // a cópia não entra nas capturas seguintes
+	select([]); // o script seleciona a layer criada; sem seleção, o painel reabre sem captura
+	await page.fill('#codeEdit', draft);
+	await page.dispatchEvent('#codeEdit', 'input');
+
+	// o rascunho e a aba ficam guardados
+	await page.waitForTimeout(300);
 	await page.reload();
 	await page.waitForFunction(() => document.querySelector('.tab.active') && document.querySelector('.tab.active').dataset.tab === 'code', null, { timeout: 5000 }).catch(() => { });
 	const st = await page.evaluate(() => ({ s: localStorage.getItem('bin.settings'), tab: document.querySelector('.tab.active').dataset.tab, scratch: localStorage.getItem('bin.scratch'), ed: document.getElementById('codeEdit').value }));
@@ -127,5 +149,6 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	check(al, 'texto e cores alinhados (fonte, espaçamento e rolagem iguais)');
 
 	await browser.close();
+	srv.close();
 	process.exit(failed ? 1 : 0);
 })();

@@ -841,13 +841,16 @@
 		clearTimeout(resetRun.t);
 		if (!b.classList.contains('done') && !b.classList.contains('working')) return;
 		b.classList.remove('done', 'working');
-		b.querySelector('.ico').outerHTML = UI.icon('sparkle');
+		b.querySelector('.ico').outerHTML = UI.icon('play');
 	}
+
+	// o resultado diz o que foi criado (o código pode ter vindo do editor, sem captura)
+	function isCompResult(r) { return (r.comps || []).length > 0; }
 
 	function runMessage(r) {
 		var errs = r.errors || [];
 		var msg;
-		if (state.m.mode === 'comp') {
+		if (isCompResult(r)) {
 			var pre = (r.comps || []).length - 1;
 			msg = 'comp <b>' + esc(r.comp) + '</b> criada com ' + plural(r.count || 0, 'layer', 'layers') + (pre > 0 ? ' e ' + plural(pre, 'precomp', 'precomps') : '') + '.';
 		} else {
@@ -880,7 +883,7 @@
 			b.querySelector('.ico').outerHTML = UI.icon('check');
 			var errs = r.errors || [];
 			if (free && !(r.layers || r.comps)) $('runTxt').textContent = 'script executado';
-			else $('runTxt').textContent = state.m && state.m.mode === 'comp' ? 'comp criada' : ((r.layers || []).length > 1 ? r.layers.length + ' layers criadas' : 'layer criada');
+			else $('runTxt').textContent = isCompResult(r) ? 'comp criada' : ((r.layers || []).length > 1 ? r.layers.length + ' layers criadas' : 'layer criada');
 			var msg = free && !(r.layers || r.comps) ? 'script executado.' : runMessage(r);
 			UI.toast(msg, errs.length ? 'warn' : 'ok', {
 				sticky: true,
