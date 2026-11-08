@@ -312,6 +312,14 @@ function bin_node(p, parent, idx, ctx, path) {
 	if (p.numKeys > 0) n.keys = bin_keys(p);
 	else n.v = bin_val(p, p.value);
 
+	// parâmetro que aponta para uma layer: o número muda na comp recriada, então guarda nome e posição
+	if (vt === PropertyValueType.LAYER_INDEX && !p.numKeys && p.value > 0) {
+		try {
+			var ref = ctx.layer.containingComp.layer(p.value);
+			if (ref) n.lyr = { name: ref.name, index: ref.index };
+		} catch (e) { }
+	}
+
 	try {
 		if (p.expression !== '') {
 			n.x = p.expression;

@@ -110,6 +110,29 @@ function run(ctx, code, label) {
 		'[animator] recria só as propriedades adicionadas (com valor e expressão)', shown.map((k) => k.name).join(', '));
 }
 
+// -------------------------------------- efeitos que apontam para layers (3D Glasses)
+// o valor é o número da layer: na comp recriada as posições mudam, então o script resolve pelo nome e pela posição original
+[['active', 'layers'], ['new', 'layers'], ['new', 'comp']].forEach(([target, mode]) => {
+	const { ctx, comp } = setup();
+	const adj = comp._layers.find((l) => l.name === 'CONTROLE');
+	const glasses = adj.property('ADBE Effect Parade').addProperty('ADBE 3D Glasses2');
+	glasses.property('ADBE 3D Glasses2-0001').setValue(adj.index);                                               // ela mesma
+	glasses.property('ADBE 3D Glasses2-0002').setValue(comp._layers.find((l) => l.name === 'MATTE').index);      // outra layer
+	adj.property('ADBE Effect Parade').addProperty('ADBE Glo2'); // outro efeito depois: referências antigas a propriedades se perdem no AE
+	const origMatte = comp._layers.find((l) => l.name === 'MATTE');
+	comp._layers.forEach((l) => { l.selected = ['CONTROLE', 'MATTE'].indexOf(l.name) >= 0; });
+	const cap = call(ctx, mode === 'comp' ? 'bin_captureComp' : 'bin_capture');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target, now: NOW });
+	const last = run(ctx, code, 'layer-ref-' + target + '-' + mode);
+	const into = mode === 'comp' || target === 'new' ? ctx.app.project.activeItem : comp;
+	const made = into._layers.find((l) => l !== adj && l.name === 'CONTROLE');
+	const g = made && made.property('ADBE Effect Parade').property('ADBE 3D Glasses2');
+	const left = g && into.layer(g.property('ADBE 3D Glasses2-0001').value);
+	const right = g && into.layer(g.property('ADBE 3D Glasses2-0002').value);
+	const ok = !last.errors.length && left === made && !!right && right.name === 'MATTE' && right !== origMatte;
+	report(ok, '[3D Glasses · ' + mode + ' · ' + target + '] Left/Right View apontam para as layers recriadas', 'left ' + (left && left.name) + ' #' + (left && left.index) + ' · right ' + (right && right.name) + ' #' + (right && right.index) + ' · erros ' + last.errors.length);
+});
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();

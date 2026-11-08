@@ -401,7 +401,8 @@
 			out.push(ind + 'var ' + t + ' = ' + target + ';');
 		}
 		ops.forEach(function (op) {
-			if (op === 'set') out.push(ind + 'bin.set(' + t + ', ' + lit(value) + ');');
+			if (op === 'set' && n.lyr) out.push(ind + 'bin.ref(' + t + ', ' + obj({ name: n.lyr.name, index: n.lyr.index }) + ');' + (o.comments ? ' // aponta para a layer quando todas existirem' : ''));
+			else if (op === 'set') out.push(ind + 'bin.set(' + t + ', ' + lit(value) + ');');
 			if (op === 'keys') {
 				out.push(ind + 'bin.keys(' + t + ', [');
 				n.keys.forEach(function (k, i) { out.push(ind + I + keyLit(k) + (i < n.keys.length - 1 ? ',' : '')); });
@@ -453,17 +454,23 @@
 		};
 		var on = function (L, k) { return !ex[L.attrsId] && !ex[L.attrsId + '/' + k]; };
 
-		var links = [], mattes = [], locks = [];
+		var links = [], mattes = [], locks = [], refs = false;
 		plans.forEach(function (p) {
 			var L = p.L;
 			if (o.parent && L.parent && on(L, 'parent')) links.push(ind + 'bin.parent(L[' + L.index + '], ' + refTo(L.parent) + ');');
 			if (L.matte && L.matte.name && on(L, 'matte')) mattes.push(ind + 'bin.matte(L[' + L.index + '], ' + refTo(L.matte) + ', ' + lit(L.matte.type) + ');');
 			if (L.attrs.locked && on(L, 'locked')) locks.push(ind + 'L[' + L.index + '].locked = true;');
+			if (!ex[L.id] && hasRef(L.groups, ex)) refs = true;
 		});
+		if (refs) { out.push(''); this.comment(out, ind, 'efeitos que apontam para outras layers'); out.push(ind + 'bin.links(comp, L);'); }
 		if (links.length) { out.push(''); this.comment(out, ind, 'parentesco'); links.forEach(function (l) { out.push(l); }); }
 		if (mattes.length) { out.push(''); this.comment(out, ind, 'track matte'); mattes.forEach(function (l) { out.push(l); }); }
 		if (locks.length) { out.push(''); locks.forEach(function (l) { out.push(l); }); }
 	};
+
+	function hasRef(nodes, ex) {
+		return (nodes || []).some(function (n) { return !ex[n.id] && (n.lyr || hasRef(n.kids, ex)); });
+	}
 
 	Gen.prototype.compMarkers = function (C, ind, out) {
 		if (!C.markers.length || this.ex[C.markersId]) return;
@@ -733,6 +740,31 @@
 				}
 				bin.err(name, 'layer não encontrada na comp');
 				return null;
+			},
+			// parâmetro que aponta para uma layer: guarda a layer dona e o caminho até ele (referências a
+			// propriedades se perdem quando outros efeitos entram) e resolve em bin.links, com todas as layers prontas
+			refs: [],
+			ref: function (p, info) {
+				if (!p) return;
+				try {
+					var path = [], q = p, d = p.propertyDepth;
+					for (var i = 0; i < d; i++) { path.unshift(q.propertyIndex); q = q.parentProperty; }
+					bin.refs.push({ layer: p.propertyGroup(d), path: path, info: info });
+				} catch (e) { bin.err(bin.path(p), e); }
+			},
+			links: function (comp, made) {
+				var rest = [];
+				for (var i = 0; i < bin.refs.length; i++) {
+					var r = bin.refs[i], p = r.layer;
+					if (r.layer.containingComp.id !== comp.id) { rest.push(r); continue; }
+					var t = made[r.info.index] && made[r.info.index].name === r.info.name ? made[r.info.index] : bin.find(comp, r.info.name, made);
+					if (!t) continue;
+					try {
+						for (var k = 0; k < r.path.length; k++) p = p.property(r.path[k]);
+						p.setValue(t.index);
+					} catch (e) { bin.err(r.layer.name + ' > ' + r.info.name, e); }
+				}
+				bin.refs = rest;
 			},
 			parent: function (l, p) {
 				if (!l || !p) return;

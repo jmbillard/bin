@@ -120,6 +120,12 @@ const EFFECTS = {
 		P('ADBE Fill-0006', 'Opacity', VT.OneD, 1),
 		builtIn()
 	]),
+	// parâmetros que apontam para uma layer (como Left View / Right View do 3D Glasses)
+	'ADBE 3D Glasses2': () => G('ADBE 3D Glasses2', '3D Glasses', [
+		P('ADBE 3D Glasses2-0001', 'Left View', VT.LAYER_INDEX, 0),
+		P('ADBE 3D Glasses2-0002', 'Right View', VT.LAYER_INDEX, 0),
+		builtIn()
+	]),
 	'ADBE Slider Control': () => G('ADBE Slider Control', 'Slider Control', [P('ADBE Slider Control-0001', 'Slider', VT.OneD, 0), builtIn()])
 };
 const MASKS = {
@@ -167,9 +173,11 @@ function transformSpec(comp, three) {
 
 // ----------------------------------------------------------- propriedades --
 class PropertyBase {
-	get parentProperty() { return this._parent; }
-	get propertyIndex() { return this._parent ? this._parent._kids.indexOf(this) + 1 : 0; }
-	get propertyDepth() { let d = 0, p = this; while (p._parent) { d++; p = p._parent; } return d; }
+	// como no AE: acima dos grupos de primeiro nível está a própria layer
+	get parentProperty() { return this._parent || this._layer || null; }
+	get propertyIndex() { const up = this._parent || this._layer; return up ? up._kids.indexOf(this) + 1 : 0; }
+	get propertyDepth() { let d = 0, p = this; while (p._parent) { d++; p = p._parent; } return d + (p._layer ? 1 : 0); }
+	propertyGroup(n) { let p = this; for (let i = 0; i < (n === undefined ? 1 : n); i++) p = p.parentProperty; return p; }
 	get name() { return this._name; }
 	set name(v) {
 		if (!this._parent || this._parent.propertyType !== PropertyType.INDEXED_GROUP) throw new Error('Unable to set name: property is not a member of an indexed group');
