@@ -316,6 +316,12 @@ function bin_layerType(l) {
 	return 'footage';
 }
 
+// shape e texto têm tudo de AVLayer (adjustment, 3D, blending, track matte...),
+// mas no ExtendScript "layer instanceof AVLayer" dá false para elas
+function bin_isAV(l) {
+	return l instanceof AVLayer || l instanceof ShapeLayer || l instanceof TextLayer;
+}
+
 var BIN_ATTRS = {
 	all: ['name', 'label', 'comment', 'enabled', 'shy', 'locked', 'startTime', 'stretch', 'inPoint', 'outPoint'],
 	av: ['threeDLayer', 'motionBlur', 'adjustmentLayer', 'guideLayer', 'collapseTransformation', 'effectsActive', 'preserveTransparency', 'timeRemapEnabled', 'audioEnabled'],
@@ -355,13 +361,13 @@ function bin_layer(l) {
 	var i;
 
 	var keys = BIN_ATTRS.all;
-	if (l instanceof AVLayer) keys = keys.concat(BIN_ATTRS.av);
+	if (bin_isAV(l)) keys = keys.concat(BIN_ATTRS.av);
 	if (type === 'text') keys = keys.concat(BIN_ATTRS.text);
 	for (i = 0; i < keys.length; i++) {
 		var v = bin_try(l, keys[i]);
 		if (v !== undefined && v !== null) d.attrs[keys[i]] = v;
 	}
-	if (l instanceof AVLayer) {
+	if (bin_isAV(l)) {
 		d.attrs.blendingMode = bin_enum('BlendingMode', l.blendingMode);
 		d.attrs.quality = bin_enum('LayerQuality', l.quality);
 		var sq = bin_try(l, 'samplingQuality');

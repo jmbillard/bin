@@ -360,6 +360,11 @@ class AVLayer extends Layer {
 		this._addGroup(IG('ADBE Effect Parade', 'Effects', EFFECTS));
 	}
 	setTrackMatte(layer, type) { this.trackMatteLayer = layer; this.trackMatteType = type; }
+	// como no AE de verdade: shape e texto têm tudo de AVLayer, mas "instanceof AVLayer" dá false
+	static [Symbol.hasInstance](o) {
+		if (this !== AVLayer) return Function.prototype[Symbol.hasInstance].call(this, o);
+		return !!o && Function.prototype[Symbol.hasInstance].call(AVLayer, o) && !(o instanceof ShapeLayer) && !(o instanceof TextLayer);
+	}
 }
 class ShapeLayer extends AVLayer {
 	constructor(comp) {

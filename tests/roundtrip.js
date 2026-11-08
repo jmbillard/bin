@@ -66,6 +66,27 @@ function run(ctx, code, label) {
 	return last;
 }
 
+// --------------------------------------------- shape e texto como AVLayer
+// no AE, "layer instanceof AVLayer" é false para shape e texto; os atributos de AVLayer precisam vir mesmo assim
+{
+	const { ctx, comp } = setup();
+	const adjShape = comp.layers.addShape();
+	adjShape.name = 'AJUSTE_shape';
+	adjShape.adjustmentLayer = true;
+	adjShape.guideLayer = true;
+	comp._layers.forEach((l) => { l.selected = ['TITULO_principal', 'CRÉDITO direção', 'AJUSTE_shape', 'MATTE'].indexOf(l.name) >= 0; });
+	const cap = call(ctx, 'bin_capture');
+	const by = (n) => cap.layers.find((L) => L.name === n);
+	const capOk = by('AJUSTE_shape').attrs.adjustmentLayer === true && by('CRÉDITO direção').attrs.threeDLayer === true &&
+		by('TITULO_principal').attrs.motionBlur === true && /ADD/.test(JSON.stringify(by('TITULO_principal').attrs.blendingMode)) && !!by('TITULO_principal').matte;
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'new', now: NOW });
+	run(ctx, code, 'avlayer-attrs');
+	const made = (n) => ctx.app.project.activeItem._layers.find((l) => l.name === n);
+	const madeOk = made('AJUSTE_shape').adjustmentLayer === true && made('AJUSTE_shape').guideLayer === true && made('CRÉDITO direção').threeDLayer === true &&
+		made('TITULO_principal').motionBlur === true && made('TITULO_principal').blendingMode === ctx.BlendingMode.ADD && !!made('TITULO_principal').trackMatteLayer;
+	report(capOk && madeOk, '[shape e texto] adjustment, guide, 3D, motion blur, blending e track matte capturados e recriados', 'captura ' + (capOk ? 'ok' : 'falhou') + ' · recriada ' + (madeOk ? 'ok' : 'falhou'));
+}
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();
