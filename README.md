@@ -225,7 +225,7 @@ sem nenhuma captura, o editor vira um **rascunho livre**: digite qualquer script
 
 para abrir um script pronto, **arraste o arquivo** (`.jsx`, `.js`, `.jsxinc` ou `.txt`) para qualquer lugar do painel, fora da área do binário nos utilitários, ou use o botão **abrir script** da barra do código (`Ctrl/⌘ + O`). com uma captura, o script aberto entra como código editado (e **descartar edições** volta ao gerado). arquivos em UTF-8 ou Windows-1252 abrem com os acentos certos.
 
-o script gerado é **autônomo**: roda em `File` > `Scripts` > `Run Script File...` em qualquer projeto, sem o painel. ele traz um pequeno objeto `bin` com funções auxiliares que aplicam cada propriedade separadamente. se uma propriedade não existir na versão do After Effects de destino, ela é pulada e listada no final, sem derrubar o resto.
+o script gerado é **autônomo**: roda em `File` > `Scripts` > `Run Script File...` em qualquer projeto, sem o painel. ele traz um pequeno objeto `bin` com funções auxiliares que aplicam cada propriedade separadamente. se uma propriedade não existir na versão do After Effects de destino, ela é pulada e listada no final, sem derrubar o resto. as **expressões entram por último**, quando todas as layers e comps já existem: nenhuma é avaliada antes das dependências (o que deixaria erros presos, como no expression selector). parâmetros de efeito que apontam para uma layer (3D Glasses, Displacement Map…) também são resolvidos no fim, pela layer recriada.
 
 ```js
 function criar_titulo_principal(comp) {

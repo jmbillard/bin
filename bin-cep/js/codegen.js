@@ -693,12 +693,41 @@
 				// roving só depois de todas as keys no lugar
 				for (i = 0; i < keys.length; i++) if (keys[i].rv) try { p.setRovingAtKey(p.nearestKeyIndex(keys[i].t), true); } catch (e) { }
 			},
+			// onde fica uma propriedade: a layer dona e os índices até ela. Referências a propriedades
+			// se perdem quando outras entram no mesmo grupo; a layer e o caminho continuam valendo
+			loc: function (p) {
+				var path = [], q = p, d = p.propertyDepth;
+				for (var i = 0; i < d; i++) { path.unshift(q.propertyIndex); q = q.parentProperty; }
+				return { layer: p.propertyGroup(d), path: path, mn: p.matchName };
+			},
+			at: function (r) {
+				var p = r.layer;
+				for (var k = 0; k < r.path.length; k++) p = p.property(r.path[k]);
+				if (!p || p.matchName !== r.mn) throw new Error('a propriedade mudou de lugar');
+				return p;
+			},
+			// as expressões entram só no fim, com todas as layers e comps prontas: assim nenhuma é avaliada
+			// antes de as dependências existirem (o expression selector, por exemplo, não se recupera do erro)
+			pend: [],
 			expr: function (p, x, on) {
 				if (!p) return;
+				try { bin.pend.push({ at: bin.loc(p), x: x, on: on }); return; } catch (e) { }
 				try {
 					p.expression = x;
 					if (on === false) p.expressionEnabled = false;
-				} catch (e) { bin.err(bin.path(p) + ' (expressão)', e); }
+				} catch (e2) { bin.err(bin.path(p) + ' (expressão)', e2); }
+			},
+			exprs: function () {
+				var list = bin.pend;
+				bin.pend = [];
+				for (var i = 0; i < list.length; i++) {
+					var e = list[i], p = null;
+					try {
+						p = bin.at(e.at);
+						p.expression = e.x;
+						if (e.on === false) p.expressionEnabled = false;
+					} catch (err) { bin.err((p ? bin.path(p) : e.at.layer.name + ' › ' + e.at.mn) + ' (expressão)', err); }
+				}
 			},
 			// markers de layer ou de comp
 			marker: function (o, t, m) {
@@ -747,22 +776,19 @@
 			ref: function (p, info) {
 				if (!p) return;
 				try {
-					var path = [], q = p, d = p.propertyDepth;
-					for (var i = 0; i < d; i++) { path.unshift(q.propertyIndex); q = q.parentProperty; }
-					bin.refs.push({ layer: p.propertyGroup(d), path: path, info: info });
+					var r = bin.loc(p);
+					r.info = info;
+					bin.refs.push(r);
 				} catch (e) { bin.err(bin.path(p), e); }
 			},
 			links: function (comp, made) {
 				var rest = [];
 				for (var i = 0; i < bin.refs.length; i++) {
-					var r = bin.refs[i], p = r.layer;
+					var r = bin.refs[i];
 					if (r.layer.containingComp.id !== comp.id) { rest.push(r); continue; }
 					var t = made[r.info.index] && made[r.info.index].name === r.info.name ? made[r.info.index] : bin.find(comp, r.info.name, made);
 					if (!t) continue;
-					try {
-						for (var k = 0; k < r.path.length; k++) p = p.property(r.path[k]);
-						p.setValue(t.index);
-					} catch (e) { bin.err(r.layer.name + ' > ' + r.info.name, e); }
+					try { bin.at(r).setValue(t.index); } catch (e) { bin.err(r.layer.name + ' > ' + r.info.name, e); }
 				}
 				bin.refs = rest;
 			},
@@ -783,6 +809,7 @@
 			// seleciona o que foi criado e deixa o resumo para o painel
 			done: function (comp, made, comps) {
 				var names = [], list = [], k, i;
+				bin.exprs();
 				try {
 					if (made) {
 						for (i = 1; i <= comp.numLayers; i++) comp.layer(i).selected = false;

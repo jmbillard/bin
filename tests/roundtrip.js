@@ -133,6 +133,28 @@ function run(ctx, code, label) {
 	report(ok, '[3D Glasses · ' + mode + ' · ' + target + '] Left/Right View apontam para as layers recriadas', 'left ' + (left && left.name) + ' #' + (left && left.index) + ' · right ' + (right && right.name) + ' #' + (right && right.index) + ' · erros ' + last.errors.length);
 });
 
+// ------------------------------- expressões só no fim, com todas as layers e comps prontas
+// (aplicadas antes, uma expressão que lê outra layer dá erro, e o expression selector não se recupera)
+['layers', 'comp'].forEach((mode) => {
+	const { ctx, comp } = setup();
+	const proto = Object.getPrototypeOf(comp.layer(1).property('ADBE Transform Group').property('ADBE Opacity'));
+	const desc = Object.getOwnPropertyDescriptor(proto, 'expression');
+	const seen = [];
+	Object.defineProperty(proto, 'expression', {
+		configurable: true, get: desc.get,
+		set(v) { const c = this.propertyGroup(this.propertyDepth).containingComp; seen.push({ comp: c, layers: c.numLayers, items: ctx.app.project.numItems }); desc.set.call(this, v); }
+	});
+	comp._layers.forEach((l) => { l.selected = true; });
+	const cap = call(ctx, mode === 'comp' ? 'bin_captureComp' : 'bin_capture');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'new', now: NOW });
+	seen.length = 0;
+	const last = run(ctx, code, 'expr-no-fim-' + mode);
+	Object.defineProperty(proto, 'expression', desc);
+	const items = ctx.app.project.numItems;
+	const ok = seen.length > 0 && !last.errors.length && seen.every((x) => x.items === items && x.layers === x.comp.numLayers);
+	report(ok, '[expressões no fim · ' + mode + '] aplicadas com todas as layers e comps já criadas', seen.length + ' expressões · ' + seen.map((x) => x.layers + '/' + x.items).join(' '));
+});
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();
