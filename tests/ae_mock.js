@@ -387,6 +387,12 @@ class ShapeLayer extends AVLayer {
 class TextLayer extends AVLayer {
 	constructor(comp, box) {
 		super(comp, 'Text');
+		// como no AE: texto é sempre rasterizado continuamente; o switch não pode ser alterado
+		Object.defineProperty(this, 'collapseTransformation', {
+			get: () => true,
+			set: () => { throw new Error('After Effects error: Can not set collapseTransformation on Layer "' + this.name + '". Check layer.canSetCollapseTransformation before setting.'); }
+		});
+		this.canSetCollapseTransformation = false;
 		const tp = build(G('ADBE Text Properties', 'Text', [
 			P('ADBE Text Document', 'Source Text', VT.TEXT_DOCUMENT, null),
 			IG('ADBE Text Animators', 'Animators', ANIMATORS)

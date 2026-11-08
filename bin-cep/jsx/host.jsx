@@ -411,6 +411,12 @@ function bin_layer(l) {
 		}
 	}
 	d.attrs.autoOrient = bin_enum('AutoOrientType', l.autoOrient);
+
+	// atributos que o AE não deixa mudar nesta layer (ex.: texto é sempre rasterizado continuamente,
+	// shape e texto não têm time remap): o valor é fixo, não entra no script
+	for (var ak in d.attrs) {
+		if (d.attrs.hasOwnProperty(ak) && bin_try(l, 'canSet' + ak.charAt(0).toUpperCase() + ak.slice(1)) === false) delete d.attrs[ak];
+	}
 	if (type === 'adjustment') delete d.attrs.adjustmentLayer;
 
 	// origem (precomp e footage: o painel decide se recria a comp ou procura o item pelo nome)

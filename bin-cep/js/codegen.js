@@ -631,7 +631,15 @@
 			},
 			attrs: function (o, a) {
 				if (!o) return;
-				for (var k in a) if (a.hasOwnProperty(k)) try { o[k] = a[k]; } catch (e) { bin.err((o.name || '') + '.' + k, e); }
+				for (var k in a) {
+					if (!a.hasOwnProperty(k)) continue;
+					try {
+						// já está assim, ou o AE não deixa mudar (canSetCollapseTransformation...): não mexe
+						if (typeof a[k] !== 'object' && o[k] === a[k]) continue;
+						if (o['canSet' + k.charAt(0).toUpperCase() + k.slice(1)] === false) continue;
+					} catch (e0) { }
+					try { o[k] = a[k]; } catch (e) { bin.err((o.name || '') + '.' + k, e); }
+				}
 			},
 			shape: function (o) {
 				var s = new Shape();
