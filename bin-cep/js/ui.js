@@ -83,6 +83,45 @@
 		return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	};
 
+	// ------------------------------------------------- centro óptico -----
+	// Pílulas com texto em caixa alta (ou algarismos) têm a tinta acima do centro da linha, porque a
+	// fonte reserva espaço para descendentes. Mede a fonte REAL do painel (Segoe UI no Windows, a do
+	// sistema no Mac) e grava o deslocamento em variáveis CSS (--cap-pt/--cap-pb, --num-pt/--num-pb).
+	// Sem as medidas do canvas (Chromium do CEP 9/10), o CSS usa o valor fixo de reserva.
+	UI.opticalCenter = function () {
+		try {
+			var ctx = document.createElement('canvas').getContext('2d');
+			var family = global.getComputedStyle(document.body).fontFamily;
+			// deslocamento (em) para centralizar a tinta de 'text' numa pílula de 'height' px:
+			// a linha de base vem do layout real (um marcador vazio alinhado pela base),
+			// a altura das letras vem do canvas
+			var shift = function (weight, size, height, text) {
+				ctx.font = weight + ' 200px ' + family;
+				var m = ctx.measureText(text);
+				if (typeof m.actualBoundingBoxAscent !== 'number') return null;
+				var probe = document.createElement('div');
+				probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;display:flex;align-items:center;height:' + height + 'px;' +
+					'font-family:' + family.replace(/"/g, "'") + ';font-weight:' + weight + ';font-size:' + size + 'px;line-height:1;letter-spacing:.5px';
+				probe.innerHTML = '<span>' + text + '<i style="display:inline-block;width:0;height:0;vertical-align:baseline"></i></span>';
+				document.body.appendChild(probe);
+				var baseline = probe.querySelector('i').getBoundingClientRect().top - probe.getBoundingClientRect().top;
+				probe.remove();
+				var k = size / 200;
+				var ink = baseline - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) * k / 2;
+				return (height / 2 - ink) / size;
+			};
+			var root = document.documentElement.style;
+			var apply = function (name, em) {
+				if (em === null || !isFinite(em) || Math.abs(em) > 0.5) return;
+				var pad = Math.abs(em * 2).toFixed(3) + 'em'; // padding num lado só move o centro pela metade
+				root.setProperty('--' + name + '-pt', em >= 0 ? pad : '0px');
+				root.setProperty('--' + name + '-pb', em >= 0 ? '0px' : pad);
+			};
+			apply('cap', shift(700, 9.5, 22, 'SHAPE COMP'));
+			apply('num', shift(600, 10, 17, '0123456789'));
+		} catch (e) { }
+	};
+
 	// ------------------------------------------------------------ dicas ----
 	// Mesmo tooltip do ABRIDOR. O texto vem do title (ou data-tip):
 	//   1ª linha      → título (em destaque quando há mais linhas)

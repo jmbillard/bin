@@ -968,6 +968,8 @@
 		$('logo').innerHTML = UI.logo;
 		UI.hydrateIcons();
 		UI.tooltips();
+		UI.opticalCenter();
+		if (document.fonts && document.fonts.ready) document.fonts.ready.then(UI.opticalCenter);
 
 		applyTheme(false);
 		$('themeBtn').onclick = function () {

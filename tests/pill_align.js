@@ -63,5 +63,17 @@ const comp = scene(ctx);
 		console.log(`${label.padEnd(9)} acima ${(above / 4).toFixed(2)}px · abaixo ${(below / 4).toFixed(2)}px · desvio ${off >= 0 ? '+' : ''}${off.toFixed(2)}px`);
 	}
 	console.log('maior desvio:', worst.toFixed(2) + 'px');
+
+	// chip: a pílula com a mesma folga em cima, embaixo e à esquerda, igual à diferença dos raios (curvas concêntricas)
+	const g = await page.evaluate(() => {
+		const chip = document.getElementById('chip'), pill = document.getElementById('chipType');
+		const c = chip.getBoundingClientRect(), t = pill.getBoundingClientRect();
+		const R = Math.min(parseFloat(getComputedStyle(chip).borderRadius), c.height / 2);
+		const r = Math.min(parseFloat(getComputedStyle(pill).borderRadius), t.height / 2);
+		return { top: t.top - c.top, left: t.left - c.left, bottom: c.bottom - t.bottom, d: R - r };
+	});
+	const conc = Math.abs(g.top - g.left) < 0.5 && Math.abs(g.bottom - g.left) < 0.5 && Math.abs(g.d - g.left) < 0.5;
+	console.log((conc ? 'ok    ' : 'FALHA ') + 'chip concêntrico: folgas ' + g.top + ' / ' + g.left + ' / ' + g.bottom + ' px, R − r = ' + g.d + ' px');
+	if (!conc) process.exitCode = 1;
 	await browser.close();
 })();

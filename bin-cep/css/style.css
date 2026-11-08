@@ -171,7 +171,9 @@ body:not(.is-empty) .logo-name { display: none; }
 	display: flex;
 	align-items: center;
 	gap: 9px;
-	padding: 5px 8px 5px 5px;
+	/* curvas concêntricas: texto com 30 px e pílula com 22 px deixam 4 + 4 px acima da pílula;
+	   a esquerda repete os 8 px (raio do chip 20 = raio da pílula 11 + 1 de borda + 8) */
+	padding: 4px 10px 4px 8px;
 	border: 1px solid var(--line);
 	background: var(--surface);
 	border-radius: 999px;
@@ -187,15 +189,15 @@ body.is-empty .chip { display: none; }
 	flex: none;
 	min-width: 46px;
 	height: 22px;
-	padding: 0 8px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	font-size: 9.5px;
 	font-weight: 700;
 	line-height: 1;
-	/* caixa alta não tem descendentes: desce o texto para o centro óptico */
-	padding-top: .2em;
+	/* centro óptico da caixa alta, medido na fonte real pelo painel (UI.opticalCenter);
+	   +.5px à esquerda compensa o espaçamento que sobra depois da última letra */
+	padding: var(--cap-pt, .2em) 8px var(--cap-pb, 0) 8.5px;
 	letter-spacing: .5px;
 	border-radius: 999px;
 	color: #fff;
@@ -209,7 +211,7 @@ body.is-empty .chip { display: none; }
 .ltype.t-precomp, .ltype.t-footage { background: #2f7bf0; }
 .ltype.t-multi, .ltype.t-comp { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 
-.chip-text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.chip-text { display: flex; flex-direction: column; justify-content: center; height: 30px; min-width: 0; flex: 1; line-height: 1.2; }
 .chip-text b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip-text small { color: var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip-swap { color: var(--muted); }
@@ -264,13 +266,12 @@ body.is-empty .chip { display: none; }
 .pill {
 	min-width: 17px;
 	height: 17px;
-	padding: 0 5px;
 	border-radius: 9px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	font-weight: 600; font-size: 10px; line-height: 1;
-	padding-top: .1em; /* algarismos têm a altura das maiúsculas */
+	padding: var(--num-pt, .1em) 5px var(--num-pb, 0); /* algarismos: centro óptico medido como na caixa alta */
 	background: var(--surface-2);
 	color: var(--muted);
 	font-variant-numeric: tabular-nums;
