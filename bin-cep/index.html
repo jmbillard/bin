@@ -10,10 +10,10 @@
 	<header class="top">
 		<span class="logo" id="logo" title="BIN 3.0&#10;engenharia reversa de layers"></span>
 		<span class="logo-name">BIN</span>
-		<button id="chip" class="chip" data-kbd="mod+L" title="capturar de novo&#10;lê de novo a seleção (ou a comp inteira) no After Effects">
+		<button id="chip" class="chip" data-kbd="mod+L" title="atualizar a captura&#10;lê de novo a seleção (ou a comp inteira) no After Effects">
 			<span id="chipType" class="ltype">SHAPE</span>
 			<span class="chip-text"><b id="chipName"></b><small id="chipMeta"></small></span>
-			<i data-icon="swap" class="chip-swap"></i>
+			<i data-icon="refresh" class="chip-swap"></i>
 		</button>
 		<button id="helpBtn" class="icon-btn" title="ajuda&#10;abre o guia do BIN no navegador"><i data-icon="help"></i></button>
 		<button id="themeBtn" class="icon-btn theme-btn" data-mode="auto" title="tema">
@@ -33,10 +33,10 @@
 		<section id="tab-props" class="panel active">
 			<div id="empty" class="empty">
 				<div class="stack"><span></span><span></span><span></span></div>
-				<b>selecione uma layer na comp</b>
+				<b id="emptyTitle">selecione uma layer na comp</b>
 				<small>o BIN lê a layer selecionada (ou a comp inteira) e gera o script que recria ela</small>
 				<div class="empty-acts">
-					<button class="btn" id="captureBtn" title="capturar seleção&#10;as layers selecionadas na comp ativa"><i data-icon="target"></i>capturar seleção</button>
+					<button class="btn" id="captureBtn" title="capturar seleção&#10;as layers selecionadas na comp ativa"><i data-icon="target"></i><span id="captureTxt">capturar seleção</span></button>
 					<button class="btn ghost" id="captureCompBtn" title="capturar comp inteira&#10;todas as layers da comp ativa, com as precomps"><i data-icon="monitor"></i>comp inteira</button>
 				</div>
 				<button class="link-btn" id="scriptBtn" title="aba código&#10;digite e execute qualquer script do After Effects; arrastar um .jsx para o painel também abre no editor">ou digite um script na aba código</button>

@@ -185,6 +185,11 @@ body:not(.is-empty) .logo-name { display: none; }
 
 .chip:hover { border-color: var(--line-2); background: var(--surface-2); }
 .chip:hover .chip-swap { transform: rotate(180deg); color: var(--txt); }
+/* a seleção no AE mudou depois da captura: o aviso fica no próprio chip (nada se mexe na tela) */
+.chip.stale { border-color: var(--accent); background: var(--accent-soft); animation: stale-pulse 2.4s var(--ease) infinite; }
+.chip.stale .chip-swap { color: var(--accent); }
+.chip.stale .chip-text small { color: var(--accent); }
+@keyframes stale-pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 3px var(--accent-soft); } }
 body.is-empty .chip { display: none; }
 
 .ltype {
@@ -216,7 +221,8 @@ body.is-empty .chip { display: none; }
 .chip-text { display: flex; flex-direction: column; justify-content: center; height: 30px; min-width: 0; flex: 1; line-height: 1.2; }
 .chip-text b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip-text small { color: var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip-swap { color: var(--muted); }
+.chip-swap { color: var(--muted); transition: transform .45s var(--ease), color .2s; }
+
 
 /* ------------------------------------------------------------------ abas */
 .tabs {

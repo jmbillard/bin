@@ -104,7 +104,7 @@ a captura é **somente leitura**: nada no projeto é alterado e o histórico de 
     <td width="300"><img src="docs/img/02-propriedades.png" width="280"></td>
     <td>
 
-1. **chip** → tipo da layer (`SHAPE`, `TEXT`, `SOLID`, `NULL`, `ADJ`, `CAM`, `LUZ`, `COMP`, `MÍDIA`), comp de origem e contagens. clique para capturar de novo (`Ctrl/⌘ + L`).
+1. **chip** → tipo da layer (`SHAPE`, `TEXT`, `SOLID`, `NULL`, `ADJ`, `CAM`, `LUZ`, `COMP`, `MÍDIA`), comp de origem e contagens. clique (ou `Ctrl/⌘ + L`) para atualizar a captura. o painel acompanha a seleção no After Effects: quando ela muda (ou, no modo comp inteira, quando outra comp fica ativa), o chip fica destacado e mostra **atualizar para “…”**, sem recapturar sozinho e sem mexer no resto da tela. na tela inicial, o botão já diz o que vai ser capturado.
 2. **modo** → `layers selecionadas` ou `comp inteira`. trocar captura de novo.
 3. **filtrar** → pelo nome da propriedade, do grupo ou da layer (`Ctrl/⌘ + F`).
 4. **keyframes e expressões** → ligam e desligam no script inteiro. sem keyframes, cada propriedade recebe o valor do primeiro keyframe.
@@ -300,7 +300,7 @@ com o painel em foco:
 | atalho | o que faz |
 |---|---|
 | `1` `2` `3` | abas propriedades, código e utilitários |
-| `Ctrl/⌘ + L` | capturar de novo |
+| `Ctrl/⌘ + L` | atualizar a captura (seleção ou comp ativa de agora) |
 | `Ctrl/⌘ + F` | filtrar propriedades |
 | `Ctrl/⌘ + Enter` | recriar (ou executar o script da aba código) |
 | `Tab` (no editor) | insere tabulação |
@@ -398,6 +398,7 @@ tests/
   tooltips.js         dicas (conteúdo, posição, modo aquecido) e atalhos de teclado
   code_editor.js      aba código como editor: script livre, código editado, erros e atalhos
   script_drop.js      abrir script no editor: arrastar o arquivo ou usar o botão abrir
+  selection_watch.js  o painel acompanha a seleção do AE e avisa no chip quando a captura fica para trás
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado

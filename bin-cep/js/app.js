@@ -268,6 +268,7 @@
 			$('propsView').classList.remove('hidden');
 			resetRun();
 			render();
+			markSeen(true);
 			if (!quiet) {
 				var m = state.m, msg;
 				if (m.mode === 'comp') {
@@ -279,6 +280,70 @@
 		}).catch(function (e) {
 			if (!quiet) UI.toast(esc(e.message), 'error');
 		});
+	}
+
+	// ------------------------------------------------- seleção no AE ------
+	// o painel pergunta a cada segundo o que está selecionado; se não bate com a captura, avisa (sem recapturar
+	// sozinho: a captura de uma comp grande demora e as marcações feitas no painel se perderiam)
+	var watch = { busy: false, sel: null, cap: '', ack: '' };
+
+	function selKey(sel, mode) {
+		if (!sel || !sel.comp) return '';
+		if (mode === 'comp') return 'comp:' + sel.comp.id;
+		return sel.comp.id + ':' + sel.layers.map(function (l) { return l.index + '.' + l.name; }).join('|');
+	}
+
+	function pollSelection() {
+		if (watch.busy || document.hidden || $('runBtn').classList.contains('working')) return Promise.resolve(watch.sel);
+		watch.busy = true;
+		return BIN.callHostJSON('bin_selection').then(function (sel) {
+			watch.busy = false;
+			watch.sel = sel;
+			renderSelection();
+			return sel;
+		}, function () { watch.busy = false; return null; });
+	}
+
+	// o que acabou de ser capturado (ou criado pelo script) vira a referência
+	function markSeen(asCapture) {
+		watch.busy = false;
+		return pollSelection().then(function (sel) {
+			if (!sel) return;
+			var key = selKey(sel, state.m ? state.m.mode : S.mode);
+			if (asCapture) { watch.cap = key; watch.ack = ''; } else watch.ack = key;
+			renderSelection();
+		});
+	}
+
+	function selLabel(sel) {
+		var n = sel.layers.length;
+		return n === 1 ? '“' + esc(sel.layers[0].name) + '”' : n + ' layers';
+	}
+
+	function renderSelection() {
+		var sel = watch.sel;
+		if (!state.m) {
+			// tela inicial: mostra o que vai ser capturado
+			var n = sel && sel.comp ? sel.layers.length : 0;
+			$('emptyTitle').textContent = !sel || !sel.comp ? 'abra uma comp e selecione uma layer' : n ? (n === 1 ? '1 layer selecionada' : n + ' layers selecionadas') + ' em “' + sel.comp.name + '”' : 'selecione uma layer em “' + sel.comp.name + '”';
+			$('captureTxt').textContent = n === 1 ? 'capturar “' + sel.layers[0].name + '”' : n > 1 ? 'capturar ' + n + ' layers' : 'capturar seleção';
+			$('captureBtn').disabled = !n;
+			$('captureCompBtn').disabled = !(sel && sel.comp);
+			return;
+		}
+		var mode = state.m.mode, stale = false, txt = '', tip = '';
+		if (sel && sel.comp) {
+			var key = selKey(sel, mode);
+			if (mode === 'comp') stale = key !== watch.cap && key !== watch.ack;
+			else stale = sel.layers.length > 0 && key !== watch.cap && key !== watch.ack;
+			txt = 'atualizar para ' + (mode === 'comp' ? 'a comp “' + esc(sel.comp.name) + '”' : selLabel(sel));
+			var tip = mode === 'comp' ? 'a comp ativa agora é “' + sel.comp.name + '”'
+				: 'selecionado agora em “' + sel.comp.name + '”:\n' + sel.layers.slice(0, 8).map(function (l) { return '• ' + l.name; }).join('\n') + (sel.layers.length > 8 ? '\n…' : '');
+		}
+		var chip = $('chip');
+		chip.classList.toggle('stale', stale);
+		$('chipMeta').innerHTML = stale ? txt : esc(chip.dataset.meta || '');
+		UI.setTip(chip, stale ? 'a captura ficou para trás\n' + tip + '\nclique para capturar de novo' : 'atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects');
 	}
 
 	function setMode(mode) {
@@ -320,6 +385,7 @@
 		}
 		if (st.keys) meta.push(plural(st.keys, 'key', 'keys'));
 		if (st.expr) meta.push(st.expr + ' expr');
+		$('chip').dataset.meta = meta.join(' · ');
 		$('chipMeta').textContent = meta.join(' · ');
 	}
 
@@ -882,6 +948,7 @@
 		p.then(function (r) {
 			b.classList.remove('working');
 			b.classList.add('done');
+			markSeen(false); // o script seleciona o que criou: não é motivo para avisar
 			b.querySelector('.ico').outerHTML = UI.icon('check');
 			var errs = r.errors || [];
 			if (free && !(r.layers || r.comps)) $('runTxt').textContent = 'script executado';
@@ -1194,6 +1261,8 @@
 		setTimeout(placeTabInk, 0);
 
 		$('chip').onclick = function () { capture(false); };
+		setInterval(pollSelection, 1000);
+		document.addEventListener('visibilitychange', function () { if (!document.hidden) pollSelection(); });
 		$('captureBtn').onclick = function () { setMode('layers'); capture(false); };
 		$('captureCompBtn').onclick = function () { setMode('comp'); capture(false); };
 		$('scriptBtn').onclick = function () { showTab('code'); $('codeEdit').focus(); };
@@ -1209,7 +1278,7 @@
 		bindTools();
 		renderCode();
 		if (S.tab && S.tab !== 'props' && TABS.indexOf(S.tab) >= 0) showTab(S.tab);
-		capture(true);
+		capture(true).then(function () { if (!state.m) pollSelection(); });
 	}
 
 	BIN.app = { capture: capture, showTab: showTab, state: state, mapError: mapError, collapse: collapse, expand: expand };

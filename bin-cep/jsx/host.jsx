@@ -504,6 +504,20 @@ function bin_capture() {
 	}
 }
 
+// o que está selecionado agora (leve: o painel pergunta a cada segundo para saber se a captura ficou para trás)
+function bin_selection() {
+	try {
+		var comp = bin_activeComp();
+		if (!comp) return bin_json({ comp: null, layers: [] });
+		var sel = comp.selectedLayers, out = [];
+		for (var i = 0; i < sel.length; i++) out.push({ index: sel[i].index, name: sel[i].name, type: bin_layerType(sel[i]) });
+		out.sort(function (a, b) { return a.index - b.index; });
+		return bin_json({ comp: { id: comp.id, name: comp.name, numLayers: comp.numLayers }, layers: out });
+	} catch (e) {
+		return bin_error(e);
+	}
+}
+
 // a comp ativa inteira, com todas as precomps usadas dentro dela
 function bin_captureComp() {
 	try {
