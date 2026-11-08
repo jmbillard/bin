@@ -221,9 +221,29 @@ function bin_modified(p) {
 	return false;
 }
 
+// o grupo de propriedades de um animator de texto lista todas as ~30 possíveis, até as que não foram adicionadas.
+// presente = o grupo não aceita adicioná-la de novo (quando esse sinal funciona) ou ela foi mexida (valor, keys, expressão)
+function bin_animPresent(group) {
+	var n = group.numProperties, can = [], any = false, all = true, i;
+	for (i = 1; i <= n; i++) {
+		var c;
+		try { c = group.canAddProperty(group.property(i).matchName); } catch (e) { c = null; }
+		can.push(c);
+		if (c === true) any = true;
+		if (c !== true) all = false;
+	}
+	// se aceita adicionar todas (ou nenhuma), o sinal não diz nada: fica só o "foi mexida"
+	var useCan = any && !all;
+	var out = [];
+	for (i = 1; i <= n; i++) out.push((useCan && can[i - 1] === false) || bin_modified(group.property(i)));
+	return out;
+}
+
 function bin_walk(group, ctx, path) {
 	var out = [];
+	var present = group.matchName === 'ADBE Text Animator Properties' ? bin_animPresent(group) : null;
 	for (var i = 1; i <= group.numProperties; i++) {
+		if (present && !present[i - 1]) continue;
 		var node = null;
 		try { node = bin_node(group.property(i), group, i, ctx, path); } catch (e) {
 			ctx.warnings.push('não foi possível ler "' + path + ' › ' + bin_try(group.property(i), 'name') + '": ' + e.message);

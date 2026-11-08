@@ -87,6 +87,29 @@ function run(ctx, code, label) {
 	report(capOk && madeOk, '[shape e texto] adjustment, guide, 3D, motion blur, blending e track matte capturados e recriados', 'captura ' + (capOk ? 'ok' : 'falhou') + ' · recriada ' + (madeOk ? 'ok' : 'falhou'));
 }
 
+// -------------------------------------------- animator de texto: só o que foi adicionado
+// no AE o grupo de propriedades do animator lista todas as ~30 possíveis; só as adicionadas podem ser recriadas
+{
+	const { ctx, comp } = setup();
+	const t = comp.layers.addText();
+	t.name = 'txt_LOSANGO';
+	const an = t.property('ADBE Text Properties').property('ADBE Text Animators').addProperty('ADBE Text Animator');
+	an.name = 'pos X';
+	const pos = an.property('ADBE Text Animator Properties').addProperty('ADBE Text Position 3D');
+	pos.setValue([-2650, 0, 0]);
+	pos.expression = '[-thisComp.width, 0]';
+	comp._layers.forEach((l) => { l.selected = l === t; });
+	const cap = call(ctx, 'bin_capture');
+	const props = (layer) => layer.property('ADBE Text Properties').property('ADBE Text Animators').property(1).property('ADBE Text Animator Properties');
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'new', now: NOW });
+	run(ctx, code, 'animator-props');
+	const made = ctx.app.project.activeItem._layers.find((l) => l.name === 'txt_LOSANGO');
+	const shown = props(made)._kids.filter((k) => !k._hidden);
+	const p2 = props(made).property('ADBE Text Position 3D');
+	report(shown.length === 1 && shown[0].matchName === 'ADBE Text Position 3D' && p2.value[0] === -2650 && p2.expression === '[-thisComp.width, 0]',
+		'[animator] recria só as propriedades adicionadas (com valor e expressão)', shown.map((k) => k.name).join(', '));
+}
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();

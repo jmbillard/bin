@@ -288,6 +288,9 @@ class Group extends PropertyBase {
 		super();
 		this._parent = parent; this.matchName = spec.mn; this._name = spec.name; this._spec = spec; this._enabled = true;
 		this._kids = (spec.kids || []).map((k) => build(k, this));
+		// como no AE: o grupo de propriedades de um animator lista todas as propriedades possíveis,
+		// mesmo as que não foram adicionadas (elas ficam escondidas na timeline)
+		if (spec.addableNamed) Object.keys(spec.addableNamed).forEach((mn) => { const p = build(spec.addableNamed[mn](), this); p._hidden = true; this._kids.push(p); });
 		if (spec.mask) Object.assign(this, { maskMode: ENUMS.MaskMode.ADD, inverted: false, rotoBezier: false, maskMotionBlur: ENUMS.MaskMotionBlur.SAME_AS_LAYER, maskFeatherFalloff: ENUMS.MaskFeatherFalloff.FFO_SMOOTH, color: [0.6, 0.6, 1], locked: false });
 	}
 	get propertyType() { return this._spec.kind === 'indexed' ? PropertyType.INDEXED_GROUP : PropertyType.NAMED_GROUP; }
@@ -304,11 +307,12 @@ class Group extends PropertyBase {
 	canAddProperty(mn) {
 		const a = this._addable();
 		if (!a || !a[mn]) return false;
-		if (this._spec.addableNamed) return !this.property(mn);
+		if (this._spec.addableNamed) return !!(this.property(mn) && this.property(mn)._hidden);
 		return true;
 	}
 	addProperty(mn) {
 		if (!this.canAddProperty(mn)) throw new Error('Unable to call "addProperty": can not add a property with this name: ' + mn);
+		if (this._spec.addableNamed) { const h = this.property(mn); h._hidden = false; return h; }
 		const spec = this._addable()[mn]();
 		const p = build(spec, this);
 		if (this._spec.kind === 'indexed') {
