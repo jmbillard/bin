@@ -38,7 +38,7 @@
 		tab: 'props',
 		code: '',
 		warnings: [],
-		ed: { edited: false, scratch: false },   // editor da aba código
+		ed: { edited: false, scratch: false, file: null },   // editor da aba código
 		tools: { expr: '', bin: '', binName: 'arquivos_bin.jsxinc' }
 	};
 	BIN.state = state;
@@ -261,6 +261,7 @@
 			state.open = {};
 			state.focus = null;
 			state.ed.edited = false;
+			state.ed.file = null;
 			indexNodes();
 			document.body.classList.remove('is-empty');
 			$('empty').classList.add('hidden');
@@ -766,6 +767,7 @@
 
 	function fileName() {
 		var m = state.m;
+		if (state.ed.file && freeMode()) return state.ed.file.replace(/\.(js|jsxinc|txt)$/i, '') + (/\.jsx$/i.test(state.ed.file) ? '' : '.jsx');
 		if (!m) return 'script.jsx';
 		if (m.mode === 'comp') return 'criar_comp_' + CG.snake(m.rootComp.name) + '.jsx';
 		var L = CG.layersIn(m.rootComp, state.ex);
@@ -903,6 +905,52 @@
 				actions: err.line && free ? [{ label: 'ir para a linha ' + err.line, icon: 'code', run: function () { selectLine(err.line); } }] : []
 			});
 		});
+	}
+
+	// ------------------------------------------------- abrir script ------
+	var SCRIPT_TYPES = ['jsx', 'js', 'jsxinc', 'txt'];
+	var SCRIPT_RE = /\.(jsx|js|jsxinc|txt)$/i;
+	var MAX_SCRIPT = 2 * 1024 * 1024;
+
+	// UTF-8 quando for válido; senão Windows-1252 (scripts antigos salvos sem UTF-8)
+	function decodeText(bytes) {
+		try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+		catch (e) { return new TextDecoder('windows-1252').decode(bytes); }
+	}
+
+	function readScript(f) {
+		if (f.path) return Promise.resolve().then(function () { return { name: BIN.fs.basename(f.path), bytes: BIN.fs.readBinary(f.path) }; });
+		return f.file.arrayBuffer().then(function (buf) { return { name: f.file.name, bytes: new Uint8Array(buf) }; });
+	}
+
+	// abre o primeiro script da lista no editor (com captura, vira código editado)
+	function openScripts(list) {
+		var name = function (f) { return f.path ? BIN.fs.basename(f.path) : f.file.name; };
+		var scripts = list.filter(function (f) { return SCRIPT_RE.test(name(f)); });
+		if (!scripts.length) {
+			var n = list.length ? name(list[0]) : '';
+			UI.toast(/\.jsxbin$/i.test(n) ? '.jsxbin é compilado e não dá para editar: use o .jsx original.' : 'só scripts abrem no editor: .jsx, .js, .jsxinc ou .txt.' + (state.m || state.tab !== 'tools' ? ' Para virar binário, use os utilitários.' : ''), 'warn', { life: 4200 });
+			return;
+		}
+		readScript(scripts[0]).then(function (r) {
+			if (r.bytes.length > MAX_SCRIPT) throw new Error('“' + r.name + '” tem mais de 2 MB: grande demais para o editor.');
+			var text = decodeText(r.bytes).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+			if (state.m) state.ed.edited = true;
+			else state.ed.scratch = true;
+			state.ed.file = r.name;
+			resetRun();
+			showTab('code');
+			setEditor(text);
+			if (!state.m) saveScratch();
+			renderCode();
+			var t = $('codeEdit');
+			t.focus();
+			t.setSelectionRange(0, 0);
+			t.scrollTop = 0;
+			syncScroll();
+			var extra = scripts.length > 1 ? ' (só o primeiro de ' + scripts.length + ' scripts)' : '';
+			UI.toast('<b>' + esc(r.name) + '</b> aberto no editor' + extra + '.', 'info', { life: 2600 });
+		}).catch(function (e) { UI.toast(esc(e.message), 'error', { sticky: true }); });
 	}
 
 	// ----------------------------------------------------- utilitários -----
@@ -1046,7 +1094,12 @@
 				ed.dispatchEvent(new Event('input'));
 			}
 		});
-		$('discardBtn').onclick = function () { state.ed.edited = false; renderCode(); renderSummary(); };
+		$('discardBtn').onclick = function () { state.ed.edited = false; state.ed.file = null; renderCode(); renderSummary(); };
+		$('openBtn').onclick = function () {
+			BIN.dialog.openFiles('abrir script', SCRIPT_TYPES, true).then(function (paths) {
+				if (paths && paths.length) openScripts([{ path: paths[0] }]);
+			});
+		};
 		$('packBtn').onclick = function () { if (state.m) exportPack(); };
 	}
 
@@ -1066,9 +1119,29 @@
 			var files = Array.prototype.slice.call(e.dataTransfer.files || []);
 			convertFiles(files.map(function (f) { return f.path && BIN.hasFS ? { path: f.path } : { file: f }; }));
 		});
-		// arquivo solto fora da área não deve abrir no painel
+		// fora da área do binário, um script solto abre no editor (e nada abre no lugar do painel)
+		var depth = 0;
+		var acceptsScript = function (e) {
+			var dt = e.dataTransfer;
+			return dt && Array.prototype.indexOf.call(dt.types || [], 'Files') >= 0 && state.tab !== 'tools';
+		};
+		var hideDrop = function () { depth = 0; document.body.classList.remove('dragging'); };
+		document.addEventListener('dragenter', function (e) {
+			e.preventDefault();
+			if (!acceptsScript(e)) return;
+			depth++;
+			document.body.classList.add('dragging');
+		});
+		document.addEventListener('dragleave', function () { if (depth && --depth === 0) hideDrop(); });
 		document.addEventListener('dragover', function (e) { e.preventDefault(); });
-		document.addEventListener('drop', function (e) { e.preventDefault(); });
+		document.addEventListener('drop', function (e) {
+			e.preventDefault();
+			var ok = acceptsScript(e);
+			hideDrop();
+			if (!ok || (e.target.closest && e.target.closest('#binDrop'))) return;
+			var files = Array.prototype.slice.call(e.dataTransfer.files || []);
+			if (files.length) openScripts(files.map(function (f) { return f.path && BIN.hasFS ? { path: f.path } : { file: f }; }));
+		});
 
 		each(document.querySelectorAll('[data-copy]'), function (b) {
 			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : 'código'); };
@@ -1093,6 +1166,7 @@
 			if (mod && (k === 'f' || k === 'F')) { e.preventDefault(); showTab('props'); $('query').focus(); $('query').select(); return; }
 			if (mod && (k === 'l' || k === 'L')) { e.preventDefault(); capture(false); return; }
 			if (mod && k === 'Enter') { e.preventDefault(); if (!$('runBtn').disabled) run(); return; }
+			if (mod && (k === 'o' || k === 'O')) { e.preventDefault(); $('openBtn').click(); return; }
 			if (mod && (k === 's' || k === 'S')) { e.preventDefault(); $('exportBtn').click(); return; }
 			if (mod && e.shiftKey && (k === 'c' || k === 'C')) { e.preventDefault(); $('copyBtn').click(); return; }
 			if (!mod && !typing && /^[123]$/.test(k)) showTab(TABS[+k - 1]);

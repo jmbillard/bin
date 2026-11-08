@@ -105,12 +105,12 @@
 
 	BIN.dialog = {
 		// lista de caminhos (ou [])
-		openFiles: function (title) {
+		openFiles: function (title, types, single) {
 			if (cepFs() && cepFs().showOpenDialogEx) {
-				var r = cepFs().showOpenDialogEx(true, false, title, '', []);
+				var r = cepFs().showOpenDialogEx(!single, false, title, '', types || []);
 				return Promise.resolve(r && r.err === 0 && r.data ? r.data : []);
 			}
-			if (mock() && mock().openFiles) return Promise.resolve(mock().openFiles(title));
+			if (mock() && mock().openFiles) return Promise.resolve(mock().openFiles(title, types));
 			return Promise.resolve([]);
 		},
 		// caminho para salvar (ou null)

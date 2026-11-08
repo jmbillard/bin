@@ -39,7 +39,7 @@
 					<button class="btn" id="captureBtn" title="capturar seleção&#10;as layers selecionadas na comp ativa"><i data-icon="target"></i>capturar seleção</button>
 					<button class="btn ghost" id="captureCompBtn" title="capturar comp inteira&#10;todas as layers da comp ativa, com as precomps"><i data-icon="monitor"></i>comp inteira</button>
 				</div>
-				<button class="link-btn" id="scriptBtn" title="aba código&#10;digite e execute qualquer script do After Effects">ou digite um script na aba código</button>
+				<button class="link-btn" id="scriptBtn" title="aba código&#10;digite e execute qualquer script do After Effects; arrastar um .jsx para o painel também abre no editor">ou digite um script na aba código</button>
 			</div>
 
 			<div id="propsView" class="hidden">
@@ -68,6 +68,7 @@
 				<span class="spacer"></span>
 				<span id="lineCount" class="faint"></span>
 				<button class="icon-btn toggle" id="wrapBtn" title="quebra de linha&#10;linhas longas continuam embaixo"><i data-icon="wrap"></i></button>
+				<button class="icon-btn" id="openBtn" data-kbd="mod+O" title="abrir script&#10;.jsx, .js, .jsxinc ou .txt; também dá para arrastar o arquivo para o painel"><i data-icon="open"></i></button>
 				<button class="icon-btn" id="copyBtn" data-kbd="mod+Shift+C" title="copiar o código"><i data-icon="copy"></i></button>
 				<button class="icon-btn" id="packBtn" title="pacote para documentação&#10;salva um .json para o app de documentação de templates (docs-app)"><i data-icon="file"></i></button>
 				<button class="icon-btn" id="exportBtn" data-kbd="mod+S" title="exportar .jsx&#10;salva o script para rodar em File › Scripts"><i data-icon="save"></i></button>
@@ -76,7 +77,7 @@
 				<div class="code-gutter" id="gutter" aria-hidden="true"></div>
 				<div class="code-area">
 					<pre id="codeView" aria-hidden="true"></pre>
-					<textarea id="codeEdit" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" placeholder="// digite um script do After Effects (ExtendScript)&#10;// e execute com Ctrl/⌘ + Enter"></textarea>
+					<textarea id="codeEdit" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" placeholder="// digite um script do After Effects (ExtendScript)&#10;// ou arraste um arquivo .jsx para cá&#10;// e execute com Ctrl/⌘ + Enter"></textarea>
 				</div>
 			</div>
 			<div class="code-note hidden" id="codeNote"><span>código editado à mão: mudanças nas propriedades e nas opções não chegam mais aqui.</span><button class="btn small" id="discardBtn">descartar edições</button></div>
@@ -128,6 +129,7 @@
 	</main>
 
 	<!-- ======================================================== RODAPÉ -->
+	<div class="drop-all" id="dropAll" aria-hidden="true"><div><i data-icon="open"></i><b>solte para abrir no editor</b><small>.jsx · .js · .jsxinc · .txt</small></div></div>
 	<footer class="foot">
 		<div id="toast" class="toast"></div>
 		<div class="sum" id="sum">

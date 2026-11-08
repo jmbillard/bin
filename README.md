@@ -223,6 +223,8 @@ a aba código é um **editor**: dá para mexer no código gerado antes de rodar.
 
 sem nenhuma captura, o editor vira um **rascunho livre**: digite qualquer script do After Effects (ExtendScript) e execute com **executar script** ou `Ctrl/⌘ + Enter`. o rascunho fica salvo no painel, e o painel abre na última aba usada. no estado vazio, **ou digite um script na aba código** leva direto para lá. todo script roda dentro de um único undo, e um erro mostra a linha certa do editor (com o botão **ir para a linha**).
 
+para abrir um script pronto, **arraste o arquivo** (`.jsx`, `.js`, `.jsxinc` ou `.txt`) para qualquer lugar do painel, fora da área do binário nos utilitários, ou use o botão **abrir script** da barra do código (`Ctrl/⌘ + O`). com uma captura, o script aberto entra como código editado (e **descartar edições** volta ao gerado). arquivos em UTF-8 ou Windows-1252 abrem com os acentos certos.
+
 o script gerado é **autônomo**: roda em `File` > `Scripts` > `Run Script File...` em qualquer projeto, sem o painel. ele traz um pequeno objeto `bin` com funções auxiliares que aplicam cada propriedade separadamente. se uma propriedade não existir na versão do After Effects de destino, ela é pulada e listada no final, sem derrubar o resto.
 
 ```js
@@ -302,6 +304,7 @@ com o painel em foco:
 | `Ctrl/⌘ + F` | filtrar propriedades |
 | `Ctrl/⌘ + Enter` | recriar (ou executar o script da aba código) |
 | `Tab` (no editor) | insere tabulação |
+| `Ctrl/⌘ + O` | abrir um script no editor |
 | `Ctrl/⌘ + S` | exportar .jsx |
 | `Ctrl/⌘ + Shift + C` | copiar o código |
 | `Esc` | limpa o filtro, volta da layer aberta ou fecha o aviso |
@@ -394,6 +397,7 @@ tests/
   tab_ink.js          confere o fundo da aba ativa depois da captura
   tooltips.js         dicas (conteúdo, posição, modo aquecido) e atalhos de teclado
   code_editor.js      aba código como editor: script livre, código editado, erros e atalhos
+  script_drop.js      abrir script no editor: arrastar o arquivo ou usar o botão abrir
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado
