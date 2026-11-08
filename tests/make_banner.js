@@ -15,7 +15,7 @@ const GLYPH = '<svg width="24" height="24" viewBox="0 0 24 24"><path d="M6.5 6.5
 		<div style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#4c9dff,#8f7cff);box-shadow:0 6px 18px rgba(76,157,255,.4)">${GLYPH}</div>
 		<div style="display:flex;flex-direction:column;gap:2px;position:relative">
 			<b style="color:#eceef1;font-size:16px;letter-spacing:4px">BIN</b>
-			<span style="color:#9aa0a8;font-size:11.5px">engenharia reversa de layer · After Effects</span>
+			<span style="color:#9aa0a8;font-size:11.5px">engenharia reversa de layers · After Effects</span>
 		</div></div></body>`);
 	const buf = await (await page.$('#b')).screenshot();
 	await browser.close();
