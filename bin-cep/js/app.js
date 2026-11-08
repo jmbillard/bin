@@ -1280,12 +1280,18 @@
 
 		bindTree();
 		bindKeys();
+		BIN.claimKeys();
 		bindOptions();
 		bindCode();
 		bindTools();
 		renderCode();
 		if (S.tab && S.tab !== 'props' && TABS.indexOf(S.tab) >= 0) showTab(S.tab);
-		capture(true).then(function () { if (!state.m) pollSelection(); });
+		// host sempre na mesma versão do painel; a assinatura dos arquivos aparece no logo
+		var stamp = BIN.localStamp();
+		if (stamp) UI.setTip($('logo'), 'BIN 3.0 · versão ' + stamp + '\nengenharia reversa de layers');
+		BIN.reloadHost().then(function () {
+			return capture(true);
+		}).then(function () { if (!state.m) pollSelection(); });
 	}
 
 	BIN.app = { capture: capture, showTab: showTab, state: state, mapError: mapError, collapse: collapse, expand: expand };

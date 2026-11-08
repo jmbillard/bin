@@ -39,6 +39,72 @@
 			.replace(PS, '\\u2029');
 	}
 
+	// ------------------------------------------------------------ versão --
+	// pasta da extensão instalada (no CEP) ou null
+	BIN.extPath = function () {
+		try {
+			var p = cep && cep.getSystemPath('extension');
+			if (!p) return null;
+			p = String(p).replace(/^file:\/{2}/, '');
+			try { p = decodeURIComponent(p); } catch (e2) { } // caminho já decodificado (com "%" no nome)
+			return p.replace(/^\/([A-Za-z]:)/, '$1');
+		} catch (e) { return null; }
+	};
+
+	// assinatura curta dos arquivos instalados (painel + host): mostrada no logo para saber
+	// qual versão está rodando. Mesmo cálculo de tests/build_stamp.js
+	BIN.FILES = ['jsx/host.jsx', 'js/app.js', 'js/codegen.js', 'js/ui.js', 'js/cep.js', 'css/style.css', 'index.html'];
+	BIN.stamp = function (read) {
+		var h = 2166136261;
+		for (var i = 0; i < BIN.FILES.length; i++) {
+			var t = String(read(BIN.FILES[i]) || '').replace(/\r\n?/g, '\n');
+			for (var k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+		}
+		return ('0000000' + h.toString(16)).slice(-8);
+	};
+	BIN.localStamp = function () {
+		var dir = BIN.extPath();
+		if (!fs || !dir) return null;
+		try { return BIN.stamp(function (f) { return fs.readFileSync(path.join(dir, f), 'utf8'); }); } catch (e) { return null; }
+	};
+
+	// o After Effects carrega o host.jsx uma vez e o mantém na memória: depois de uma atualização com o
+	// AE aberto, o painel novo conversaria com o host antigo. Recarrega sempre o da própria pasta.
+	BIN.reloadHost = function () {
+		var dir = BIN.extPath();
+		if (!cep || !dir) return Promise.resolve(false);
+		var file = (dir + '/jsx/host.jsx').replace(/\\/g, '/');
+		return new Promise(function (resolve) {
+			cep.evalScript("try { $.evalFile(File('" + escapeForJSX(file) + "')); 'ok'; } catch (e) { 'erro: ' + e; }", function (r) { resolve(r === 'ok'); });
+		});
+	};
+
+	// ----------------------------------------------------------- atalhos --
+	// com o painel em foco, o After Effects entrega estas teclas ao painel em vez de usar os atalhos dele
+	// (ex.: ⌘ + Enter abre o Quick Apply do AE). Códigos de tecla do sistema: macOS (virtual key) e Windows (VK).
+	var KEYS = {
+		mac: { Enter: [36, 76], F: [3], L: [37], O: [31], S: [1], C: [8] },
+		win: { Enter: [13], F: [70], L: [76], O: [79], S: [83], C: [67] }
+	};
+	BIN.keyInterest = function (mac) {
+		var map = mac ? KEYS.mac : KEYS.win, out = [];
+		['Enter', 'F', 'L', 'O', 'S'].forEach(function (k) {
+			map[k].forEach(function (code) {
+				out.push(mac ? { keyCode: code, metaKey: true } : { keyCode: code, ctrlKey: true });
+				if (mac) out.push({ keyCode: code, ctrlKey: true }); // ⌃ Control também vale no Mac
+			});
+		});
+		map.C.forEach(function (code) { out.push(mac ? { keyCode: code, metaKey: true, shiftKey: true } : { keyCode: code, ctrlKey: true, shiftKey: true }); });
+		return out;
+	};
+	BIN.claimKeys = function () {
+		if (!cep || !cep.registerKeyEventsInterest) return false;
+		try {
+			cep.registerKeyEventsInterest(JSON.stringify(BIN.keyInterest(/Mac/i.test(global.navigator.platform || ''))));
+			return true;
+		} catch (e) { return false; }
+	};
+
 	// Executa uma função do host.jsx e devolve uma Promise com o retorno (string).
 	BIN.callHost = function (fnName, args) {
 		args = args || [];

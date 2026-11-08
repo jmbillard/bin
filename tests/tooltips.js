@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { createContext, loadHost } = require('./ae_mock');
 const scene = require('./scene');
+const lib = require('./lib_panel');
 
 const outDir = path.resolve(process.argv[2] || path.join(__dirname, 'out'));
 fs.mkdirSync(outDir, { recursive: true });
@@ -70,6 +71,19 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 
 	t = await hover('#runBtn', 'recriar');
 	check(t.show && t.kbd === 'Ctrl+Enter', 'recriar: atalho Ctrl + Enter');
+	// no Mac: símbolo junto do nome da tecla
+	const mac = await browser.newPage({ viewport: { width: 420, height: 760 } });
+	await mac.addInitScript(() => Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' }));
+	await lib.setup(mac, { theme: 'dark', mode: 'layers' });
+	await mac.goto(lib.url);
+	await mac.waitForTimeout(400);
+	const macKbd = await mac.evaluate(() => {
+		const b = document.getElementById('runBtn');
+		b.disabled = false;
+		return new Promise((ok) => { b.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); setTimeout(() => ok([...document.querySelectorAll('.tip kbd')].map((k) => k.textContent).join(' + ')), 900); });
+	});
+	check(macKbd === '⌘ Cmd + ↩ Enter', 'Mac: atalho com símbolo e nome (' + macKbd + ')');
+	await mac.close();
 
 	// modo aquecido: a próxima dica aparece quase sem espera
 	await page.click('.tab[data-tab=code]');

@@ -57,10 +57,11 @@ async function animName(page, host, ico) {
 	check(/matrix\(1, 0, 0, 1, 2, 0\)/.test(play), 'play: avança 2 px');
 	check(await animName(page, '#helpBtn', '.i-help') === 'ico-wiggle', 'ajuda: balança');
 
-	// aba ativa mantém a escala no hover
+	// aba ativa: mantém a escala e as camadas se afastam
 	const tab = await after(page, '.tab[data-tab=props]', '.i-layers');
 	const m = tab.match(/matrix\(([^)]+)\)/)[1].split(',').map(Number);
-	check(Math.abs(m[0] - 1.12) < 0.01 && m[5] < -1, 'aba ativa: sobe sem perder o destaque (escala 1.12)');
+	const parts = await page.$eval('.tab[data-tab=props] .i-layers', (s) => [s.querySelector('.up'), s.querySelector('.dn')].map((g) => new DOMMatrix(getComputedStyle(g).transform).f));
+	check(Math.abs(m[0] - 1.12) < 0.01 && parts[0] < -1 && parts[1] > 1, 'aba propriedades: as camadas se afastam (de cima ' + parts[0] + ', de baixo +' + parts[1] + ') e a aba ativa mantém a escala');
 
 	// chevron de card fechado continua virado no hover
 	await page.click('xpath=//div[contains(@class,"card-head")][.//b[text()="contents"]]');

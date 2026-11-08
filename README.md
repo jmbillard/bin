@@ -309,6 +309,10 @@ com o painel em foco:
 | `Ctrl/⌘ + Shift + C` | copiar o código |
 | `Esc` | limpa o filtro, volta da layer aberta ou fecha o aviso |
 
+com o painel em foco, essas teclas vão para o BIN e não para os atalhos do After Effects (como o **Quick Apply** do `⌘ + Enter`). no Mac, `⌃ Control` também vale no lugar do `⌘`. os tooltips mostram o símbolo junto do nome da tecla (`⌘ Cmd`, `⇧ Shift`).
+
+**versão:** o tooltip do logo mostra a assinatura dos arquivos instalados (ex.: `versão 611f0c31`). ao abrir, o painel recarrega a parte que conversa com o After Effects (`host.jsx`) da própria pasta, então uma atualização vale por inteiro mesmo sem reiniciar o AE (basta fechar e abrir o painel).
+
 <br>
 
 ---
@@ -400,6 +404,8 @@ tests/
   script_drop.js      abrir script no editor: arrastar o arquivo ou usar o botão abrir
   selection_watch.js  o painel acompanha a seleção do AE e avisa no chip quando a captura fica para trás
   micro_anim.js       gestos dos ícones no hover, sombra da rolagem e "reduzir movimento"
+  cep_bridge.js       ponte com o CEP: recarga do host, teclas reservadas e assinatura da versão
+  build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado

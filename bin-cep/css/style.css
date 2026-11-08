@@ -879,15 +879,6 @@ label:hover .i-expr,
 .chip:hover .i-expr,
 .layer-head:hover .i-expr,
 .comp-head:hover .i-expr { transform: scaleX(1.15); }
-button:hover .i-layers,
-.drop:hover .i-layers,
-.card-head:hover .i-layers,
-.search:hover .i-layers,
-label:hover .i-layers,
-.row:hover .i-layers,
-.chip:hover .i-layers,
-.layer-head:hover .i-layers,
-.comp-head:hover .i-layers { transform: translateY(-1.5px); }
 button:hover .i-code,
 .drop:hover .i-code,
 .card-head:hover .i-code,
@@ -1021,8 +1012,28 @@ label:hover .i-copy .mv,
 .layer-head:hover .i-copy .mv,
 .comp-head:hover .i-copy .mv { animation: ico-copy .45s var(--ease); }
 
+/* camadas: se afastam (a de cima sobe, a de baixo desce) */
+.ico g { transition: transform .35s var(--spring); }
+button:hover .i-layers .up,
+.drop:hover .i-layers .up,
+.card-head:hover .i-layers .up,
+.search:hover .i-layers .up,
+label:hover .i-layers .up,
+.row:hover .i-layers .up,
+.chip:hover .i-layers .up,
+.layer-head:hover .i-layers .up,
+.comp-head:hover .i-layers .up { transform: translateY(-1.5px); }
+button:hover .i-layers .dn,
+.drop:hover .i-layers .dn,
+.card-head:hover .i-layers .dn,
+.search:hover .i-layers .dn,
+label:hover .i-layers .dn,
+.row:hover .i-layers .dn,
+.chip:hover .i-layers .dn,
+.layer-head:hover .i-layers .dn,
+.comp-head:hover .i-layers .dn { transform: translateY(1.5px); }
+
 /* aba ativa: o gesto soma com o destaque (escala) em vez de trocar */
-.tab.active:hover .i-layers { transform: scale(1.12) translateY(-1.5px); }
 .tab.active:hover .i-code { transform: scale(1.12) scaleX(1.15); }
 .tab.active:hover .i-tools { transform: scale(1.12) rotate(-15deg); }
 

@@ -13,7 +13,7 @@
 
 	// ------------------------------------------------------------ ícones ---
 	var P = {
-		layers: '<path d="M12 3 21 8l-9 5-9-5z"/><path d="m3 12.5 9 5 9-5"/>',
+		layers: '<g class="up"><path d="M12 3 21 8l-9 5-9-5z"/></g><g class="dn"><path d="m3 12.5 9 5 9-5"/></g>',
 		eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 		eyeOff: '<path d="M9.9 5.2A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.4M6.6 6.6C3.7 8.5 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
 		monitor: '<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8.5 21h7M12 17v4"/>',
@@ -143,7 +143,9 @@
 		var esc = UI.esc;
 
 		function kbd(k) {
-			return k.replace('mod', mac ? '⌘' : 'Ctrl').split('+').map(function (x) { return '<kbd>' + esc(x) + '</kbd>'; }).join('');
+			// símbolo junto do nome no Mac (⌘ Cmd, ⇧ Shift, ⌥ Option); no Windows, o nome
+			var NAMES = mac ? { mod: '⌘ Cmd', Shift: '⇧ Shift', Alt: '⌥ Option', Enter: '↩ Enter' } : { mod: 'Ctrl', Shift: 'Shift', Alt: 'Alt', Enter: 'Enter' };
+			return k.split('+').map(function (x) { return '<kbd>' + esc(NAMES[x] || x) + '</kbd>'; }).join('');
 		}
 
 		function findTarget(el) {
