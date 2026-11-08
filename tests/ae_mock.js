@@ -141,6 +141,8 @@ const ANIM_PROPS = {
 	'ADBE Text Position 3D': () => P('ADBE Text Position 3D', 'Position', VT.ThreeD_SPATIAL, [0, 0, 0]),
 	'ADBE Text Tracking Amount': () => P('ADBE Text Tracking Amount', 'Tracking Amount', VT.OneD, 0)
 };
+// eixos de fonte variável: listados como as outras, mas com fonte comum o AE nunca deixa adicioná-los
+for (let i = 1; i <= 8; i++) ANIM_PROPS['ADBE Text VF Axis ' + i] = () => Object.assign(P('ADBE Text VF Axis ' + i, 'Axis ' + i, VT.OneD, 0), { fixed: true });
 const SELECTORS = {
 	'ADBE Text Selector': () => G('ADBE Text Selector', 'Range Selector 1', [
 		P('ADBE Text Percent Start', 'Start', VT.OneD, 0),
@@ -315,7 +317,7 @@ class Group extends PropertyBase {
 	canAddProperty(mn) {
 		const a = this._addable();
 		if (!a || !a[mn]) return false;
-		if (this._spec.addableNamed) return !!(this.property(mn) && this.property(mn)._hidden);
+		if (this._spec.addableNamed) return !!(this.property(mn) && this.property(mn)._hidden && !a[mn]().fixed);
 		return true;
 	}
 	addProperty(mn) {

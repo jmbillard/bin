@@ -226,11 +226,14 @@ function bin_modified(p) {
 function bin_animPresent(group) {
 	var n = group.numProperties, can = [], any = false, all = true, i;
 	for (i = 1; i <= n; i++) {
-		var c;
-		try { c = group.canAddProperty(group.property(i).matchName); } catch (e) { c = null; }
+		var c, pmn = group.property(i).matchName;
+		try { c = group.canAddProperty(pmn); } catch (e) { c = null; }
+		// eixos de fonte variável: com uma fonte comum o AE nunca deixa adicioná-los, então
+		// "não aceita adicionar" não quer dizer "já está lá"; vale só o "foi mexida"
+		if (/^ADBE Text VF Axis/.test(pmn)) c = null;
 		can.push(c);
 		if (c === true) any = true;
-		if (c !== true) all = false;
+		if (c === false) all = false;
 	}
 	// se aceita adicionar todas (ou nenhuma), o sinal não diz nada: fica só o "foi mexida"
 	var useCan = any && !all;
