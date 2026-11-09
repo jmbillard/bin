@@ -361,11 +361,26 @@
 	}
 
 	// ------------------------------------------------------ render ---------
+	// aba utilitários: XML dos pseudo effects da captura
+	function renderPseudo() {
+		var list = state.m ? CG.pseudoEffects(state.m) : [];
+		$('pseudoNone').classList.toggle('hidden', !!list.length);
+		$('pseudoOut').classList.toggle('hidden', !list.length);
+		if (!list.length) return;
+		var xml = list.map(function (p) { return CG.pseudoXML(p.mn, p.def); }).join('\n\n');
+		state.tools.pseudo = xml;
+		$('pseudoInfo').textContent = plural(list.length, 'pseudo effect', 'pseudo effects') + ' · ' + list.map(function (p) { return p.mn.replace(/^Pseudo\//, ''); }).join(', ');
+		$('pseudoOut').querySelector('pre').innerHTML = xml.split('\n').map(function (l) {
+			return /<!--/.test(l) ? esc(l).replace(/(&lt;!--.*?--&gt;)/g, '<span class="tk-c">$1</span>') : esc(l);
+		}).join('\n');
+	}
+
 	function render() {
 		setMode(state.m.mode);
 		renderChip();
 		renderTree();
 		renderSummary();
+		renderPseudo();
 		if (state.tab === 'code') renderCode();
 	}
 
@@ -667,7 +682,8 @@
 				(function walk(list) {
 					list.forEach(function (n) {
 						if (ex[n.id]) return;
-						if (n.fx && !NATIVE_FX.test(n.mn)) fx[n.name + ' (' + n.mn + ')'] = true;
+						if (n.pseudo) add('pseudo effect “' + n.mn.replace(/^Pseudo\//, '') + '”: precisa estar no PresetEffects.xml de quem rodar o script (o XML está na aba utilitários).');
+						else if (n.fx && !NATIVE_FX.test(n.mn)) fx[n.name + ' (' + n.mn + ')'] = true;
 						if (n.mn === 'ADBE Text Document') [n.v].concat((n.keys || []).map(function (k) { return k.v; })).forEach(function (v) {
 							if (v && v.doc) {
 								if (v.doc.font) fonts[v.doc.font] = true;
@@ -1249,10 +1265,10 @@
 		});
 
 		each(document.querySelectorAll('[data-copy]'), function (b) {
-			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : 'código'); };
+			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : b.dataset.copy === 'pseudo' ? 'XML' : 'código'); };
 		});
 		each(document.querySelectorAll('[data-save]'), function (b) {
-			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? 'expressoes.jsxinc' : state.tools.binName); };
+			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? 'expressoes.jsxinc' : b.dataset.save === 'pseudo' ? 'pseudo_effects.xml' : state.tools.binName); };
 		});
 	}
 

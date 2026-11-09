@@ -182,7 +182,7 @@
 		// caminho para salvar (ou null)
 		saveFile: function (title, defaultName) {
 			if (cepFs() && cepFs().showSaveDialogEx) {
-				var r = cepFs().showSaveDialogEx(title, '', ['jsx', 'jsxinc', 'txt'], defaultName);
+				var r = cepFs().showSaveDialogEx(title, '', ['jsx', 'jsxinc', 'txt', 'xml', 'json'], defaultName);
 				if (r && r.err === 0 && r.data) {
 					var p = String(r.data);
 					if (!/\.[a-z0-9]+$/i.test(p)) p += '.jsx';

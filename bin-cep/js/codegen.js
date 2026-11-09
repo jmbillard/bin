@@ -267,6 +267,107 @@
 		return s;
 	};
 
+	// ====================================================== pseudo effects ==
+	// XML do PresetEffects.xml a partir do que a captura leu de um pseudo effect. O AE não informa os nomes
+	// das opções de um popup, a faixa visual do slider nem o valor padrão original (vale o valor atual):
+	// esses pontos saem com um comentário "conferir".
+	function xmlAttr(v) { return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+	function presetId(label, i) {
+		var id = String(label).normalize ? String(label).normalize('NFD').replace(/[̀-ͯ]/g, '') : String(label);
+		id = id.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+		return id || 'param_' + i;
+	}
+	function presetName(label, i) { return '$$$/AE/Preset/' + presetId(label, i) + '=' + xmlAttr(label); }
+	function decimals(v) { var m = String(v).match(/\.(\d+)/); return m ? Math.min(2, m[1].length) : 0; }
+	function round(v, d) { var f = Math.pow(10, d); return Math.round(v * f) / f; }
+
+	// tipo do parâmetro no PresetEffects.xml (com a dúvida, quando há)
+	CG.pseudoType = function (p) {
+		if (p.vt === 'COLOR') return { t: 'Color' };
+		if (p.vt === 'TwoD' || p.vt === 'TwoD_SPATIAL') return { t: 'Point' };
+		if (p.vt === 'ThreeD' || p.vt === 'ThreeD_SPATIAL') return { t: 'Point3D' };
+		if (p.vt === 'LAYER_INDEX') return { t: 'Layer' };
+		if (p.vt === 'NO_VALUE') return { t: p.name ? 'GroupStart' : 'GroupEnd' };
+		if (p.vt !== 'OneD') return { t: null };
+		if (/degree|grau/i.test(p.units || '')) return { t: 'Angle' };
+		var whole = p.v === Math.round(p.v);
+		if (p.dropdown) return { t: 'Popup' };
+		if (p.min === 0 && p.max === 1 && (p.v === 0 || p.v === 1)) return { t: 'Checkbox', doubt: 'checkbox ou slider de 0 a 1' };
+		if (p.min === 1 && whole && p.max >= 2 && p.max <= 64 && p.max === Math.round(p.max) && !p.units) return { t: 'Popup', doubt: 'popup ou slider inteiro' };
+		return { t: 'Slider' };
+	};
+
+	CG.pseudoXML = function (mn, def) {
+		var I1 = '\t', out = [], depth = 1;
+		var pad = function () { return new Array(depth + 1).join(I1); };
+		var label = String(mn).replace(/^Pseudo\//, '');
+		var size = def.size || [];
+		out.push('<!-- pseudo effect “' + xmlAttr(def.name || label) + '” extraído pelo BIN: cole dentro de <Effects> no PresetEffects.xml -->');
+		out.push('<Effect matchname="' + xmlAttr(mn) + '" name="' + presetName(label, 0) + '">');
+		(def.params || []).forEach(function (p, i) {
+			var ty = CG.pseudoType(p), n = presetName(p.name, i + 1), line = null, note = ty.doubt ? 'conferir: ' + ty.doubt : '';
+			switch (ty.t) {
+				case 'GroupStart': out.push(pad() + '<Group name="' + n + '">'); depth++; return;
+				case 'GroupEnd': if (depth > 1) depth--; out.push(pad() + '</Group>'); return;
+				case 'Color': {
+					var c = (p.v || [1, 1, 1]).map(function (x) { return Math.round(Math.max(0, Math.min(1, x)) * 255); });
+					line = '<Color name="' + n + '" default_red="' + c[0] + '" default_green="' + c[1] + '" default_blue="' + c[2] + '"/>';
+					break;
+				}
+				case 'Point': case 'Point3D': {
+					var v = p.v || [0, 0, 0];
+					var fx = size[0] ? round(v[0] / size[0], 4) : 0.5, fy = size[1] ? round(v[1] / size[1], 4) : 0.5;
+					line = '<' + ty.t + ' name="' + n + '" default_x="' + fx + '" default_y="' + fy + '"' + (ty.t === 'Point3D' ? ' default_z="' + round(v[2] || 0, 2) + '"' : '') + '/>';
+					note = 'conferir: posição em fração do tamanho da layer (' + round(v[0], 2) + ', ' + round(v[1], 2) + ' px)';
+					break;
+				}
+				case 'Layer': line = '<Layer name="' + n + '" default_self="false"/>'; break;
+				case 'Angle': line = '<Angle name="' + n + '" default="' + round(p.v || 0, 2) + '"/>'; break;
+				case 'Checkbox': line = '<Checkbox name="' + n + '" default="' + (p.v ? 'true' : 'false') + '"/>'; break;
+				case 'Popup': {
+					var count = p.max && p.max === Math.round(p.max) ? p.max : Math.max(2, p.v || 1), opts = [];
+					for (var k = 1; k <= count; k++) opts.push('opção ' + k);
+					line = '<Popup name="' + n + '" default="' + (p.v || 1) + '" content="' + opts.join('|') + '"/>';
+					note = 'conferir: ' + (ty.doubt ? ty.doubt + '; ' : '') + 'o AE não informa os nomes das opções';
+					break;
+				}
+				case 'Slider': {
+					var d = decimals(p.v), lo = p.min !== undefined ? p.min : -1000000, hi = p.max !== undefined ? p.max : 1000000;
+					var smin = Math.max(lo, Math.min(0, p.v)), smax = Math.min(hi, Math.max(100, p.v));
+					line = '<Slider name="' + n + '" default="' + round(p.v, 2) + '" valid_min="' + lo + '" valid_max="' + hi + '" slider_min="' + smin + '" slider_max="' + smax + '" precision="' + d + '"' + (/percent|%/i.test(p.units || '') ? ' percent="true"' : '') + '/>';
+					note = note || 'conferir: faixa do slider (' + smin + ' a ' + smax + ')';
+					break;
+				}
+				default:
+					out.push(pad() + '<!-- “' + xmlAttr(p.name) + '” (' + p.vt + '): tipo sem equivalente no PresetEffects.xml -->');
+					return;
+			}
+			out.push(pad() + line + (note ? ' <!-- ' + xmlAttr(note) + ' -->' : ''));
+		});
+		while (depth > 1) { depth--; out.push(pad() + '</Group>'); }
+		out.push('</Effect>');
+		return out.join('\n');
+	};
+
+	// pseudo effects da captura (um por matchName), com as layers que os usam
+	CG.pseudoEffects = function (m) {
+		var seen = {}, list = [];
+		(m.comps || []).forEach(function (C) {
+			C.layers.forEach(function (L) {
+				(function walk(nodes) {
+					(nodes || []).forEach(function (n) {
+						if (n.pseudo) {
+							if (!seen[n.mn]) { seen[n.mn] = { mn: n.mn, def: n.pseudo, layers: [] }; list.push(seen[n.mn]); }
+							if (seen[n.mn].layers.indexOf(L.name) < 0) seen[n.mn].layers.push(L.name);
+						}
+						if (n.kids) walk(n.kids);
+					});
+				})(L.groups);
+			});
+		});
+		return list;
+	};
+
 	// ============================================================= geração ==
 	var DEFAULT_OPTS = { target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, excluded: {}, now: null };
 
@@ -671,15 +772,22 @@
 				try { while (p && p.parentProperty) { n.unshift(p.name); p = p.parentProperty; } } catch (e) { }
 				return n.join(' > ');
 			},
+			// no lugar do que não pôde ser criado (efeito de plug-in ausente, pseudo effect não instalado...):
+			// aceita as chamadas seguintes sem fazer nada, e o resto do script continua
+			none: { property: function () { return bin.none; }, addProperty: function () { return bin.none; } },
 			add: function (g, mn, name) {
-				if (!g) return null;
+				if (!g || g === bin.none) return bin.none;
 				var p;
-				try { p = g.addProperty(mn); } catch (e) { bin.err('+ ' + mn, e); return null; }
+				try { p = g.addProperty(mn); } catch (e) {
+					// pseudo effect: só existe se estiver no PresetEffects.xml desta máquina
+					bin.err('+ ' + mn, /^Pseudo\//.test(mn) ? 'pseudo effect não instalado. Cole o XML dele (aba utilitários do BIN) no PresetEffects.xml e reinicie o After Effects.' : e);
+					return bin.none;
+				}
 				if (name) try { p.name = name; } catch (e2) { }
 				return p;
 			},
 			attrs: function (o, a) {
-				if (!o) return;
+				if (!o || o === bin.none) return;
 				for (var k in a) {
 					if (!a.hasOwnProperty(k)) continue;
 					try {
@@ -724,11 +832,11 @@
 				return d;
 			},
 			set: function (p, v) {
-				if (!p) return;
+				if (!p || p === bin.none) return;
 				try { p.setValue(bin.val(p, v)); } catch (e) { bin.err(bin.path(p), e); }
 			},
 			keys: function (p, keys) {
-				if (!p) return;
+				if (!p || p === bin.none) return;
 				var I = { L: KeyframeInterpolationType.LINEAR, B: KeyframeInterpolationType.BEZIER, H: KeyframeInterpolationType.HOLD };
 				var i, k, o;
 				function ease(a) { var r = []; for (var n = 0; n < a.length; n++) r.push(new KeyframeEase(a[n][0], a[n][1])); return r; }
@@ -767,7 +875,7 @@
 			// antes de as dependências existirem (o expression selector, por exemplo, não se recupera do erro)
 			pend: [],
 			expr: function (p, x, on) {
-				if (!p) return;
+				if (!p || p === bin.none) return;
 				try { bin.pend.push({ at: bin.loc(p), x: x, on: on }); return; } catch (e) { }
 				try {
 					p.expression = x;
@@ -831,7 +939,7 @@
 			// propriedades se perdem quando outros efeitos entram) e resolve em bin.links, com todas as layers prontas
 			refs: [],
 			ref: function (p, info) {
-				if (!p) return;
+				if (!p || p === bin.none) return;
 				try {
 					var r = bin.loc(p);
 					r.info = info;

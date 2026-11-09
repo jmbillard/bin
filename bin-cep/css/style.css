@@ -549,6 +549,7 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .code-gutter { flex: none; width: 40px; padding: 8px 8px 8px 0; overflow: hidden; text-align: right; font: 11px/1.6 var(--mono); color: var(--faint); opacity: .7; user-select: none; white-space: pre; }
 .code-area { position: relative; flex: 1; min-width: 0; }
 .code-area pre, .code-area textarea {
+	font-variant-ligatures: none; /* "<!--", "=>" e "!=" como foram digitados */
 	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
 	margin: 0; padding: 8px 14px 8px 4px; border: 0;
 	font: 11px/1.6 var(--mono); tab-size: 4; -moz-tab-size: 4; letter-spacing: 0;
@@ -623,7 +624,7 @@ body.dragging .drop-all { display: grid; animation: up .2s var(--ease); }
 .out { align-self: stretch; border: 1px solid var(--line); border-radius: 8px; background: var(--code-bg); overflow: hidden; }
 .out-bar { display: flex; align-items: center; padding: 2px 4px 2px 10px; border-bottom: 1px solid var(--line); }
 .out-bar .icon-btn { width: 26px; height: 26px; }
-.out pre { margin: 0; padding: 8px 10px; tab-size: 4; font: 10.5px/1.55 var(--mono); max-height: 180px; overflow: auto; white-space: pre; user-select: text; color: var(--txt); }
+.out pre { font-variant-ligatures: none; margin: 0; padding: 8px 10px; tab-size: 4; font: 10.5px/1.55 var(--mono); max-height: 180px; overflow: auto; white-space: pre; user-select: text; color: var(--txt); }
 
 /* --------------------------------------------------------------- rodapé */
 .foot { border-top: 1px solid var(--line); padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 9px; flex: none; }

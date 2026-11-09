@@ -291,7 +291,10 @@ function bin_node(p, parent, idx, ctx, path) {
 			g.add = true;
 			if (bin_try(p, 'canSetEnabled') && p.enabled === false) g.off = true;
 		}
-		if (parent.matchName === 'ADBE Effect Parade') g.fx = true;
+		if (parent.matchName === 'ADBE Effect Parade') {
+			g.fx = true;
+			if (/^Pseudo\//.test(mn)) g.pseudo = bin_pseudo(p);
+		}
 		if (mn === 'ADBE Mask Atom') {
 			g.mask = {
 				mode: bin_enum('MaskMode', p.maskMode),
@@ -456,6 +459,38 @@ function bin_layer(l) {
 		if (ov.length) d.overrides = ov;
 	}
 	return d;
+}
+
+// ---------------------------------------------------------- pseudo effects --
+// definição de um pseudo effect (todos os parâmetros, inclusive os que estão no padrão), para montar
+// o XML do PresetEffects.xml. O AE não diz os nomes das opções de um popup nem a faixa do slider:
+// o painel marca esses pontos para conferir.
+function bin_vtName(t) {
+	var names = ['NO_VALUE', 'OneD', 'TwoD', 'TwoD_SPATIAL', 'ThreeD', 'ThreeD_SPATIAL', 'COLOR', 'LAYER_INDEX', 'MASK_INDEX', 'SHAPE', 'TEXT_DOCUMENT', 'MARKER', 'CUSTOM_VALUE'];
+	for (var i = 0; i < names.length; i++) if (PropertyValueType[names[i]] === t) return names[i];
+	return String(t);
+}
+
+function bin_pseudo(fx) {
+	var out = { name: fx.name, params: [] };
+	for (var i = 1; i <= fx.numProperties; i++) {
+		var p = fx.property(i), mn = p.matchName;
+		if (mn === 'ADBE Effect Built In Params' || mn === 'ADBE Effect Mask Parade') continue;
+		var o = { name: p.name, mn: mn };
+		try {
+			if (p.propertyType !== PropertyType.PROPERTY) { o.vt = 'GROUP'; out.params.push(o); continue; }
+			o.vt = bin_vtName(p.propertyValueType);
+			if (p.propertyValueType !== PropertyValueType.NO_VALUE) o.v = p.numKeys > 0 ? p.keyValue(1) : p.value;
+			if (bin_try(p, 'hasMin')) o.min = p.minValue;
+			if (bin_try(p, 'hasMax')) o.max = p.maxValue;
+			var u = bin_try(p, 'unitsText');
+			if (u) o.units = u;
+			if (bin_try(p, 'isDropdownEffect')) o.dropdown = true;
+		} catch (e) { o.err = e.message; }
+		out.params.push(o);
+	}
+	try { var L = bin_propRoute(fx).layer; out.size = [L.width, L.height]; } catch (e2) { }
+	return out;
 }
 
 // ------------------------------------------------------ essential graphics --

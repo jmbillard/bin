@@ -331,6 +331,7 @@ com o painel em foco, essas teclas vão para o BIN e não para os atalhos do Aft
 1. **expressão → string** → pega a expressão da propriedade selecionada (ou todas as expressões das layers selecionadas)…
 2. … e formata como string JS, uma linha por item, pronta para colar em um script. copie ou exporte pela barra.
 3. **arquivo → binário** → arraste arquivos (PNG, WAV, FFX…) ou clique para escolher. o BIN gera uma variável com o conteúdo de cada um, mais a função `binToFile()` para gravar de volta no disco. no ScriptUI, a string de um PNG já serve direto como imagem.
+4. **pseudo effects → XML** → para cada pseudo effect da captura (matchName `Pseudo/…`), o trecho pronto para colar dentro de `<Effects>` no `PresetEffects.xml` de outra máquina: sliders, ângulos, checkboxes, cores, pontos, popups, layers e grupos, com o valor atual como padrão. o After Effects não informa os nomes das opções de um popup, a faixa visual do slider nem o padrão original: esses pontos saem com um comentário `conferir`. copie ou exporte como `pseudo_effects.xml`.
 
   </td>
   </tr>
@@ -376,6 +377,7 @@ o **[BIN docs](docs-app/README.md)** é um app web que transforma o pacote para 
 | **markers** | comentário, duração, rótulo, capítulo, URL, cue point e parâmetros |
 | **entre layers** | parent (sem pular a posição) e track matte |
 | **comps** | tamanho, duração, frame rate, cor de fundo, início do timecode, work area, motion blur e shutter, frame blending, shy, draft 3D, renderizador, rótulo, comentário, markers e precomps aninhadas |
+| **pseudo effects** | recriados com os valores, se estiverem no `PresetEffects.xml` de quem roda o script (o XML de cada um está na aba utilitários); se não estiverem, o script avisa e segue com o resto |
 | **essential graphics** | controles da comp (nome, ordem e de onde vêm), nome do template e, nas layers de precomp, os valores mudados e as expressões (inclusive desligadas) das essential properties |
 
 **não recriados:** estilos de layer (a API do After Effects não permite adicioná-los), máscaras de efeito e grupos do Essential Graphics. o painel avisa quando a layer usa algum deles.
@@ -411,6 +413,7 @@ tests/
   micro_anim.js       gestos dos ícones no hover, sombra da rolagem e "reduzir movimento"
   cep_bridge.js       ponte com o CEP: recarga do host, teclas reservadas e assinatura da versão
   egp_panel.js        essential graphics no painel: cards, exclusões, avisos e recriação
+  pseudo_panel.js     pseudo effects: XML na aba utilitários, aviso e exportação
   build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques

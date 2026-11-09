@@ -247,6 +247,40 @@ function egpScene() {
 	report(!!ov && ov[0] === 500 && !last.errors.length && !cap.comp.egp.length, '[essential graphics · layers] a layer de precomp recriada leva o valor mudado', 'Tamanho ' + ov + ' · erros ' + last.errors.length);
 }
 
+// ------------------------------------------------------------ pseudo effects
+// definição lida do efeito, XML do PresetEffects.xml e recriação (com e sem o pseudo effect instalado)
+{
+	const { ctx, comp } = setup();
+	const l = comp.layer('CONTROLE');
+	const fx = l.property('ADBE Effect Parade').addProperty('Pseudo/BIN Texto');
+	fx.property('Pseudo/BIN Texto-0001').setValue(96);
+	fx.property('Pseudo/BIN Texto-0009').setValue(-20);
+	l.outPoint = 7; // atributo aplicado depois dos efeitos: confirma que a layer foi até o fim
+	comp._layers.forEach((x) => { x.selected = x === l; });
+	const cap = call(ctx, 'bin_capture');
+	const m = CG.prepare(JSON.parse(JSON.stringify(cap)));
+	const list = CG.pseudoEffects(m);
+	const xml = list.length ? CG.pseudoXML(list[0].mn, list[0].def) : '';
+	const has = (re) => re.test(xml);
+	report(list.length === 1 && has(/<Effect matchname="Pseudo\/BIN Texto"/) && has(/<Slider name="\$\$\$\/AE\/Preset\/Tamanho=Tamanho" default="96" valid_min="0" valid_max="1000"/) &&
+		has(/<Angle name="[^"]*=Inclinação" default="0"\/>/) && has(/<Checkbox [^>]*default="false"/) && has(/<Color [^>]*default_red="255" default_green="128" default_blue="0"/) &&
+		has(/<Point [^>]*default_x="0.5" default_y="0.5"/) && has(/<Popup [^>]*default="2" content="opção 1\|opção 2\|opção 3"/) && has(/<Layer /) &&
+		has(/<Group name="[^"]*=Avançado">\n\t\t<Slider name="[^"]*=Respiro" default="-20"/) && has(/\t<\/Group>\n<\/Effect>$/),
+		'[pseudo effects] XML do PresetEffects.xml com cada tipo de parâmetro e o grupo', (xml.match(/<(\w+) /g) || []).length + ' tags');
+
+	const code = CG.generate(m, { target: 'new', now: NOW });
+	let last = run(ctx, code, 'pseudo-ok');
+	const made = ctx.app.project.activeItem.layer('CONTROLE').property('ADBE Effect Parade').property('Pseudo/BIN Texto');
+	report(!!made && made.property('Pseudo/BIN Texto-0001').value === 96 && made.property('Pseudo/BIN Texto-0009').value === -20 && !last.errors.length, '[pseudo effects] instalado: recriado com os valores');
+
+	ctx.__env.pseudo = false; // outra máquina, sem o pseudo effect no PresetEffects.xml
+	last = run(ctx, code, 'pseudo-falta');
+	const made2 = ctx.app.project.activeItem.layer('CONTROLE');
+	report(last.errors.length === 1 && /pseudo effect não instalado.*PresetEffects\.xml/.test(last.errors[0]) && !!made2 && !!made2.property('ADBE Effect Parade').property('amp') && made2.outPoint === 7,
+		'[pseudo effects] não instalado: um erro claro, e o resto da layer (até a saída) recriado', last.errors.join(' | '));
+	ctx.__env.pseudo = true;
+}
+
 // ---------------------------------------------------------- layers ------
 [['layers-funcoes', {}], ['layers-inline', { wrap: false, comments: false }]].forEach(([label, opts]) => {
 	const { ctx, comp } = setup();

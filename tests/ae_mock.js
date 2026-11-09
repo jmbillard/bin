@@ -39,6 +39,8 @@ let base = 5000;
 for (const k in ENUM_NAMES) { ENUMS[k] = makeEnum(ENUM_NAMES[k], base); base += 100; }
 
 const VT = PropertyValueType;
+// pseudo effects instalados no PresetEffects.xml desta "máquina" (os testes desligam para simular outra)
+const ENV = { pseudo: true };
 const clone = (v) => (v && typeof v === 'object') ? (typeof v.clone === 'function' ? v.clone() : JSON.parse(JSON.stringify(v))) : v;
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -126,6 +128,20 @@ const EFFECTS = {
 		P('ADBE 3D Glasses2-0002', 'Right View', VT.LAYER_INDEX, 0),
 		builtIn()
 	]),
+	// pseudo effect (definido no PresetEffects.xml): um parâmetro de cada tipo, com um grupo
+	'Pseudo/BIN Texto': () => G('Pseudo/BIN Texto', 'BIN Texto', [
+		Object.assign(P('Pseudo/BIN Texto-0001', 'Tamanho', VT.OneD, 72), { min: 0, max: 1000 }),
+		Object.assign(P('Pseudo/BIN Texto-0002', 'Inclinação', VT.OneD, 0), { units: 'degrees' }),
+		Object.assign(P('Pseudo/BIN Texto-0003', 'Caixa alta', VT.OneD, 0), { min: 0, max: 1 }),
+		P('Pseudo/BIN Texto-0004', 'Cor', VT.COLOR, [1, 0.5, 0, 1]),
+		P('Pseudo/BIN Texto-0005', 'Centro', VT.TwoD_SPATIAL, [960, 540]),
+		Object.assign(P('Pseudo/BIN Texto-0006', 'Alinhamento', VT.OneD, 2), { min: 1, max: 3 }),
+		P('Pseudo/BIN Texto-0007', 'Referência', VT.LAYER_INDEX, 0),
+		P('Pseudo/BIN Texto-0008', 'Avançado', VT.NO_VALUE, null),
+		Object.assign(P('Pseudo/BIN Texto-0009', 'Respiro', VT.OneD, 12.5), { min: -100, max: 100 }),
+		P('Pseudo/BIN Texto-0010', '', VT.NO_VALUE, null),
+		builtIn()
+	]),
 	'ADBE Slider Control': () => G('ADBE Slider Control', 'Slider Control', [P('ADBE Slider Control-0001', 'Slider', VT.OneD, 0), builtIn()])
 };
 const MASKS = {
@@ -192,13 +208,20 @@ class PropertyBase {
 class Property extends PropertyBase {
 	constructor(spec, parent) {
 		super();
-		this._parent = parent; this.matchName = spec.mn; this._name = spec.name; this.propertyValueType = spec.vt;
+		this._parent = parent; this.matchName = spec.mn; this._name = spec.name; this.propertyValueType = spec.vt; this._spec = spec;
 		this._def = spec.vt === VT.SHAPE ? new Shape() : spec.vt === VT.TEXT_DOCUMENT ? new TextDocument('') : spec.vt === VT.MARKER ? null : clone(spec.def);
 		this._value = clone(this._def);
 		this._keys = []; this._expr = ''; this.expressionEnabled = true; this._sep = false;
 	}
 	get propertyType() { return PropertyType.PROPERTY; }
 	get value() { return clone(this._value); }
+	// faixa válida, unidade e "é um popup" (como nos parâmetros de efeito do AE)
+	get hasMin() { return this._spec.min !== undefined; }
+	get hasMax() { return this._spec.max !== undefined; }
+	get minValue() { if (this._spec.min === undefined) throw new Error('no min'); return this._spec.min; }
+	get maxValue() { if (this._spec.max === undefined) throw new Error('no max'); return this._spec.max; }
+	get unitsText() { return this._spec.units || ''; }
+	get isDropdownEffect() { return !!this._spec.dropdown; }
 	get numKeys() { return this._keys.length; }
 	// essential graphics: a propriedade vira um controle da comp da layer dela
 	canAddToMotionGraphicsTemplate(comp) {
@@ -328,6 +351,7 @@ class Group extends PropertyBase {
 	canAddProperty(mn) {
 		const a = this._addable();
 		if (!a || !a[mn]) return false;
+		if (/^Pseudo\//.test(mn) && !ENV.pseudo) return false;
 		if (this._spec.addableNamed) return !!(this.property(mn) && this.property(mn)._hidden && !a[mn]().fixed);
 		return true;
 	}
@@ -385,6 +409,8 @@ class AVLayer extends Layer {
 		this._addGroup(IG('ADBE Effect Parade', 'Effects', EFFECTS));
 	}
 	setTrackMatte(layer, type) { this.trackMatteLayer = layer; this.trackMatteType = type; }
+	get width() { return this.source ? this.source.width : this.containingComp.width; }
+	get height() { return this.source ? this.source.height : this.containingComp.height; }
 	// Essential Properties: aparece quando a comp de origem tem controles no essential graphics
 	property(n) {
 		if (n === 'ADBE Layer Overrides' || n === 'Essential Properties') return this._overrides();
@@ -547,6 +573,7 @@ function createContext() {
 	const project = new Project();
 	const alerts = [];
 	const ctx = {
+		__env: ENV,
 		PropertyType, PropertyValueType, KeyframeInterpolationType, Shape, TextDocument, KeyframeEase, MarkerValue,
 		Layer, AVLayer, ShapeLayer, TextLayer, CameraLayer, LightLayer, CompItem, FootageItem, SolidSource, FileSource,
 		app: { project, version: '24.6.0x1', beginUndoGroup() { }, endUndoGroup() { }, executeCommand() { } },
