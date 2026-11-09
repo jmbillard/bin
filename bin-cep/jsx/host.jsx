@@ -214,6 +214,19 @@ function bin_canAdd(parent) {
 	return false;
 }
 
+// valores padrão do transform da layer: o AE marca como "modificado" o que foi mexido e voltou ao padrão
+var BIN_TRANSFORM_DEFAULTS = {
+	'ADBE Scale': '[100,100,100]', 'ADBE Opacity': '100', 'ADBE Rotate Z': '0', 'ADBE Rotate X': '0', 'ADBE Rotate Y': '0', 'ADBE Orientation': '[0,0,0]'
+};
+
+function bin_atDefault(p, parent) {
+	try {
+		var d = BIN_TRANSFORM_DEFAULTS[p.matchName];
+		if (!d || parent.matchName !== 'ADBE Transform Group' || p.numKeys > 0 || p.expression !== '') return false;
+		return bin_json(p.value) === d;
+	} catch (e) { return false; }
+}
+
 function bin_modified(p) {
 	try { if (p.isModified) return true; } catch (e) { }
 	try { if (p.numKeys > 0) return true; } catch (e2) { }
@@ -308,7 +321,7 @@ function bin_node(p, parent, idx, ctx, path) {
 	if (mn === 'ADBE Time Remapping' && !ctx.layer.timeRemapEnabled) return null;
 
 	var force = add || vt === PropertyValueType.TEXT_DOCUMENT;
-	if (!force && !bin_modified(p)) return null;
+	if (!force && (!bin_modified(p) || bin_atDefault(p, parent))) return null;
 
 	var n = { k: 'p', mn: mn, name: p.name, idx: idx };
 	if (add) n.add = true;
@@ -468,9 +481,15 @@ function bin_overrides(l, ctx) {
 			var vt = p.propertyValueType;
 			if (vt === PropertyValueType.NO_VALUE || vt === PropertyValueType.CUSTOM_VALUE) continue;
 			var v = bin_json(bin_val(p, p.value)), src = bin_try(p, 'essentialPropertySource');
-			if (src && bin_json(bin_val(src, src.value)) === v) continue;
-			var o = { names: leaves[i].names, v: bin_val(p, p.value) };
-			if (p.expression) o.x = p.expression;
+			var x = bin_try(p, 'expression') || '';
+			var same = src && bin_json(bin_val(src, src.value)) === v;
+			if (same && !x) continue; // igual ao de dentro da precomp e sem expressão: nada a recriar
+			var o = { names: leaves[i].names };
+			if (!same) o.v = bin_val(p, p.value);
+			if (x) {
+				o.x = x;
+				if (bin_try(p, 'expressionEnabled') === false) o.xoff = true;
+			}
 			out.push(o);
 		} catch (e) { ctx.warnings.push('não foi possível ler a essential property "' + leaves[i].names.join(' › ') + '": ' + e.message); }
 	}

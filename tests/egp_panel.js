@@ -25,6 +25,7 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	comp.layer('CRÉDITO direção').property('ADBE Text Properties').property('ADBE Text Document').addToMotionGraphicsTemplateAs(comp, 'Crédito');
 	comp.motionGraphicsTemplateName = 'Abertura v03';
 	comp.layer('PRE logo').property('ADBE Layer Overrides').property('Opacidade').setValue(40);
+	comp.layer('PRE logo').property('ADBE Layer Overrides').property('Opacidade').expression = 'value';
 	const gen = () => page.evaluate(() => window.BIN.codegen.generate(window.BIN.state.m, { excluded: window.BIN.state.ex }));
 	const hide = () => page.evaluate(() => window.BIN.ui.hideToast());
 
@@ -65,7 +66,7 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	await page.click(ovHead);
 	await page.waitForTimeout(200);
 	const ov = await page.$$eval('.card:not(.closed) .row.leaf', (rs) => rs.map((r) => r.textContent.trim()).filter((t) => /Opacidade/.test(t)));
-	check(ov.length === 1 && /40/.test(ov[0]) && /bin\.over\(layer, \[/.test(await gen()), 'mostra o valor mudado (' + ov[0] + ') e o código o aplica');
+	check(ov.length === 1 && /40/.test(ov[0]) && /ƒ/.test(ov[0]) && /bin\.over\(layer, \[/.test(await gen()) && /x: 'value'/.test(await gen()), 'mostra o valor mudado e a expressão (' + ov[0] + '), e o código aplica os dois');
 	await page.screenshot({ path: path.join(outDir, 'egp-2-precomp.png') });
 
 	// recriar de verdade

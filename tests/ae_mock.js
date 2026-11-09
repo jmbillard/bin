@@ -409,7 +409,12 @@ class AVLayer extends Layer {
 	}
 }
 class OverrideProperty {
-	constructor(layer, e) { this._layer = layer; this._e = e; this.name = e.name; this.matchName = 'ADBE Layer Overrides Property'; this.expression = ''; }
+	constructor(layer, e) { this._layer = layer; this._e = e; this.name = e.name; this.matchName = 'ADBE Layer Overrides Property'; layer._ovx = layer._ovx || {}; }
+	// a expressão fica guardada na layer (o grupo é refeito a cada acesso)
+	get expression() { return (this._layer._ovx[this.name] || {}).x || ''; }
+	set expression(v) { this._layer._ovx[this.name] = { x: v, on: true }; }
+	get expressionEnabled() { return (this._layer._ovx[this.name] || { on: true }).on; }
+	set expressionEnabled(v) { (this._layer._ovx[this.name] = this._layer._ovx[this.name] || { x: '' }).on = v; }
 	get propertyType() { return PropertyType.PROPERTY; }
 	get propertyValueType() { return this._e.prop.propertyValueType; }
 	get essentialPropertySource() { return this._e.prop; }

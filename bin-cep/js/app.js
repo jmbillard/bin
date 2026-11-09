@@ -405,7 +405,10 @@
 				c.props++;
 				if (n.node.keys) c.keys += n.node.keys.length;
 				if (n.node.x) c.expr++;
-			} else if (n.kind === 'attr' || n.kind === 'marker' || n.kind === 'csetting' || n.kind === 'cinfo' || n.kind === 'ctrl' || n.kind === 'override') c.props++;
+			} else if (n.kind === 'attr' || n.kind === 'marker' || n.kind === 'csetting' || n.kind === 'cinfo' || n.kind === 'ctrl' || n.kind === 'override') {
+				c.props++;
+				if (n.kind === 'override' && n.node.x) c.expr++;
+			}
 			else if (n.kind === 'layer') c.layers++;
 			n.kids.forEach(walk);
 		})(id);
@@ -490,8 +493,11 @@
 			case 'ctrl':
 				if (v.missing) return '<span class="faint">origem desconhecida</span>';
 				return '<span class="vt">' + esc(v.layer.name) + ' › ' + esc(v.path[v.path.length - 1].name) + '</span>';
-			case 'override':
-				return preview(v.v);
+			case 'override': {
+				var ov = v.v !== undefined ? preview(v.v) : '<span class="faint">igual à da precomp</span>';
+				if (v.x) ov = '<span class="xf' + (S.expr ? '' : ' dis') + '" title="expressão' + (v.xoff ? ' (desligada)' : '') + '\n' + esc(v.x.split(/\r|\n/)[0].slice(0, 80)) + '">ƒ</span>' + ov;
+				return ov;
+			}
 		}
 		return '';
 	}
@@ -518,7 +524,10 @@
 		if (!fixedKind(n)) {
 			var tipLines = [label(n)];
 			if (n.kind === 'ctrl') tipLines.push(n.node.missing ? 'este After Effects não diz de onde vem o controle (precisa do AE 2022 ou mais novo)' : 'controle do essential graphics: ' + n.node.layer.name + ' › ' + n.node.path.map(function (s) { return s.name; }).join(' › ') + (n.node.group ? '\ngrupo “' + n.node.group + '” (grupos não são recriados)' : ''));
-			if (n.kind === 'override') tipLines.push('valor mudado nas essential properties desta layer');
+			if (n.kind === 'override') {
+				if (n.node.v !== undefined) tipLines.push('valor mudado nas essential properties desta layer');
+				if (n.node.x) tipLines.push('• expressão' + (n.node.xoff ? ' (desligada)' : '') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
+			}
 			if (n.kind === 'prop') {
 				tipLines.push(n.node.mn);
 				if (n.node.keys) tipLines.push('• ' + plural(n.node.keys.length, 'keyframe', 'keyframes'));

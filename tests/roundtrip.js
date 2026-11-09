@@ -198,6 +198,43 @@ function egpScene() {
 	report(/'Amplitude'/.test(sem) && !/'Crédito'/.test(sem) && !/'Amplitude'/.test(nada) && /'Tamanho'/.test(nada), '[essential graphics · exclusões] um controle ou o card inteiro');
 }
 {
+	// expressão numa essential property: entra mesmo com o valor igual ao de dentro da precomp, e no fim do script
+	const { ctx, comp } = egpScene();
+	const pl = comp.layer('PRE logo');
+	pl.property('ADBE Layer Overrides').property('Opacidade').expression = 'thisComp.layer("CONTROLE").effect("amp")(1) * 10';
+	pl.property('ADBE Layer Overrides').property('Tamanho').expression = '[100, 100]';
+	pl.property('ADBE Layer Overrides').property('Tamanho').expressionEnabled = false;
+	const cap = call(ctx, 'bin_captureComp');
+	const ovs = cap.comps.find((C) => C.id === cap.root).layers.find((L) => L.name === 'PRE logo').overrides;
+	const code = CG.generate(CG.prepare(JSON.parse(JSON.stringify(cap))), { target: 'new', now: NOW });
+	const last = run(ctx, code, 'egp-expr');
+	const g = ctx.app.project.activeItem._layers.find((l) => l.name === 'PRE logo').property('ADBE Layer Overrides');
+	const op = g.property('Opacidade'), tp = g.property('Tamanho');
+	report(ovs.length === 2 && op.expression === 'thisComp.layer("CONTROLE").effect("amp")(1) * 10' && op.expressionEnabled && tp.expression === '[100, 100]' && !tp.expressionEnabled && tp.value[0] === 500 && !last.errors.length,
+		'[essential graphics · expressões] expressão na essential property recriada (inclusive desligada), com o valor', 'capturadas ' + ovs.length + ' · erros ' + last.errors.length + (last.errors.length ? ': ' + last.errors.join(' | ') : ''));
+}
+{
+	// valor padrão de transform (escala 100%, opacidade 100%) não entra só porque o AE marcou como mexido
+	const { ctx, comp } = setup();
+	const sh = comp.layer('MATTE');
+	const tg = sh.property('ADBE Transform Group');
+	tg.property('ADBE Scale').setValue([100, 100, 100]);
+	tg.property('ADBE Opacity').setValue(100);
+	tg.property('ADBE Rotate Z').setValue(15);
+	['ADBE Scale', 'ADBE Opacity'].forEach((mn) => Object.defineProperty(tg.property(mn), 'isModified', { get: () => true })); // como no AE depois de mexer e voltar
+	comp._layers.forEach((l) => { l.selected = l === sh; });
+	const L = call(ctx, 'bin_capture').layers[0];
+	const tr = L.groups.find((n) => n.mn === 'ADBE Transform Group');
+	const names = tr ? tr.kids.map((n) => n.mn) : [];
+	report(names.indexOf('ADBE Scale') < 0 && names.indexOf('ADBE Opacity') < 0 && names.indexOf('ADBE Rotate Z') >= 0, '[padrões] escala 100% e opacidade 100% sem keys nem expressão ficam de fora (a rotação mudada fica)', names.join(', '));
+
+	// com expressão ou keys, o valor padrão continua
+	tg.property('ADBE Opacity').expression = 'value';
+	const L2 = call(ctx, 'bin_capture').layers[0];
+	const names2 = L2.groups.find((n) => n.mn === 'ADBE Transform Group').kids.map((n) => n.mn);
+	report(names2.indexOf('ADBE Opacity') >= 0, '[padrões] opacidade 100% com expressão continua no script');
+}
+{
 	// modo layers: a layer de precomp recriada na comp ativa leva o valor mudado (a precomp é a mesma do projeto)
 	const { ctx, comp } = egpScene();
 	const orig = comp.layer('PRE logo');

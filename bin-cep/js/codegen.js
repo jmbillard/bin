@@ -257,6 +257,11 @@
 						if (n.x) s.expr++;
 					});
 				})(L.groups);
+				if (!ex[L.overridesId]) (L.overrides || []).forEach(function (o) {
+					if (ex[o.id]) return;
+					s.props++;
+					if (o.x) s.expr++;
+				});
 			});
 		});
 		return s;
@@ -330,7 +335,12 @@
 			out.push('');
 			this.comment(out, ind, 'essential properties (valores mudados nesta layer)');
 			out.push(ind + 'bin.over(' + lv + ', [');
-			ov.forEach(function (o, i) { out.push(ind + I + '{ n: ' + lit(o.names) + ', v: ' + lit(o.v) + ' }' + (i < ov.length - 1 ? ',' : '')); });
+			ov.forEach(function (o, i) {
+				var parts = ['n: ' + lit(o.names)];
+				if (o.v !== undefined) parts.push('v: ' + lit(o.v));
+				if (o.x && self.o.expr) parts.push('x: ' + str(o.x) + (o.xoff ? ', on: false' : ''));
+				out.push(ind + I + '{ ' + parts.join(', ') + ' }' + (i < ov.length - 1 ? ',' : ''));
+			});
 			out.push(ind + ']);');
 		}
 
@@ -770,10 +780,10 @@
 				for (var i = 0; i < list.length; i++) {
 					var e = list[i], p = null;
 					try {
-						p = bin.at(e.at);
+						p = e.get ? e.get() : bin.at(e.at);
 						p.expression = e.x;
 						if (e.on === false) p.expressionEnabled = false;
-					} catch (err) { bin.err((p ? bin.path(p) : e.at.layer.name + ' › ' + e.at.mn) + ' (expressão)', err); }
+					} catch (err) { bin.err((e.label || (p ? bin.path(p) : e.at.layer.name + ' › ' + e.at.mn)) + ' (expressão)', err); }
 				}
 			},
 			// markers de layer ou de comp
@@ -861,16 +871,21 @@
 					} catch (err) { bin.err(e.n + ' (essential graphics)', err); }
 				}
 			},
-			// valores mudados nas essential properties de uma layer de precomp
+			// valores e expressões das essential properties de uma layer de precomp
+			ovp: function (l, names) {
+				var p = null;
+				try { p = l.property('ADBE Layer Overrides'); } catch (e0) { }
+				for (var k = 0; p && k < names.length; k++) { try { p = p.property(names[k]); } catch (e1) { p = null; } }
+				if (!p) throw new Error('essential property não encontrada');
+				return p;
+			},
 			over: function (l, list) {
-				var g = null;
-				try { g = l.property('ADBE Layer Overrides'); } catch (e0) { }
-				if (!g) { bin.err(l.name + ' > essential properties', 'a precomp não tem controles no essential graphics'); return; }
 				for (var i = 0; i < list.length; i++) {
-					var p = g;
-					for (var k = 0; p && k < list[i].n.length; k++) { try { p = p.property(list[i].n[k]); } catch (e1) { p = null; } }
-					if (!p) { bin.err(l.name + ' > ' + list[i].n.join(' > '), 'essential property não encontrada'); continue; }
-					try { p.setValue(bin.val(p, list[i].v)); } catch (e2) { bin.err(l.name + ' > ' + list[i].n.join(' > '), e2); }
+					var o = list[i], p;
+					try { p = bin.ovp(l, o.n); } catch (e1) { bin.err(l.name + ' > ' + o.n.join(' > '), e1); continue; }
+					if (o.v !== undefined) try { p.setValue(bin.val(p, o.v)); } catch (e2) { bin.err(l.name + ' > ' + o.n.join(' > '), e2); }
+					// a expressão entra no fim, como as outras (o grupo é refeito pelo AE: guarda a layer e os nomes)
+					if (o.x !== undefined) bin.pend.push({ get: (function (layer, names) { return function () { return bin.ovp(layer, names); }; })(l, o.n), x: o.x, on: o.on, label: l.name + ' > ' + o.n.join(' > ') });
 				}
 			},
 			parent: function (l, p) {

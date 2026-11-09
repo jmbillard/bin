@@ -183,7 +183,7 @@ no modo **comp inteira**, o BIN captura a comp ativa com todas as layers e tamb�
   </tr>
 </table>
 
-**essential graphics:** cada comp com controles no Essential Graphics ganha o card **essential graphics** (com o nome do template), listando os controles na ordem do painel e de onde vem cada um (`CONTROLE › Slider`). o script recria os controles com os mesmos nomes, na mesma ordem, e o nome do template. nas layers de precomp, o card **essential properties** traz os valores mudados ali (diferentes do valor dentro da precomp), e o script os aplica na layer recriada. como o resto, o olho tira um controle ou o card inteiro; se a layer de origem de um controle sair do script, o controle sai também e o painel avisa.
+**essential graphics:** cada comp com controles no Essential Graphics ganha o card **essential graphics** (com o nome do template), listando os controles na ordem do painel e de onde vem cada um (`CONTROLE › Slider`). o script recria os controles com os mesmos nomes, na mesma ordem, e o nome do template. nas layers de precomp, o card **essential properties** traz os valores mudados ali (diferentes do valor dentro da precomp) e as expressões (marcadas com **ƒ**), e o script os aplica na layer recriada; as expressões entram no fim, como as outras. como o resto, o olho tira um controle ou o card inteiro; se a layer de origem de um controle sair do script, o controle sai também e o painel avisa.
 
 > precisa do After Effects 2022 ou mais novo para saber de onde vem cada controle. para ler os controles de uma comp que não está dentro de nenhuma outra, o BIN cria uma comp temporária e a apaga em seguida (isso aparece no histórico de desfazer). grupos do Essential Graphics não são recriados: o After Effects não deixa criá-los por script, então os controles entram soltos.
 
@@ -370,13 +370,13 @@ o **[BIN docs](docs-app/README.md)** é um app web que transforma o pacote para 
 |---|---|
 | **tipos de layer** | shape, texto (ponto e caixa), solid, adjustment, null, câmera, luz, precomp e footage (procurados no projeto pelo nome; footage é reimportado do caminho original se existir) |
 | **atributos** | nome, rótulo, comentário, entrada / saída, início, stretch, 3D, motion blur, blend mode, qualidade, guia, shy, auto-orient, time remap, travada… |
-| **propriedades** | valores, keyframes (interpolação, easing, tangentes espaciais, continuidade, auto-bezier, roving), expressões (inclusive desligadas), posição com dimensões separadas |
+| **propriedades** | valores (o que voltou ao padrão do transform, como escala 100%, fica de fora), keyframes (interpolação, easing, tangentes espaciais, continuidade, auto-bezier, roving), expressões (inclusive desligadas), posição com dimensões separadas |
 | **grupos** | grupos de shape e todos os itens, efeitos (inclusive desligados), máscaras (modo, invertida, feather, cor), animators de texto com seletores |
 | **texto** | fonte, tamanho, cor, contorno, alinhamento, tracking, entrelinha, caixa de texto e, no AE 24.3+, estilos diferentes por trecho |
 | **markers** | comentário, duração, rótulo, capítulo, URL, cue point e parâmetros |
 | **entre layers** | parent (sem pular a posição) e track matte |
 | **comps** | tamanho, duração, frame rate, cor de fundo, início do timecode, work area, motion blur e shutter, frame blending, shy, draft 3D, renderizador, rótulo, comentário, markers e precomps aninhadas |
-| **essential graphics** | controles da comp (nome, ordem e de onde vêm), nome do template e os valores mudados nas essential properties das layers de precomp |
+| **essential graphics** | controles da comp (nome, ordem e de onde vêm), nome do template e, nas layers de precomp, os valores mudados e as expressões (inclusive desligadas) das essential properties |
 
 **não recriados:** estilos de layer (a API do After Effects não permite adicioná-los), máscaras de efeito e grupos do Essential Graphics. o painel avisa quando a layer usa algum deles.
 
