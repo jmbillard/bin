@@ -254,7 +254,7 @@
 	}
 
 	function opts() {
-		return { target: S.target, wrap: S.wrap, parent: S.parent, comments: S.comments, keys: S.keys, expr: S.expr, excluded: state.ex };
+		return { target: S.target, wrap: S.wrap, parent: S.parent, comments: S.comments, keys: S.keys, expr: S.expr, excluded: state.ex, ffx: ffxMap() };
 	}
 
 	// ---------------------------------------------------- captura ----------
@@ -361,18 +361,76 @@
 	}
 
 	// ------------------------------------------------------ render ---------
-	// aba utilitários: XML dos pseudo effects da captura
+	// ------------------------------------------------- pseudo effects -----
+	// o .ffx de cada pseudo effect, salvo pelo próprio AE; o caminho fica guardado (S.ffx) e os bytes vão para o script
+	var ffxCache = {};
+	function ffxBytes(mn) {
+		var p = S.ffx && S.ffx[mn];
+		if (!p) return null;
+		if (ffxCache[mn] && ffxCache[mn].path === p) return ffxCache[mn].bytes;
+		try {
+			var b = BIN.fs.readBinary(p);
+			if (!b || !b.length) return null;
+			ffxCache[mn] = { path: p, bytes: b };
+			return b;
+		} catch (e) { return null; }
+	}
+
+	function ffxMap() {
+		var out = {};
+		if (state.m) CG.pseudoEffects(state.m).forEach(function (p) { var b = ffxBytes(p.mn); if (b) out[p.mn] = b; });
+		return out;
+	}
+
+	function useFfx(mn, path) {
+		S.ffx = S.ffx || {};
+		S.ffx[mn] = path;
+		delete ffxCache[mn];
+		saveSettings();
+		if (!ffxBytes(mn)) { delete S.ffx[mn]; saveSettings(); UI.toast('não foi possível ler ' + esc(BIN.fs.basename(path)) + '.', 'error'); }
+		else UI.toast('<b>' + esc(BIN.fs.basename(path)) + '</b> entra no script: o pseudo effect funciona em qualquer máquina.', 'ok', { life: 2600 });
+		state.code = null;
+		renderPseudo();
+		renderSummary();
+		if (state.tab === 'code') renderCode();
+	}
+
+	function savePseudo(p) {
+		var at = p.at[0];
+		UI.toast('salve o .ffx no diálogo do After Effects…', 'info', { life: 2600 });
+		BIN.callHostJSON('bin_savePseudo', [at.comp, at.layer, at.fx, p.mn]).then(function (r) {
+			if (r.file) useFfx(p.mn, r.file);
+			else UI.toast('o .ffx foi salvo fora da pasta de presets (ou o diálogo foi cancelado).', 'warn', {
+				sticky: true,
+				actions: [{ label: 'escolher o .ffx', icon: 'open', run: function () { pickFfx(p); } }]
+			});
+		}).catch(function (e) { UI.toast(esc(e.message), 'error', { sticky: true }); });
+	}
+
+	function pickFfx(p) {
+		BIN.dialog.openFiles('escolha o .ffx de ' + p.name, ['ffx'], true).then(function (paths) {
+			if (paths && paths.length) useFfx(p.mn, paths[0]);
+		});
+	}
+
 	function renderPseudo() {
 		var list = state.m ? CG.pseudoEffects(state.m) : [];
 		$('pseudoNone').classList.toggle('hidden', !!list.length);
-		$('pseudoOut').classList.toggle('hidden', !list.length);
-		if (!list.length) return;
-		var xml = list.map(function (p) { return CG.pseudoXML(p.mn, p.def); }).join('\n\n');
-		state.tools.pseudo = xml;
-		$('pseudoInfo').textContent = plural(list.length, 'pseudo effect', 'pseudo effects') + ' · ' + list.map(function (p) { return p.mn.replace(/^Pseudo\//, ''); }).join(', ');
-		$('pseudoOut').querySelector('pre').innerHTML = xml.split('\n').map(function (l) {
-			return /<!--/.test(l) ? esc(l).replace(/(&lt;!--.*?--&gt;)/g, '<span class="tk-c">$1</span>') : esc(l);
-		}).join('\n');
+		state.pseudo = list;
+		$('pseudoList').innerHTML = list.map(function (p, i) {
+			var has = !!ffxBytes(p.mn);
+			var where = p.at.map(function (a) { return a.layerName; }).filter(function (n, k, all) { return all.indexOf(n) === k; }).join(', ');
+			return '<div class="pseudo-item' + (has ? ' ok' : '') + '">' +
+				'<div class="pseudo-head"><b>' + esc(p.mn.replace(/^Pseudo\//, '')) + '</b><small>' + esc(where) + '</small></div>' +
+				'<div class="pseudo-state">' + (has
+					? UI.icon('check') + '<span>' + esc(BIN.fs.basename(S.ffx[p.mn])) + ' · entra no script</span>'
+					: UI.icon('alert') + '<span>sem .ffx: o script só cria o efeito onde ele estiver instalado</span>') + '</div>' +
+				'<div class="pseudo-acts">' +
+				'<button class="btn small" data-pseudo-save="' + i + '" title="salvar .ffx\nabre o “Save Animation Preset” do After Effects com o efeito selecionado"><i data-icon="save"></i>' + (has ? 'salvar de novo' : 'salvar .ffx') + '</button>' +
+				'<button class="btn small ghost" data-pseudo-pick="' + i + '" title="escolher .ffx\nusa um .ffx que você já tem"><i data-icon="open"></i>escolher .ffx</button>' +
+				'</div></div>';
+		}).join('');
+		UI.hydrateIcons($('pseudoList'));
 	}
 
 	function render() {
@@ -682,8 +740,9 @@
 				(function walk(list) {
 					list.forEach(function (n) {
 						if (ex[n.id]) return;
-						if (n.pseudo) add('pseudo effect “' + n.mn.replace(/^Pseudo\//, '') + '”: precisa estar no PresetEffects.xml de quem rodar o script (o XML está na aba utilitários).');
-						else if (n.fx && !NATIVE_FX.test(n.mn)) fx[n.name + ' (' + n.mn + ')'] = true;
+						if (n.pseudo) {
+							if (!ffxBytes(n.mn)) add('pseudo effect “' + n.mn.replace(/^Pseudo\//, '') + '”: sem o .ffx, o script só cria o efeito onde ele estiver instalado. Salve o .ffx na aba utilitários.');
+						} else if (n.fx && !NATIVE_FX.test(n.mn)) fx[n.name + ' (' + n.mn + ')'] = true;
 						if (n.mn === 'ADBE Text Document') [n.v].concat((n.keys || []).map(function (k) { return k.v; })).forEach(function (v) {
 							if (v && v.doc) {
 								if (v.doc.font) fonts[v.doc.font] = true;
@@ -1264,11 +1323,18 @@
 			if (files.length) openScripts(files.map(function (f) { return f.path && BIN.hasFS ? { path: f.path } : { file: f }; }));
 		});
 
+		$('pseudoList').addEventListener('click', function (e) {
+			var b = e.target.closest && e.target.closest('button');
+			if (!b || !state.pseudo) return;
+			if (b.dataset.pseudoSave !== undefined) savePseudo(state.pseudo[+b.dataset.pseudoSave]);
+			if (b.dataset.pseudoPick !== undefined) pickFfx(state.pseudo[+b.dataset.pseudoPick]);
+		});
+
 		each(document.querySelectorAll('[data-copy]'), function (b) {
-			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : b.dataset.copy === 'pseudo' ? 'XML' : 'código'); };
+			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : 'código'); };
 		});
 		each(document.querySelectorAll('[data-save]'), function (b) {
-			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? 'expressoes.jsxinc' : b.dataset.save === 'pseudo' ? 'pseudo_effects.xml' : state.tools.binName); };
+			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? 'expressoes.jsxinc' : state.tools.binName); };
 		});
 	}
 
@@ -1348,7 +1414,7 @@
 		}).then(function () { if (!state.m) pollSelection(); });
 	}
 
-	BIN.app = { capture: capture, showTab: showTab, state: state, mapError: mapError, collapse: collapse, expand: expand };
+	BIN.app = { capture: capture, showTab: showTab, state: state, mapError: mapError, collapse: collapse, expand: expand, opts: opts };
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
 	else bind();

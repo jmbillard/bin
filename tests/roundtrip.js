@@ -248,8 +248,8 @@ function egpScene() {
 }
 
 // ------------------------------------------------------------ pseudo effects
-// definição lida do efeito, XML do PresetEffects.xml e recriação (com e sem o pseudo effect instalado)
-{
+// o .ffx salvo pelo próprio AE (Save Animation Preset) entra no script e registra o efeito onde ele não existe
+function pseudoScene() {
 	const { ctx, comp } = setup();
 	const l = comp.layer('CONTROLE');
 	const fx = l.property('ADBE Effect Parade').addProperty('Pseudo/BIN Texto');
@@ -257,28 +257,50 @@ function egpScene() {
 	fx.property('Pseudo/BIN Texto-0009').setValue(-20);
 	l.outPoint = 7; // atributo aplicado depois dos efeitos: confirma que a layer foi até o fim
 	comp._layers.forEach((x) => { x.selected = x === l; });
-	const cap = call(ctx, 'bin_capture');
-	const m = CG.prepare(JSON.parse(JSON.stringify(cap)));
+	return { ctx, comp, l, fxIndex: l.property('ADBE Effect Parade').numProperties };
+}
+const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c.charCodeAt(0));
+{
+	const { ctx, comp, l, fxIndex } = pseudoScene();
+	const m = CG.prepare(call(ctx, 'bin_capture'));
 	const list = CG.pseudoEffects(m);
-	const xml = list.length ? CG.pseudoXML(list[0].mn, list[0].def) : '';
-	const has = (re) => re.test(xml);
-	report(list.length === 1 && has(/<Effect matchname="Pseudo\/BIN Texto"/) && has(/<Slider name="\$\$\$\/AE\/Preset\/Tamanho=Tamanho" default="96" valid_min="0" valid_max="1000"/) &&
-		has(/<Angle name="[^"]*=Inclinação" default="0"\/>/) && has(/<Checkbox [^>]*default="false"/) && has(/<Color [^>]*default_red="255" default_green="128" default_blue="0"/) &&
-		has(/<Point [^>]*default_x="0.5" default_y="0.5"/) && has(/<Popup [^>]*default="2" content="opção 1\|opção 2\|opção 3"/) && has(/<Layer /) &&
-		has(/<Group name="[^"]*=Avançado">\n\t\t<Slider name="[^"]*=Respiro" default="-20"/) && has(/\t<\/Group>\n<\/Effect>$/),
-		'[pseudo effects] XML do PresetEffects.xml com cada tipo de parâmetro e o grupo', (xml.match(/<(\w+) /g) || []).length + ' tags');
+	report(list.length === 1 && list[0].mn === 'Pseudo/BIN Texto' && list[0].at[0].layer === l.index && list[0].at[0].fx === fxIndex && list[0].at[0].comp === comp.id,
+		'[pseudo effects] a captura diz onde está cada pseudo effect (comp, layer, posição)');
 
-	const code = CG.generate(m, { target: 'new', now: NOW });
-	let last = run(ctx, code, 'pseudo-ok');
-	const made = ctx.app.project.activeItem.layer('CONTROLE').property('ADBE Effect Parade').property('Pseudo/BIN Texto');
-	report(!!made && made.property('Pseudo/BIN Texto-0001').value === 96 && made.property('Pseudo/BIN Texto-0009').value === -20 && !last.errors.length, '[pseudo effects] instalado: recriado com os valores');
+	// salvar o .ffx pelo AE: só o efeito selecionado, na pasta de presets do usuário
+	const r = JSON.parse(ctx.bin_savePseudo(comp.id, l.index, fxIndex, 'Pseudo/BIN Texto'));
+	const sel = l.property('ADBE Effect Parade').property(fxIndex).selected && l.selected && comp._layers.filter((x) => x.selected).length === 1;
+	report(r.ok && /User Presets\/BIN Texto\.ffx$/.test(r.file) && sel, '[pseudo effects] salvar .ffx: seleciona só o efeito, abre o Save Animation Preset e acha o arquivo', r.file);
+	const ffx = bytesOf(ctx, r.file);
 
-	ctx.__env.pseudo = false; // outra máquina, sem o pseudo effect no PresetEffects.xml
-	last = run(ctx, code, 'pseudo-falta');
+	// script com o .ffx embutido, numa máquina sem o pseudo effect
+	const code = CG.generate(m, { target: 'new', now: NOW, ffx: { 'Pseudo/BIN Texto': ffx } });
+	ctx.__env.pseudo = false;
+	const files = ctx.__fs.files.size;
+	const last = run(ctx, code, 'pseudo-ffx');
+	const made = ctx.app.project.activeItem.layer('CONTROLE');
+	const nfx = made && made.property('ADBE Effect Parade').property('Pseudo/BIN Texto');
+	report(/var FFX = \{/.test(code) && /bin\.pseudo\(effects, 'Pseudo\/BIN Texto', 'BIN Texto', FFX\['Pseudo\/BIN Texto'\]\)/.test(code) && !!nfx &&
+		nfx.property('Pseudo/BIN Texto-0001').value === 96 && nfx.property('Pseudo/BIN Texto-0009').value === -20 && made.outPoint === 7 && !last.errors.length &&
+		!ctx.app.project._items.some((i) => /registro do pseudo effect/.test(i.name)) && ctx.__fs.files.size === files,
+		'[pseudo effects] sem o efeito instalado: o .ffx embutido o registra (comp e arquivo temporários somem) e os valores entram', 'erros ' + last.errors.length + (last.errors.length ? ': ' + last.errors.join(' | ') : '') + ' · registrado: ' + !!ctx.__env.registered['Pseudo/BIN Texto']);
+
+	// sem .ffx: um erro claro e o resto da layer recriado
+	ctx.__env.registered = {};
+	const code2 = CG.generate(m, { target: 'new', now: NOW });
+	const last2 = run(ctx, code2, 'pseudo-sem-ffx');
 	const made2 = ctx.app.project.activeItem.layer('CONTROLE');
-	report(last.errors.length === 1 && /pseudo effect não instalado.*PresetEffects\.xml/.test(last.errors[0]) && !!made2 && !!made2.property('ADBE Effect Parade').property('amp') && made2.outPoint === 7,
-		'[pseudo effects] não instalado: um erro claro, e o resto da layer (até a saída) recriado', last.errors.join(' | '));
+	report(!/var FFX/.test(code2) && last2.errors.length === 1 && /pseudo effect não instalado nesta máquina.*\.ffx/.test(last2.errors[0]) && made2.outPoint === 7 && !!made2.property('ADBE Effect Parade').property('amp'),
+		'[pseudo effects] sem .ffx: um erro claro, e o resto da layer (até a saída) recriado', last2.errors.join(' | '));
 	ctx.__env.pseudo = true;
+
+	// diálogo cancelado ou salvo fora da pasta de presets: sem arquivo (o painel pede para escolher)
+	ctx.__fs.dialog = null;
+	const c1 = JSON.parse(ctx.bin_savePseudo(comp.id, l.index, fxIndex, 'Pseudo/BIN Texto'));
+	ctx.__fs.dialog = { dir: '/Users/teste/Desktop', name: 'x.ffx' };
+	const c2 = JSON.parse(ctx.bin_savePseudo(comp.id, l.index, fxIndex, 'Pseudo/BIN Texto'));
+	const c3 = JSON.parse(ctx.bin_savePseudo(comp.id, l.index, 1, 'Pseudo/BIN Texto'));
+	report(c1.ok && c1.file === null && c2.ok && c2.file === null && /não está mais nessa layer/.test(c3.error), '[pseudo effects] cancelado ou fora da pasta: sem arquivo; efeito que mudou de lugar: erro');
 }
 
 // ---------------------------------------------------------- layers ------

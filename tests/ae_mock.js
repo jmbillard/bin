@@ -40,7 +40,7 @@ for (const k in ENUM_NAMES) { ENUMS[k] = makeEnum(ENUM_NAMES[k], base); base += 
 
 const VT = PropertyValueType;
 // pseudo effects instalados no PresetEffects.xml desta "máquina" (os testes desligam para simular outra)
-const ENV = { pseudo: true };
+const ENV = { pseudo: true, registered: {} };
 const clone = (v) => (v && typeof v === 'object') ? (typeof v.clone === 'function' ? v.clone() : JSON.parse(JSON.stringify(v))) : v;
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -351,7 +351,7 @@ class Group extends PropertyBase {
 	canAddProperty(mn) {
 		const a = this._addable();
 		if (!a || !a[mn]) return false;
-		if (/^Pseudo\//.test(mn) && !ENV.pseudo) return false;
+		if (/^Pseudo\//.test(mn) && !ENV.pseudo && !ENV.registered[mn]) return false;
 		if (this._spec.addableNamed) return !!(this.property(mn) && this.property(mn)._hidden && !a[mn]().fixed);
 		return true;
 	}
@@ -409,6 +409,15 @@ class AVLayer extends Layer {
 		this._addGroup(IG('ADBE Effect Parade', 'Effects', EFFECTS));
 	}
 	setTrackMatte(layer, type) { this.trackMatteLayer = layer; this.trackMatteType = type; }
+	applyPreset(file) {
+		const f = new file.constructor(file.fsName);
+		if (!f.open('r')) throw new Error('applyPreset: arquivo não encontrado');
+		const data = f.read(); f.close();
+		const m = /^RIFX[\s\S]{4}FaFX[\s\S]*?(Pseudo\/[^\x00]+)/.exec(data);
+		if (!m) throw new Error('applyPreset: não é um .ffx');
+		ENV.registered[m[1]] = true;
+		this.property('ADBE Effect Parade').addProperty(m[1]);
+	}
 	get width() { return this.source ? this.source.width : this.containingComp.width; }
 	get height() { return this.source ? this.source.height : this.containingComp.height; }
 	// Essential Properties: aparece quando a comp de origem tem controles no essential graphics
@@ -569,16 +578,72 @@ class Project {
 }
 
 // ------------------------------------------------------------- contexto --
+// sistema de arquivos em memória (File / Folder do ExtendScript), com a pasta de presets do usuário
+function makeFS(project) {
+	const files = new Map(), dirs = new Set();
+	const DOCS = '/Users/teste/Documents', PRESETS = DOCS + '/Adobe/After Effects 2026/User Presets';
+	const base = (p) => String(p).replace(/\/+$/, '').replace(/^.*\//, '');
+	const mkdirs = (p) => { let d = String(p); while (d && d !== '/') { dirs.add(d); d = d.replace(/\/[^/]*$/, ''); } };
+	[DOCS, PRESETS, '/tmp/ae'].forEach(mkdirs);
+	class File {
+		constructor(p) { this.fsName = String(p); this.encoding = 'UTF-8'; this._buf = null; this._mode = null; }
+		get name() { return base(this.fsName); }
+		get exists() { return files.has(this.fsName); }
+		get modified() { const f = files.get(this.fsName); return f ? new Date(f.t) : null; }
+		get length() { const f = files.get(this.fsName); return f ? f.data.length : -1; }
+		open(mode) { this._mode = mode; if (mode === 'w') { this._buf = ''; return true; } const f = files.get(this.fsName); this._buf = f ? f.data : ''; return !!f; }
+		write(t) { this._buf += String(t); return true; }
+		read() { return this._buf; }
+		close() { if (this._mode === 'w') { mkdirs(this.fsName.replace(/\/[^/]*$/, '')); files.set(this.fsName, { data: this._buf, t: Date.now() }); } this._mode = null; return true; }
+		remove() { return files.delete(this.fsName); }
+	}
+	class Folder {
+		constructor(p) { this.fsName = String(p).replace(/\/+$/, ''); }
+		get name() { return base(this.fsName); }
+		get exists() { return dirs.has(this.fsName); }
+		create() { mkdirs(this.fsName); return true; }
+		getFiles() {
+			const out = [], pre = this.fsName + '/';
+			dirs.forEach((d) => { if (d.startsWith(pre) && d.slice(pre.length).indexOf('/') < 0) out.push(new Folder(d)); });
+			files.forEach((f, p) => { if (p.startsWith(pre) && p.slice(pre.length).indexOf('/') < 0) out.push(new File(p)); });
+			return out;
+		}
+	}
+	Folder.temp = new Folder('/tmp/ae');
+	Folder.myDocuments = new Folder(DOCS);
+	return { File, Folder, files, PRESETS };
+}
+
+// "Save Animation Preset...": o diálogo de salvar do AE é simulado por fs.dialog (pasta e nome, ou null = cancelar).
+// O .ffx gravado leva o matchName do pseudo effect selecionado, como o arquivo real.
+const SAVE_PRESET = 3075;
+function savePreset(project, fs) {
+	const comp = project.activeItem;
+	let fx = null;
+	if (comp) comp._layers.forEach((l) => { const g = l.property('ADBE Effect Parade'); for (let i = 1; g && i <= g.numProperties; i++) if (g.property(i).selected) fx = g.property(i); });
+	if (!fx) throw new Error('Save Animation Preset: nada selecionado');
+	const pick = fs.dialog === undefined ? { dir: fs.PRESETS, name: fx.name + '.ffx' } : fs.dialog;
+	if (!pick) return; // cancelou
+	const f = new fs.File(pick.dir + '/' + pick.name);
+	f.encoding = 'BINARY'; f.open('w'); f.write('RIFX\x00\x00\x10\x00FaFXLIST' + fx.matchName + '\x00\xff\xfe binário'); f.close();
+}
+
 function createContext() {
 	const project = new Project();
 	const alerts = [];
+	const fs2 = makeFS(project);
+	ENV.registered = {};
 	const ctx = {
 		__env: ENV,
 		PropertyType, PropertyValueType, KeyframeInterpolationType, Shape, TextDocument, KeyframeEase, MarkerValue,
 		Layer, AVLayer, ShapeLayer, TextLayer, CameraLayer, LightLayer, CompItem, FootageItem, SolidSource, FileSource,
-		app: { project, version: '24.6.0x1', beginUndoGroup() { }, endUndoGroup() { }, executeCommand() { } },
+		app: {
+			project, version: '24.6.0x1', beginUndoGroup() { }, endUndoGroup() { },
+			findMenuCommandId: (n) => (n === 'Save Animation Preset...' ? SAVE_PRESET : 0),
+			executeCommand(id) { if (id === SAVE_PRESET) savePreset(project, fs2); }
+		},
 		alert: (m) => alerts.push(m),
-		File: class { constructor(p) { this.fsName = p; this.exists = false; } },
+		File: fs2.File, Folder: fs2.Folder, __fs: fs2,
 		ImportOptions: class { },
 		console
 	};

@@ -614,6 +614,18 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .drop b { color: var(--txt); }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 
+/* pseudo effects → .ffx */
+.pseudo-list { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
+.pseudo-item { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+.pseudo-item.ok { border-color: rgba(60, 207, 142, .45); }
+.pseudo-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.pseudo-head b { font-family: var(--mono); font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pseudo-head small { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pseudo-state { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--warn); }
+.pseudo-item.ok .pseudo-state { color: var(--ok); }
+.pseudo-state .ico { width: 13px; height: 13px; flex: none; }
+.pseudo-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+
 /* script arrastado para o painel: abre no editor */
 .drop-all { position: fixed; inset: 10px; z-index: 50; display: none; place-items: center; border: 2px dashed var(--accent); border-radius: 14px; background: var(--veil); backdrop-filter: blur(3px); pointer-events: none; }
 .drop-all > div { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--muted); text-align: center; }

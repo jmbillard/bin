@@ -268,88 +268,8 @@
 	};
 
 	// ====================================================== pseudo effects ==
-	// XML do PresetEffects.xml a partir do que a captura leu de um pseudo effect. O AE não informa os nomes
-	// das opções de um popup, a faixa visual do slider nem o valor padrão original (vale o valor atual):
-	// esses pontos saem com um comentário "conferir".
-	function xmlAttr(v) { return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-	function presetId(label, i) {
-		var id = String(label).normalize ? String(label).normalize('NFD').replace(/[̀-ͯ]/g, '') : String(label);
-		id = id.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-		return id || 'param_' + i;
-	}
-	function presetName(label, i) { return '$$$/AE/Preset/' + presetId(label, i) + '=' + xmlAttr(label); }
-	function decimals(v) { var m = String(v).match(/\.(\d+)/); return m ? Math.min(2, m[1].length) : 0; }
-	function round(v, d) { var f = Math.pow(10, d); return Math.round(v * f) / f; }
-
-	// tipo do parâmetro no PresetEffects.xml (com a dúvida, quando há)
-	CG.pseudoType = function (p) {
-		if (p.vt === 'COLOR') return { t: 'Color' };
-		if (p.vt === 'TwoD' || p.vt === 'TwoD_SPATIAL') return { t: 'Point' };
-		if (p.vt === 'ThreeD' || p.vt === 'ThreeD_SPATIAL') return { t: 'Point3D' };
-		if (p.vt === 'LAYER_INDEX') return { t: 'Layer' };
-		if (p.vt === 'NO_VALUE') return { t: p.name ? 'GroupStart' : 'GroupEnd' };
-		if (p.vt !== 'OneD') return { t: null };
-		if (/degree|grau/i.test(p.units || '')) return { t: 'Angle' };
-		var whole = p.v === Math.round(p.v);
-		if (p.dropdown) return { t: 'Popup' };
-		if (p.min === 0 && p.max === 1 && (p.v === 0 || p.v === 1)) return { t: 'Checkbox', doubt: 'checkbox ou slider de 0 a 1' };
-		if (p.min === 1 && whole && p.max >= 2 && p.max <= 64 && p.max === Math.round(p.max) && !p.units) return { t: 'Popup', doubt: 'popup ou slider inteiro' };
-		return { t: 'Slider' };
-	};
-
-	CG.pseudoXML = function (mn, def) {
-		var I1 = '\t', out = [], depth = 1;
-		var pad = function () { return new Array(depth + 1).join(I1); };
-		var label = String(mn).replace(/^Pseudo\//, '');
-		var size = def.size || [];
-		out.push('<!-- pseudo effect “' + xmlAttr(def.name || label) + '” extraído pelo BIN: cole dentro de <Effects> no PresetEffects.xml -->');
-		out.push('<Effect matchname="' + xmlAttr(mn) + '" name="' + presetName(label, 0) + '">');
-		(def.params || []).forEach(function (p, i) {
-			var ty = CG.pseudoType(p), n = presetName(p.name, i + 1), line = null, note = ty.doubt ? 'conferir: ' + ty.doubt : '';
-			switch (ty.t) {
-				case 'GroupStart': out.push(pad() + '<Group name="' + n + '">'); depth++; return;
-				case 'GroupEnd': if (depth > 1) depth--; out.push(pad() + '</Group>'); return;
-				case 'Color': {
-					var c = (p.v || [1, 1, 1]).map(function (x) { return Math.round(Math.max(0, Math.min(1, x)) * 255); });
-					line = '<Color name="' + n + '" default_red="' + c[0] + '" default_green="' + c[1] + '" default_blue="' + c[2] + '"/>';
-					break;
-				}
-				case 'Point': case 'Point3D': {
-					var v = p.v || [0, 0, 0];
-					var fx = size[0] ? round(v[0] / size[0], 4) : 0.5, fy = size[1] ? round(v[1] / size[1], 4) : 0.5;
-					line = '<' + ty.t + ' name="' + n + '" default_x="' + fx + '" default_y="' + fy + '"' + (ty.t === 'Point3D' ? ' default_z="' + round(v[2] || 0, 2) + '"' : '') + '/>';
-					note = 'conferir: posição em fração do tamanho da layer (' + round(v[0], 2) + ', ' + round(v[1], 2) + ' px)';
-					break;
-				}
-				case 'Layer': line = '<Layer name="' + n + '" default_self="false"/>'; break;
-				case 'Angle': line = '<Angle name="' + n + '" default="' + round(p.v || 0, 2) + '"/>'; break;
-				case 'Checkbox': line = '<Checkbox name="' + n + '" default="' + (p.v ? 'true' : 'false') + '"/>'; break;
-				case 'Popup': {
-					var count = p.max && p.max === Math.round(p.max) ? p.max : Math.max(2, p.v || 1), opts = [];
-					for (var k = 1; k <= count; k++) opts.push('opção ' + k);
-					line = '<Popup name="' + n + '" default="' + (p.v || 1) + '" content="' + opts.join('|') + '"/>';
-					note = 'conferir: ' + (ty.doubt ? ty.doubt + '; ' : '') + 'o AE não informa os nomes das opções';
-					break;
-				}
-				case 'Slider': {
-					var d = decimals(p.v), lo = p.min !== undefined ? p.min : -1000000, hi = p.max !== undefined ? p.max : 1000000;
-					var smin = Math.max(lo, Math.min(0, p.v)), smax = Math.min(hi, Math.max(100, p.v));
-					line = '<Slider name="' + n + '" default="' + round(p.v, 2) + '" valid_min="' + lo + '" valid_max="' + hi + '" slider_min="' + smin + '" slider_max="' + smax + '" precision="' + d + '"' + (/percent|%/i.test(p.units || '') ? ' percent="true"' : '') + '/>';
-					note = note || 'conferir: faixa do slider (' + smin + ' a ' + smax + ')';
-					break;
-				}
-				default:
-					out.push(pad() + '<!-- “' + xmlAttr(p.name) + '” (' + p.vt + '): tipo sem equivalente no PresetEffects.xml -->');
-					return;
-			}
-			out.push(pad() + line + (note ? ' <!-- ' + xmlAttr(note) + ' -->' : ''));
-		});
-		while (depth > 1) { depth--; out.push(pad() + '</Group>'); }
-		out.push('</Effect>');
-		return out.join('\n');
-	};
-
-	// pseudo effects da captura (um por matchName), com as layers que os usam
+	// pseudo effects da captura (um por matchName) e onde cada um está: comp, layer e posição na pilha de efeitos
+	// (o painel usa para salvar o .ffx pelo próprio After Effects)
 	CG.pseudoEffects = function (m) {
 		var seen = {}, list = [];
 		(m.comps || []).forEach(function (C) {
@@ -357,8 +277,8 @@
 				(function walk(nodes) {
 					(nodes || []).forEach(function (n) {
 						if (n.pseudo) {
-							if (!seen[n.mn]) { seen[n.mn] = { mn: n.mn, def: n.pseudo, layers: [] }; list.push(seen[n.mn]); }
-							if (seen[n.mn].layers.indexOf(L.name) < 0) seen[n.mn].layers.push(L.name);
+							if (!seen[n.mn]) { seen[n.mn] = { mn: n.mn, name: n.name, at: [] }; list.push(seen[n.mn]); }
+							seen[n.mn].at.push({ comp: C.id, layer: L.index, layerName: L.name, fx: n.idx, id: n.id });
 						}
 						if (n.kids) walk(n.kids);
 					});
@@ -368,8 +288,25 @@
 		return list;
 	};
 
+	// .ffx que entram no script: só os dos pseudo effects que o script cria
+	function ffxUsed(g) {
+		var ffx = g.o.ffx || {}, used = {}, any = false;
+		g.comps.forEach(function (C) {
+			CG.layersIn(C, g.ex).forEach(function (L) {
+				(function walk(nodes) {
+					(nodes || []).forEach(function (n) {
+						if (g.ex[n.id]) return;
+						if (n.pseudo && ffx[n.mn] && !used[n.mn]) { used[n.mn] = ffx[n.mn]; any = true; }
+						if (n.kids) walk(n.kids);
+					});
+				})(L.groups);
+			});
+		});
+		return any ? used : null;
+	}
+
 	// ============================================================= geração ==
-	var DEFAULT_OPTS = { target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, excluded: {}, now: null };
+	var DEFAULT_OPTS = { target: 'active', wrap: true, parent: true, comments: true, keys: true, expr: true, excluded: {}, now: null, ffx: null };
 
 	var SECTION = /^(ADBE Transform Group|ADBE Root Vectors Group|ADBE Effect Parade|ADBE Mask Parade|ADBE Text Properties|ADBE Camera Options Group|ADBE Light Options Group|ADBE Material Options Group|ADBE Audio Group)$/;
 	var ITEM = /^(ADBE Vector Group|ADBE Mask Atom|ADBE Text Animator)$/;
@@ -489,7 +426,8 @@
 				out.push('');
 				this.comment(out, ind, n.name.toLowerCase());
 			}
-			out.push(ind + 'var ' + v + ' = ' + (n.add ? 'bin.add(' + pv + ', ' + str(n.mn) + ', ' + str(n.name) + ')' : access(n, pv)) + ';');
+			var mk = n.pseudo && this.ffx && this.ffx[n.mn] ? 'bin.pseudo(' + pv + ', ' + str(n.mn) + ', ' + str(n.name) + ', FFX[' + str(n.mn) + '])' : 'bin.add(' + pv + ', ' + str(n.mn) + ', ' + str(n.name) + ')';
+			out.push(ind + 'var ' + v + ' = ' + (n.add ? mk : access(n, pv)) + ';');
 			if (n.off) out.push(ind + v + '.enabled = false;');
 			if (n.mask) {
 				var m = n.mask, mo = {};
@@ -748,10 +686,20 @@
 	CG.generate = function (m, opts) {
 		var g = new Gen(m, opts);
 		var out = [];
+		g.ffx = ffxUsed(g);
 		g.header(out);
 		out.push('(function () {');
 		CG.helpers().split('\n').forEach(function (l) { out.push(l ? I + l : ''); });
 		out.push('');
+		if (g.ffx) {
+			g.comment(out, I, 'pseudo effects: .ffx salvos pelo After Effects. Numa máquina sem o efeito no PresetEffects.xml,');
+			g.comment(out, I, 'o script aplica o .ffx numa comp temporária para registrar o efeito e depois o cria normalmente.');
+			out.push(I + 'var FFX = {');
+			var keys = Object.keys(g.ffx);
+			keys.forEach(function (mn, i) { out.push(I + I + str(mn) + ': ' + CG.binaryString(g.ffx[mn]) + (i < keys.length - 1 ? ',' : '')); });
+			out.push(I + '};');
+			out.push('');
+		}
 		if (m.mode === 'comp') g.compScript(out);
 		else g.layersScript(out);
 		out.push('})();');
@@ -779,12 +727,42 @@
 				if (!g || g === bin.none) return bin.none;
 				var p;
 				try { p = g.addProperty(mn); } catch (e) {
-					// pseudo effect: só existe se estiver no PresetEffects.xml desta máquina
-					bin.err('+ ' + mn, /^Pseudo\//.test(mn) ? 'pseudo effect não instalado. Cole o XML dele (aba utilitários do BIN) no PresetEffects.xml e reinicie o After Effects.' : e);
+					// pseudo effect: só existe se estiver no PresetEffects.xml desta máquina (ou registrado por um .ffx)
+					bin.err('+ ' + mn, /^Pseudo\//.test(mn) ? 'pseudo effect não instalado nesta máquina. Salve o .ffx dele na aba utilitários do BIN e gere o script de novo.' : e);
 					return bin.none;
 				}
 				if (name) try { p.name = name; } catch (e2) { }
 				return p;
+			},
+			// pseudo effect com o .ffx embutido: se o AE não o conhece, o .ffx aplicado numa comp temporária o registra
+			pseudo: function (g, mn, name, ffx) {
+				if (!g || g === bin.none) return bin.none;
+				var can = false;
+				try { can = g.canAddProperty(mn); } catch (e) { }
+				if (!can && ffx) bin.register(mn, ffx);
+				return bin.add(g, mn, name);
+			},
+			register: function (mn, ffx) {
+				var f = null, tmp = null, comp = app.project.activeItem, sel = [], i;
+				try {
+					f = new File(Folder.temp.fsName + '/BIN_' + mn.replace(/[^A-Za-z0-9]+/g, '_') + '.ffx');
+					f.encoding = 'BINARY';
+					f.open('w');
+					f.write(ffx);
+					f.close();
+					if (comp instanceof CompItem) for (i = 1; i <= comp.numLayers; i++) if (comp.layer(i).selected) { sel.push(comp.layer(i)); comp.layer(i).selected = false; }
+					tmp = app.project.items.addComp('BIN · registro do pseudo effect', 100, 100, 1, 1, 24);
+					var l = tmp.layers.addShape();
+					l.selected = true;
+					l.applyPreset(f);
+				} catch (e) {
+					bin.err('pseudo effect ' + mn + ' (.ffx)', e);
+				} finally {
+					if (tmp) try { tmp.remove(); } catch (e2) { }
+					if (f) try { f.remove(); } catch (e3) { }
+					for (i = 0; i < sel.length; i++) try { sel[i].selected = true; } catch (e4) { }
+					if (comp instanceof CompItem) try { comp.openInViewer(); } catch (e5) { }
+				}
 			},
 			attrs: function (o, a) {
 				if (!o || o === bin.none) return;

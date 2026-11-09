@@ -293,7 +293,7 @@ function bin_node(p, parent, idx, ctx, path) {
 		}
 		if (parent.matchName === 'ADBE Effect Parade') {
 			g.fx = true;
-			if (/^Pseudo\//.test(mn)) g.pseudo = bin_pseudo(p);
+			if (/^Pseudo\//.test(mn)) g.pseudo = true;
 		}
 		if (mn === 'ADBE Mask Atom') {
 			g.mask = {
@@ -462,35 +462,76 @@ function bin_layer(l) {
 }
 
 // ---------------------------------------------------------- pseudo effects --
-// definição de um pseudo effect (todos os parâmetros, inclusive os que estão no padrão), para montar
-// o XML do PresetEffects.xml. O AE não diz os nomes das opções de um popup nem a faixa do slider:
-// o painel marca esses pontos para conferir.
-function bin_vtName(t) {
-	var names = ['NO_VALUE', 'OneD', 'TwoD', 'TwoD_SPATIAL', 'ThreeD', 'ThreeD_SPATIAL', 'COLOR', 'LAYER_INDEX', 'MASK_INDEX', 'SHAPE', 'TEXT_DOCUMENT', 'MARKER', 'CUSTOM_VALUE'];
-	for (var i = 0; i < names.length; i++) if (PropertyValueType[names[i]] === t) return names[i];
-	return String(t);
+// salva o .ffx de um pseudo effect pelo próprio After Effects (Animation > Save Animation Preset):
+// o arquivo leva a definição do efeito e funciona em máquinas sem ele no PresetEffects.xml.
+// Seleciona só o efeito, abre o diálogo de salvar do AE e procura o .ffx recém-salvo na pasta padrão.
+var BIN_SAVE_PRESET = ['Save Animation Preset...', 'Save Animation Preset…', 'Salvar predefinição de animação...', 'Salvar predefinição de animação…'];
+
+function bin_userPresets() {
+	var out = [];
+	try {
+		var base = new Folder(Folder.myDocuments.fsName + '/Adobe');
+		var dirs = base.exists ? base.getFiles() : [];
+		for (var i = 0; i < dirs.length; i++) {
+			if (dirs[i] instanceof Folder && /After Effects/.test(dirs[i].name)) {
+				var up = new Folder(dirs[i].fsName + '/User Presets');
+				if (up.exists) out.push(up);
+			}
+		}
+	} catch (e) { }
+	return out;
 }
 
-function bin_pseudo(fx) {
-	var out = { name: fx.name, params: [] };
-	for (var i = 1; i <= fx.numProperties; i++) {
-		var p = fx.property(i), mn = p.matchName;
-		if (mn === 'ADBE Effect Built In Params' || mn === 'ADBE Effect Mask Parade') continue;
-		var o = { name: p.name, mn: mn };
-		try {
-			if (p.propertyType !== PropertyType.PROPERTY) { o.vt = 'GROUP'; out.params.push(o); continue; }
-			o.vt = bin_vtName(p.propertyValueType);
-			if (p.propertyValueType !== PropertyValueType.NO_VALUE) o.v = p.numKeys > 0 ? p.keyValue(1) : p.value;
-			if (bin_try(p, 'hasMin')) o.min = p.minValue;
-			if (bin_try(p, 'hasMax')) o.max = p.maxValue;
-			var u = bin_try(p, 'unitsText');
-			if (u) o.units = u;
-			if (bin_try(p, 'isDropdownEffect')) o.dropdown = true;
-		} catch (e) { o.err = e.message; }
-		out.params.push(o);
+// .ffx das pastas de presets do usuário (um nível de subpasta): caminho → data de modificação
+function bin_ffxSnapshot() {
+	var out = {}, folders = bin_userPresets(), i, j;
+	function look(list) {
+		for (var k = 0; k < list.length; k++) {
+			var f = list[k];
+			if (f instanceof File && /\.ffx$/i.test(f.name)) out[f.fsName] = f.modified ? f.modified.getTime() : 0;
+		}
 	}
-	try { var L = bin_propRoute(fx).layer; out.size = [L.width, L.height]; } catch (e2) { }
+	for (i = 0; i < folders.length; i++) {
+		var items = folders[i].getFiles();
+		look(items);
+		for (j = 0; j < items.length; j++) if (items[j] instanceof Folder) look(items[j].getFiles());
+	}
 	return out;
+}
+
+// o .ffx que apareceu (ou mudou) entre as duas fotografias
+function bin_newFfx(before, after) {
+	var best = null, t = -1;
+	for (var p in after) {
+		if (after.hasOwnProperty(p) && (!before.hasOwnProperty(p) || before[p] !== after[p]) && after[p] > t) { best = p; t = after[p]; }
+	}
+	return best;
+}
+
+function bin_savePseudo(compId, layerIndex, fxIndex, matchName) {
+	try {
+		var comp = null, i;
+		for (i = 1; i <= app.project.numItems; i++) if (app.project.item(i).id === compId) comp = app.project.item(i);
+		if (!(comp instanceof CompItem)) return bin_json({ error: 'a comp de origem não está mais no projeto.' });
+		var layer = comp.layer(layerIndex);
+		var fx = layer ? layer.property('ADBE Effect Parade').property(fxIndex) : null;
+		if (!fx || fx.matchName !== matchName) return bin_json({ error: 'o pseudo effect não está mais nessa layer (capture de novo).' });
+		var cmd = 0;
+		for (i = 0; i < BIN_SAVE_PRESET.length && !cmd; i++) cmd = app.findMenuCommandId(BIN_SAVE_PRESET[i]);
+		if (!cmd) return bin_json({ error: 'o menu Animation > Save Animation Preset não foi encontrado. O efeito ficou selecionado: salve por esse menu.' });
+		// só este efeito selecionado, na comp aberta
+		comp.openInViewer();
+		for (i = 1; i <= comp.numLayers; i++) comp.layer(i).selected = false;
+		layer.selected = true;
+		var sel = layer.selectedProperties;
+		for (i = 0; i < sel.length; i++) try { sel[i].selected = false; } catch (e0) { }
+		fx.selected = true;
+		var before = bin_ffxSnapshot();
+		app.executeCommand(cmd); // o AE abre o diálogo de salvar; volta quando ele fecha
+		return bin_json({ ok: true, file: bin_newFfx(before, bin_ffxSnapshot()) });
+	} catch (e) {
+		return bin_error(e);
+	}
 }
 
 // ------------------------------------------------------ essential graphics --

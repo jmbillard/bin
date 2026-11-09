@@ -129,16 +129,10 @@
 			<div class="tool">
 				<span class="tool-ico"><i data-icon="fx"></i></span>
 				<div class="tool-body">
-					<b>pseudo effects → XML</b>
-					<p>o XML de cada pseudo effect da captura, para colar no PresetEffects.xml de outra máquina. o AE não informa os nomes das opções de um popup nem a faixa do slider: esses pontos vêm marcados com “conferir”.</p>
+					<b>pseudo effects → .ffx</b>
+					<p>salve o .ffx de cada pseudo effect pelo próprio After Effects (o BIN seleciona o efeito e abre o “Save Animation Preset”). o .ffx entra no script gerado, que então funciona em máquinas sem o efeito no PresetEffects.xml.</p>
 					<p class="faint" id="pseudoNone">nenhum pseudo effect na captura.</p>
-					<div class="out hidden" id="pseudoOut">
-						<div class="out-bar"><span id="pseudoInfo" class="faint"></span><span class="spacer"></span>
-							<button class="icon-btn" data-copy="pseudo" title="copiar o XML"><i data-icon="copy"></i></button>
-							<button class="icon-btn" data-save="pseudo" title="exportar .xml"><i data-icon="save"></i></button>
-						</div>
-						<pre></pre>
-					</div>
+					<div class="pseudo-list" id="pseudoList"></div>
 				</div>
 			</div>
 		</section>
