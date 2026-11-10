@@ -615,6 +615,11 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 
 /* pseudo effects → .ffx */
+.ffx-tag { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 5px; border-radius: 999px; border: 1px solid var(--warn); background: transparent; color: var(--warn); font: 600 10px/1 var(--mono); }
+.ffx-tag .ico { width: 11px; height: 11px; }
+.ffx-tag:hover { background: rgba(255, 176, 32, .12); }
+.ffx-tag.ok { border-color: rgba(60, 207, 142, .5); color: var(--ok); }
+.ffx-tag.ok:hover { background: rgba(60, 207, 142, .12); }
 .pseudo-list { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
 .pseudo-item { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
 .pseudo-item.ok { border-color: rgba(60, 207, 142, .45); }

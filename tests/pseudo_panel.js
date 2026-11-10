@@ -37,6 +37,23 @@ const PRESETS = '/Users/teste/Documents/Adobe/After Effects 2026/User Presets';
 	select(['CONTROLE']);
 	await page.goto(srv.url);
 	await page.waitForSelector('#propsView:not(.hidden)');
+
+	// a captura propõe salvar o .ffx
+	await page.waitForSelector('#toast.show');
+	let t = await page.textContent('#toast');
+	check(/o pseudo effect BIN Texto ainda não tem \.ffx: salve para incorporar no código/.test(t) && /salvar \.ffx/.test(t) && /agora não/.test(t), 'captura com pseudo effect: proposta de salvar o .ffx');
+	await page.screenshot({ path: path.join(outDir, 'pseudo-0-proposta.png') });
+	await page.click('#toast .toast-acts button:nth-child(2)'); // agora não
+	check(!(await page.isVisible('#toast.show')), '“agora não” fecha a proposta');
+	await page.keyboard.press('Control+l');
+	await page.waitForTimeout(400);
+	check(!/ainda não tem \.ffx/.test(await page.textContent('#toast')), 'capturar de novo não insiste (já foi proposto)');
+
+	// selo .ffx na linha do efeito (aba propriedades)
+	const fxHead = 'xpath=//div[contains(@class,"card-head")][.//b[text()="effects"]]';
+	if (await page.$(fxHead + '/ancestor::div[contains(@class,"card")][contains(@class,"closed")]')) await page.click(fxHead);
+	await page.waitForTimeout(200);
+	check(await page.isVisible('.ffx-tag:not(.ok)'), 'linha do pseudo effect: selo .ffx para salvar');
 	await hide();
 	await page.click('.tab[data-tab=tools]');
 	await page.waitForTimeout(200);
@@ -48,7 +65,11 @@ const PRESETS = '/Users/teste/Documents/Adobe/After Effects 2026/User Presets';
 
 	// salvar: o host abre o Save Animation Preset (simulado) e o painel lê o arquivo
 	await page.evaluate((p) => { window.__files[p] = 'RIFX\x00\x00\x10\x00FaFXLISTPseudo/BIN Texto\x00\xff'; }, PRESETS + '/BIN Texto.ffx');
-	await page.click('[data-pseudo-save="0"]');
+	await page.click('.tab[data-tab=props]');
+	await page.click('.ffx-tag'); // salvar pelo selo
+	await page.waitForSelector('.ffx-tag.ok');
+	check(true, 'clicar no selo salva o .ffx e ele fica verde');
+	await page.click('.tab[data-tab=tools]');
 	await page.waitForSelector('.pseudo-item.ok');
 	check(/BIN Texto\.ffx · entra no script/.test(await page.textContent('.pseudo-state')), 'salvar .ffx: o item fica pronto, com o nome do arquivo');
 	const code = await gen();
@@ -83,6 +104,24 @@ const PRESETS = '/Users/teste/Documents/Adobe/After Effects 2026/User Presets';
 	await page.click('[data-pseudo-pick="0"]');
 	await page.waitForTimeout(250);
 	check(/meu pseudo\.ffx · entra no script/.test(await page.textContent('.pseudo-state')) && (await page.evaluate(() => window.__types.join())) === 'ffx' && /FaFXLISTPseudo\/BIN Texto\\x00\\x01'/.test(await gen()), 'escolher .ffx: diálogo filtrado e o arquivo novo no script');
+
+	// dois pseudo effects na mesma layer: "salvar os 2", um diálogo de cada vez
+	ctx.__fs.dialog = undefined;
+	comp.layer('MATTE').property('ADBE Effect Parade').addProperty('Pseudo/BIN Cor');
+	comp.layer('MATTE').property('ADBE Effect Parade').addProperty('Pseudo/BIN Texto');
+	await page.evaluate((p) => { delete window.__files['/Users/teste/Desktop/meu pseudo.ffx']; window.__files[p + '/BIN Cor.ffx'] = 'RIFX\x00\x00\x10\x00FaFXLISTPseudo/BIN Cor\x00'; }, PRESETS);
+	await page.evaluate(() => window.BIN.app.forgetFfx());
+	select(['MATTE']);
+	await page.click('#chip');
+	await page.waitForSelector('#toast.show');
+	t = await page.textContent('#toast');
+	check(/2 pseudo effects ainda não têm \.ffx \(BIN Cor, BIN Texto\)/.test(t) && /salvar os 2/.test(t), 'dois pseudo effects: “salvar os 2”');
+	await page.evaluate((p) => { window.__files[p + '/BIN Texto.ffx'] = 'RIFX\x00\x00\x10\x00FaFXLISTPseudo/BIN Texto\x00\xff'; }, PRESETS);
+	await page.click('#toast .toast-acts button:nth-child(1)');
+	await page.waitForFunction(() => /de 2 \.ffx salvos/.test(document.getElementById('toast').textContent), null, { timeout: 5000 });
+	t = await page.textContent('#toast');
+	const code2 = await gen();
+	check(/2 de 2 \.ffx salvos: entram no script/.test(t) && /'Pseudo\/BIN Cor': 'RIFX/.test(code2) && /'Pseudo\/BIN Texto': 'RIFX/.test(code2), 'salva os dois em sequência e os dois entram no script');
 
 	await browser.close();
 	srv.close();

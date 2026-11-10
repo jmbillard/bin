@@ -142,6 +142,7 @@ const EFFECTS = {
 		P('Pseudo/BIN Texto-0010', '', VT.NO_VALUE, null),
 		builtIn()
 	]),
+	'Pseudo/BIN Cor': () => G('Pseudo/BIN Cor', 'BIN Cor', [P('Pseudo/BIN Cor-0001', 'Cor', VT.COLOR, [1, 1, 1, 1]), builtIn()]),
 	'ADBE Slider Control': () => G('ADBE Slider Control', 'Slider Control', [P('ADBE Slider Control-0001', 'Slider', VT.OneD, 0), builtIn()])
 };
 const MASKS = {
