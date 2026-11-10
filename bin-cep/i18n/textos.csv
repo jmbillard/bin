@@ -1,0 +1,398 @@
+pt,en,es
+sim,yes,sí
+não,no,no
+clique para trocar,click to switch,clic para cambiar
+comp “{0}” capturada com {1}.,comp “{0}” captured with {1}.,comp “{0}” capturada con {1}.
+comp “{0}” capturada.,comp “{0}” captured.,comp “{0}” capturada.
+{0} de “{1}”.,{0} from “{1}”.,{0} de “{1}”.
+abra uma comp e selecione uma layer,open a comp and select a layer,abre una comp y selecciona una capa
+{0} em “{1}”,{0} in “{1}”,{0} en “{1}”
+selecione uma layer em “{0}”,select a layer in “{0}”,selecciona una capa en “{0}”
+capturar “{0}”,capture “{0}”,capturar “{0}”
+capturar {0},capture {0},capturar {0}
+capturar seleção,capture selection,capturar selección
+atualizar para a comp “{0}”,update to comp “{0}”,actualizar a la comp “{0}”
+atualizar para {0},update to {0},actualizar a {0}
+a comp ativa agora é “{0}”,the active comp is now “{0}”,la comp activa ahora es “{0}”
+selecionado agora em “{0}”:,now selected in “{0}”:,seleccionado ahora en “{0}”:
+a captura ficou para trás,the capture is out of date,la captura quedó desactualizada
+clique para capturar de novo,click to capture again,clic para capturar de nuevo
+atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects,update the capture\nreads the selection (or the whole comp) in After Effects again,actualizar la captura\nvuelve a leer la selección (o la comp entera) en After Effects
+não foi possível ler {0}.,could not read {0}.,no se pudo leer {0}.
+<b>{0}</b> entra no script: o pseudo effect funciona em qualquer máquina.,<b>{0}</b> goes into the script: the pseudo effect works on any machine.,<b>{0}</b> entra en el script: el pseudo effect funciona en cualquier equipo.
+salve o .ffx de <b>{0}</b> no diálogo do After Effects…,save the .ffx of <b>{0}</b> in the After Effects dialog…,guarda el .ffx de <b>{0}</b> en el diálogo de After Effects…
+o .ffx foi salvo fora da pasta de presets (ou o diálogo foi cancelado).,the .ffx was saved outside the presets folder (or the dialog was canceled).,el .ffx se guardó fuera de la carpeta de presets (o se canceló el diálogo).
+escolher o .ffx,choose the .ffx,elegir el .ffx
+{0} de {1} .ffx salvos. faltam: {2} (escolha o arquivo na aba utilitários).,{0} of {1} .ffx saved. missing: {2} (choose the file in the tools tab).,{0} de {1} .ffx guardados. faltan: {2} (elige el archivo en la pestaña utilidades).
+{0} de {1} .ffx salvos: entram no script.,{0} of {1} .ffx saved: they go into the script.,{0} de {1} .ffx guardados: entran en el script.
+salvando {0} de {1}: <b>{2}</b> (diálogo do After Effects)…,saving {0} of {1}: <b>{2}</b> (After Effects dialog)…,guardando {0} de {1}: <b>{2}</b> (diálogo de After Effects)…
+"o pseudo effect {0} ainda não tem .ffx: salve para incorporar no código, e o script funciona em qualquer máquina.","the pseudo effect {0} has no .ffx yet: save it to embed it in the code, and the script works on any machine.","el pseudo effect {0} aún no tiene .ffx: guárdalo para incorporarlo al código, y el script funciona en cualquier equipo."
+"{0} pseudo effects ainda não têm .ffx ({1}): salve para incorporar no código, e o script funciona em qualquer máquina.","{0} pseudo effects have no .ffx yet ({1}): save them to embed them in the code, and the script works on any machine.","{0} pseudo effects aún no tienen .ffx ({1}): guárdalos para incorporarlos al código, y el script funciona en cualquier equipo."
+salvar .ffx,save .ffx,guardar .ffx
+salvar os {0},save all {0},guardar los {0}
+agora não,not now,ahora no
+escolha o .ffx de {0},choose the .ffx of {0},elige el .ffx de {0}
+{0} · entra no script,{0} · goes into the script,{0} · entra en el script
+sem .ffx: o script só cria o efeito onde ele estiver instalado,no .ffx: the script only creates the effect where it is installed,sin .ffx: el script solo crea el efecto donde esté instalado
+salvar .ffx\nabre o “Save Animation Preset” do After Effects com o efeito selecionado,save .ffx\nopens After Effects’ “Save Animation Preset” with the effect selected,guardar .ffx\nabre el “Save Animation Preset” de After Effects con el efecto seleccionado
+salvar de novo,save again,guardar de nuevo
+escolher .ffx\nusa um .ffx que você já tem,choose .ffx\nuses a .ffx you already have,elegir .ffx\nusa un .ffx que ya tienes
+escolher .ffx,choose .ffx,elegir .ffx
+LAYER,LAYER,CAPA
+{0} LAYERS,{0} LAYERS,{0} CAPAS
+{0} expr,{0} expr,{0} expr
+keyframes,keyframes,keyframes
+expressões,expressions,expresiones
+fora do script\nclique para incluir,left out of the script\nclick to include,fuera del script\nclic para incluir
+parte está fora do script\nclique para incluir tudo,part is left out of the script\nclick to include everything,una parte está fuera del script\nclic para incluir todo
+no script\nclique para tirar,in the script\nclick to leave out,en el script\nclic para quitar
+dimensões separadas,separate dimensions,dimensiones separadas
+adicionada,added,añadida
+expressão (desligada),expression (off),expresión (desactivada)
+expressão,expression,expresión
+sem comentário,no comment,sin comentario
+origem desconhecida,unknown source,origen desconocido
+igual à da precomp,same as in the precomp,igual que en la precomp
+.ffx no script\no pseudo effect funciona em qualquer máquina; clique para salvar de novo,.ffx in the script\nthe pseudo effect works on any machine; click to save again,.ffx en el script\nel pseudo effect funciona en cualquier equipo; clic para guardar de nuevo
+sem .ffx\nclique para salvar o .ffx pelo After Effects e incorporar no código,no .ffx\nclick to save the .ffx through After Effects and embed it in the code,sin .ffx\nclic para guardar el .ffx con After Effects e incorporarlo al código
+desligado,off,desactivado
+este After Effects não diz de onde vem o controle (precisa do AE 2022 ou mais novo),this After Effects doesn’t tell where the control comes from (needs AE 2022 or newer),este After Effects no indica de dónde viene el control (requiere AE 2022 o posterior)
+controle do essential graphics: {0},essential graphics control: {0},control de essential graphics: {0}
+grupo “{0}” (grupos não são recriados),group “{0}” (groups are not recreated),grupo “{0}” (los grupos no se recrean)
+valor mudado nas essential properties desta layer,value changed in this layer’s essential properties,valor cambiado en las essential properties de esta capa
+clique para incluir no script,click to include in the script,clic para incluir en el script
+clique para tirar do script,click to leave out of the script,clic para quitar del script
+layer · {0},layer · {0},capa · {0}
+markers,markers,marcadores
+essential properties,essential properties,essential properties
+principal,main,principal
+precomp,precomp,precomp
+fora do script: as layers que usam esta comp procuram a original no projeto pelo nome.,left out of the script: layers that use this comp look for the original in the project by name.,fuera del script: las capas que usan esta comp buscan la original en el proyecto por nombre.
+fora do script: só é usada por uma precomp desmarcada.,left out of the script: only used by an unchecked precomp.,fuera del script: solo la usa una precomp desmarcada.
+comp · configurações,comp · settings,comp · ajustes
+markers da comp,comp markers,marcadores de la comp
+essential graphics,essential graphics,essential graphics
+clique para abrir,click to open,clic para abrir
+nada encontrado para “{0}”,nothing found for “{0}”,nada encontrado para “{0}”
+essential graphics: “{0}” fica de fora porque a layer “{1}” saiu do script.,essential graphics: “{0}” is left out because layer “{1}” is out of the script.,essential graphics: “{0}” queda fuera porque la capa “{1}” salió del script.
+essential graphics: o grupo “{0}” não é recriado (o After Effects não deixa criar grupos por script); os controles entram soltos.,essential graphics: group “{0}” is not recreated (After Effects doesn’t allow creating groups by script); the controls go in ungrouped.,essential graphics: el grupo “{0}” no se recrea (After Effects no permite crear grupos por script); los controles entran sueltos.
+“{0}” usa “{1}”: o script procura esse item no projeto pelo nome (ou importa o arquivo original).,“{0}” uses “{1}”: the script looks for that item in the project by name (or imports the original file).,“{0}” usa “{1}”: el script busca ese elemento en el proyecto por nombre (o importa el archivo original).
+“{0}” usa “{1}”: o script procura esse item no projeto pelo nome.,“{0}” uses “{1}”: the script looks for that item in the project by name.,“{0}” usa “{1}”: el script busca ese elemento en el proyecto por nombre.
+“{0}” usa a precomp “{1}”: o script procura essa comp no projeto pelo nome.,“{0}” uses the precomp “{1}”: the script looks for that comp in the project by name.,“{0}” usa la precomp “{1}”: el script busca esa comp en el proyecto por nombre.
+"pseudo effect “{0}”: sem o .ffx, o script só cria o efeito onde ele estiver instalado. Salve o .ffx na aba utilitários.","pseudo effect “{0}”: without the .ffx, the script only creates the effect where it is installed. Save the .ffx in the tools tab.","pseudo effect “{0}”: sin el .ffx, el script solo crea el efecto donde esté instalado. Guarda el .ffx en la pestaña utilidades."
+fonte usada: {0}. precisa estar instalada onde o script rodar.,font used: {0}. it must be installed where the script runs.,fuente usada: {0}. debe estar instalada donde se ejecute el script.
+fontes usadas: {0}. precisam estar instaladas onde o script rodar.,fonts used: {0}. they must be installed where the script runs.,fuentes usadas: {0}. deben estar instaladas donde se ejecute el script.
+efeito que pode ser plug-in de terceiro: {0}.,effect that may be a third-party plug-in: {0}.,efecto que puede ser un plug-in de terceros: {0}.
+efeitos que podem ser plug-ins de terceiros: {0}.,effects that may be third-party plug-ins: {0}.,efectos que pueden ser plug-ins de terceros: {0}.
+comps,comps,comps
+layer,layer,capa
+clique para ver tudo,click to see all,clic para ver todo
+recriar comp + {0},recreate comp + {0},recrear comp + {0}
+recriar comp,recreate comp,recrear comp
+recriar {0},recreate {0},recrear {0}
+recriar layer,recreate layer,recrear capa
+criar_,create_,crear_
+uma função por layer,one function per layer,una función por capa
+"código corrido, sem funções","straight code, no functions","código corrido, sin funciones"
+"funções auxiliares do BIN ({0} linhas): entram ao rodar, copiar e exportar","BIN helper functions ({0} lines): added when running, copying and exporting","funciones auxiliares de BIN ({0} líneas): se agregan al ejecutar, copiar y exportar"
+executar script,run script,ejecutar script
+executar código editado,run edited code,ejecutar código editado
+(linha {0}),(line {0}),(línea {0})
+(nas funções auxiliares do BIN),(in the BIN helper functions),(en las funciones auxiliares de BIN)
+criar_comp_,create_comp_,crear_comp_
+não foi possível gravar o arquivo.,could not write the file.,no se pudo guardar el archivo.
+salvo em <b>{0}</b>.,saved to <b>{0}</b>.,guardado en <b>{0}</b>.
+"pacote salvo, mas sem _config.json: a comp não parece ser um template do padeiro.","pack saved, but without _config.json: the comp doesn’t look like a padeiro template.","paquete guardado, pero sin _config.json: la comp no parece ser una plantilla de padeiro."
+{0} copiado.,{0} copied.,{0} copiado.
+não foi possível copiar: selecione o texto e use Ctrl/Cmd+C.,could not copy: select the text and use Ctrl/Cmd+C.,no se pudo copiar: selecciona el texto y usa Ctrl/Cmd+C.
+comp <b>{0}</b> criada com {1} e {2}.,comp <b>{0}</b> created with {1} and {2}.,comp <b>{0}</b> creada con {1} y {2}.
+comp <b>{0}</b> criada com {1}.,comp <b>{0}</b> created with {1}.,comp <b>{0}</b> creada con {1}.
+<b>{0}</b> criada,<b>{0}</b> created,<b>{0}</b> creada
+<b>{0}</b> layers criadas,<b>{0}</b> layers created,<b>{0}</b> capas creadas
+{0} em “{1}”.,{0} in “{1}”.,{0} en “{1}”.
+executando…,running…,ejecutando…
+recriando…,recreating…,recreando…
+script executado,script run,script ejecutado
+comp criada,comp created,comp creada
+{0} layers criadas,{0} layers created,{0} capas creadas
+layer criada,layer created,capa creada
+script executado.,script run.,script ejecutado.
+desfazer,undo,deshacer
+desfeito.,undone.,deshecho.
+exportar .jsx,export .jsx,exportar .jsx
+ir para a linha {0},go to line {0},ir a la línea {0}
+.jsxbin é compilado e não dá para editar: use o .jsx original.,.jsxbin is compiled and can’t be edited: use the original .jsx.,.jsxbin está compilado y no se puede editar: usa el .jsx original.
+"só scripts abrem no editor: .jsx, .js, .jsxinc ou .txt.","only scripts open in the editor: .jsx, .js, .jsxinc or .txt.","solo se abren scripts en el editor: .jsx, .js, .jsxinc o .txt."
+"Para virar binário, use os utilitários.","To turn it into binary, use the tools.","Para convertirlo en binario, usa las utilidades."
+“{0}” tem mais de 2 MB: grande demais para o editor.,“{0}” is larger than 2 MB: too big for the editor.,“{0}” tiene más de 2 MB: demasiado grande para el editor.
+<b>{0}</b> aberto no editor (só o primeiro de {1} scripts).,<b>{0}</b> opened in the editor (only the first of {1} scripts).,<b>{0}</b> abierto en el editor (solo el primero de {1} scripts).
+<b>{0}</b> aberto no editor.,<b>{0}</b> opened in the editor.,<b>{0}</b> abierto en el editor.
+abrir script,open script,abrir script
+escolha os arquivos,choose the files,elige los archivos
+idioma: {0},language: {0},idioma: {0}
+os textos ficam em i18n/textos.csv,texts live in i18n/textos.csv,los textos están en i18n/textos.csv
+{0} sobre o script gerado:,{0} about the generated script:,{0} sobre el script generado:
+BIN 3.0 · versão {0},BIN 3.0 · version {0},BIN 3.0 · versión {0}
+engenharia reversa de layers,reverse engineering of layers,ingeniería inversa de capas
+precomps,precomps,precomps
+layer capturada,layer captured,capa capturada
+layers capturadas,layers captured,capas capturadas
+layers,layers,capas
+layer selecionada,selected layer,capa seleccionada
+layers selecionadas,selected layers,capas seleccionadas
+prop,prop,prop
+props,props,props
+key,key,key
+keys,keys,keys
+keyframe,keyframe,keyframe
+linha,line,línea
+linhas,lines,líneas
+aviso,warning,aviso
+avisos,warnings,avisos
+propriedade não pôde ser aplicada:,property could not be applied:,propiedad no se pudo aplicar:
+propriedades não puderam ser aplicadas:,properties could not be applied:,propiedades no se pudieron aplicar:
+arquivo,file,archivo
+arquivos,files,archivos
+código,code,código
+essential properties (valores mudados nesta layer),essential properties (values changed in this layer),essential properties (valores cambiados en esta capa)
+efeito › {0},effect › {0},efecto › {0}
+aponta para a layer quando todas existirem,points to the layer once all of them exist,apunta a la capa cuando todas existan
+efeitos que apontam para outras layers,effects that point to other layers,efectos que apuntan a otras capas
+parentesco,parenting,emparentado
+track matte,track matte,track matte
+essential graphics (1 controle),essential graphics (1 control),essential graphics (1 control)
+essential graphics ({0} controles),essential graphics ({0} controls),essential graphics ({0} controles)
+criar,create,crear
+gerado em {0},generated on {0},generado el {0}
+"cria as comps no projeto, com todas as layers.","creates the comps in the project, with all layers.","crea las comps en el proyecto, con todas las capas."
+"cria a comp no projeto, com todas as layers.","creates the comp in the project, with all layers.","crea la comp en el proyecto, con todas las capas."
+{0} layers,{0} layers,{0} capas
+"recria as layers na nova comp ""{0}"".","recreates the layers in the new comp ""{0}"".","recrea las capas en la nueva comp ""{0}""."
+recria as layers na comp ativa.,recreates the layers in the active comp.,recrea las capas en la comp activa.
+criar_comp,create_comp,crear_comp
+comp {0} (principal),comp {0} (main),comp {0} (principal)
+comp {0} (precomp),comp {0} (precomp),comp {0} (precomp)
+"pseudo effects: .ffx salvos pelo After Effects. Numa máquina sem o efeito no PresetEffects.xml,","pseudo effects: .ffx saved by After Effects. On a machine without the effect in PresetEffects.xml,","pseudo effects: .ffx guardados por After Effects. En un equipo sin el efecto en PresetEffects.xml,"
+o script aplica o .ffx numa comp temporária para registrar o efeito e depois o cria normalmente.,the script applies the .ffx in a temporary comp to register the effect and then creates it normally.,el script aplica el .ffx en una comp temporal para registrar el efecto y luego lo crea normalmente.
+fechar,close,cerrar
+SHAPE,SHAPE,SHAPE
+TEXT,TEXT,TEXTO
+SOLID,SOLID,SÓLIDO
+ADJ,ADJ,AJUSTE
+NULL,NULL,NULL
+CAM,CAM,CÁM
+LUZ,LIGHT,LUZ
+COMP,COMP,COMP
+MÍDIA,MEDIA,MEDIOS
+shape layer,shape layer,capa de forma
+texto,text,texto
+solid,solid,sólido
+adjustment layer,adjustment layer,capa de ajuste
+null,null,null
+câmera,camera,cámara
+luz,light,luz
+footage,footage,material
+nome,name,nombre
+rótulo,label,etiqueta
+comentário,comment,comentario
+visível,visible,visible
+shy,shy,shy
+travada,locked,bloqueada
+início,start,inicio
+stretch,stretch,stretch
+entrada,in,entrada
+saída,out,salida
+3D,3D,3D
+3D por caractere,per-character 3D,3D por carácter
+motion blur,motion blur,desenfoque de movimiento
+adjustment,adjustment,ajuste
+guia,guide,guía
+collapse,collapse,contraer
+efeitos ativos,effects on,efectos activos
+preservar transparência,preserve transparency,conservar transparencia
+time remap,time remap,reasignación de tiempo
+áudio,audio,audio
+blend mode,blend mode,modo de fusión
+qualidade,quality,calidad
+amostragem,sampling,muestreo
+frame blending,frame blending,fusión de fotogramas
+auto-orient,auto-orient,orientación automática
+parent,parent,parent
+tamanho,size,tamaño
+duração,duration,duración
+frame rate,frame rate,velocidad de fotogramas
+cor de fundo,background color,color de fondo
+início do timecode,timecode start,inicio del código de tiempo
+início da work area,work area start,inicio del área de trabajo
+duração da work area,work area duration,duración del área de trabajo
+esconder shy,hide shy,ocultar shy
+draft 3D,draft 3D,borrador 3D
+shutter angle,shutter angle,ángulo de obturación
+shutter phase,shutter phase,fase de obturación
+amostras por quadro,samples per frame,muestras por fotograma
+limite adaptativo,adaptive limit,límite adaptativo
+preservar fps aninhado,preserve nested frame rate,conservar fps anidado
+preservar resolução aninhada,preserve nested resolution,conservar resolución anidada
+resolução,resolution,resolución
+renderizador,renderer,procesador
+tema automático\nsegue o After Effects,automatic theme\nfollows After Effects,tema automático\nsigue a After Effects
+tema claro,light theme,tema claro
+tema escuro,dark theme,tema oscuro
+transform,transform,transformar
+contents,contents,contenido
+effects,effects,efectos
+masks,masks,máscaras
+material,material,material
+geometria,geometry,geometría
+propriedades,properties,propiedades
+utilitários,tools,utilidades
+selecione uma layer na comp,select a layer in the comp,selecciona una capa en la comp
+o BIN lê a layer selecionada (ou a comp inteira) e gera o script que recria ela,BIN reads the selected layer (or the whole comp) and generates the script that recreates it,BIN lee la capa seleccionada (o la comp entera) y genera el script que la recrea
+comp inteira,whole comp,comp entera
+ou digite um script na aba código,or type a script in the code tab,o escribe un script en la pestaña código
+código editado à mão: mudanças nas propriedades e nas opções não chegam mais aqui.,hand-edited code: changes to properties and options no longer reach it.,código editado a mano: los cambios en las propiedades y opciones ya no llegan aquí.
+descartar edições,discard edits,descartar ediciones
+cria a comp e as precomps no projeto,creates the comp and the precomps in the project,crea la comp y las precomps en el proyecto
+desmarque uma precomp para usar a que já existe,uncheck a precomp to use the one that already exists,desmarca una precomp para usar la que ya existe
+recriar em,recreate in,recrear en
+comp ativa,active comp,comp activa
+nova comp,new comp,nueva comp
+envolver em função,wrap in functions,envolver en funciones
+manter parentesco,keep parenting,mantener emparentado
+parent e track matte entre as layers,parent and track matte between layers,parent y track matte entre las capas
+comentários no código,comments in the code,comentarios en el código
+expressão → string,expression → string,expresión → string
+"formata a expressão da propriedade selecionada (ou de todas as layers selecionadas) como string JS, pronta para colar em um script.","formats the expression of the selected property (or of all selected layers) as a JS string, ready to paste into a script.","formatea la expresión de la propiedad seleccionada (o de todas las capas seleccionadas) como string JS, lista para pegar en un script."
+pegar da seleção,get from selection,tomar de la selección
+arquivo → binário,file → binary,archivo → binario
+"converte arquivos (PNG, WAV, FFX…) em strings para embutir no script. ScriptUI usa a string de um PNG direto como imagem.","converts files (PNG, WAV, FFX…) into strings to embed in the script. ScriptUI uses a PNG string directly as an image.","convierte archivos (PNG, WAV, FFX…) en strings para incrustar en el script. ScriptUI usa el string de un PNG directamente como imagen."
+arraste arquivos aqui,drag files here,arrastra archivos aquí
+ou clique para escolher,or click to choose,o haz clic para elegir
+pseudo effects → .ffx,pseudo effects → .ffx,pseudo effects → .ffx
+"salve o .ffx de cada pseudo effect pelo próprio After Effects (o BIN seleciona o efeito e abre o “Save Animation Preset”). o .ffx entra no script gerado, que então funciona em máquinas sem o efeito no PresetEffects.xml.","save the .ffx of each pseudo effect through After Effects itself (BIN selects the effect and opens “Save Animation Preset”). the .ffx goes into the generated script, which then works on machines without the effect in PresetEffects.xml.","guarda el .ffx de cada pseudo effect con el propio After Effects (BIN selecciona el efecto y abre el “Save Animation Preset”). el .ffx entra en el script generado, que así funciona en equipos sin el efecto en PresetEffects.xml."
+nenhum pseudo effect na captura.,no pseudo effects in the capture.,ningún pseudo effect en la captura.
+solte para abrir no editor,drop to open in the editor,suelta para abrir en el editor
+.jsx · .js · .jsxinc · .txt,.jsx · .js · .jsxinc · .txt,.jsx · .js · .jsxinc · .txt
+BIN 3.0\nengenharia reversa de layers,BIN 3.0\nreverse engineering of layers,BIN 3.0\ningeniería inversa de capas
+ajuda\nabre o guia do BIN no navegador,help\nopens the BIN guide in the browser,ayuda\nabre la guía de BIN en el navegador
+idioma,language,idioma
+tema,theme,tema
+propriedades\no que foi capturado e o que entra no script,properties\nwhat was captured and what goes into the script,propiedades\nlo que se capturó y lo que entra en el script
+código\no script que recria o que foi capturado,code\nthe script that recreates what was captured,código\nel script que recrea lo capturado
+utilitários\n• expressão → string\n• arquivo → binário,tools\n• expression → string\n• file → binary,utilidades\n• expresión → string\n• archivo → binario
+capturar seleção\nas layers selecionadas na comp ativa,capture selection\nthe selected layers in the active comp,capturar selección\nlas capas seleccionadas en la comp activa
+"capturar comp inteira\ntodas as layers da comp ativa, com as precomps","capture whole comp\nall layers of the active comp, with the precomps","capturar comp entera\ntodas las capas de la comp activa, con las precomps"
+aba código\ndigite e execute qualquer script do After Effects; arrastar um .jsx para o painel também abre no editor,code tab\ntype and run any After Effects script; dragging a .jsx onto the panel also opens it in the editor,pestaña código\nescribe y ejecuta cualquier script de After Effects; arrastrar un .jsx al panel también lo abre en el editor
+layers selecionadas\nsó as layers selecionadas na comp ativa,selected layers\nonly the selected layers in the active comp,capas seleccionadas\nsolo las capas seleccionadas en la comp activa
+"comp inteira\ntodas as layers da comp ativa, com as precomps","whole comp\nall layers of the active comp, with the precomps","comp entera\ntodas las capas de la comp activa, con las precomps"
+"filtrar\npelo nome da propriedade, do grupo ou da layer","filter\nby property, group or layer name","filtrar\npor nombre de propiedad, grupo o capa"
+filtrar propriedades,filter properties,filtrar propiedades
+expandir tudo\nabre todos os grupos,expand all\nopens every group,expandir todo\nabre todos los grupos
+recolher tudo\nfecha todos os grupos,collapse all\ncloses every group,contraer todo\ncierra todos los grupos
+keyframes\n• ligado: keys com easing e tangentes\n• desligado: só o valor do primeiro key,keyframes\n• on: keys with easing and tangents\n• off: only the first key’s value,keyframes\n• activado: keys con easing y tangentes\n• desactivado: solo el valor del primer key
+expressões\n• ligado: o script recria as expressões\n• desligado: só os valores,expressions\n• on: the script recreates the expressions\n• off: only the values,expresiones\n• activado: el script recrea las expresiones\n• desactivado: solo los valores
+quebra de linha\nlinhas longas continuam embaixo,word wrap\nlong lines continue below,ajuste de línea\nlas líneas largas siguen debajo
+"abrir script\n.jsx, .js, .jsxinc ou .txt; também dá para arrastar o arquivo para o painel","open script\n.jsx, .js, .jsxinc or .txt; you can also drag the file onto the panel","abrir script\n.jsx, .js, .jsxinc o .txt; también puedes arrastrar el archivo al panel"
+copiar o código,copy the code,copiar el código
+pacote para documentação\nsalva um .json para o app de documentação de templates (docs-app),documentation pack\nsaves a .json for the template documentation app (docs-app),paquete de documentación\nguarda un .json para la app de documentación de plantillas (docs-app)
+exportar .jsx\nsalva o script para rodar em File › Scripts,export .jsx\nsaves the script to run from File › Scripts,exportar .jsx\nguarda el script para ejecutarlo desde File › Scripts
+// digite um script do After Effects (ExtendScript)\n// ou arraste um arquivo .jsx para cá\n// e execute com Ctrl/⌘ + Enter,// type an After Effects script (ExtendScript)\n// or drag a .jsx file here\n// and run it with Ctrl/⌘ + Enter,// escribe un script de After Effects (ExtendScript)\n// o arrastra un archivo .jsx aquí\n// y ejecútalo con Ctrl/⌘ + Enter
+copiar,copy,copiar
+exportar,export,exportar
+recriar\nroda o script dentro de um único undo,recreate\nruns the script inside a single undo,recrear\nejecuta el script dentro de un solo deshacer
+pseudo effect não instalado nesta máquina. Salve o .ffx dele na aba utilitários do BIN e gere o script de novo.,pseudo effect not installed on this machine. Save its .ffx in BIN’s tools tab and generate the script again.,pseudo effect no instalado en este equipo. Guarda su .ffx en la pestaña utilidades de BIN y genera el script de nuevo.
+a propriedade mudou de lugar,the property moved,la propiedad cambió de lugar
+{0} (expressão),{0} (expression),{0} (expresión)
+item não encontrado no projeto: criado um solid no lugar,item not found in the project: a solid was created instead,elemento no encontrado en el proyecto: se creó un sólido en su lugar
+{0} [faltando],{0} [missing],{0} [falta]
+BIN: abra (ou selecione) a comp onde as layers serão criadas.,BIN: open (or select) the comp where the layers will be created.,BIN: abre (o selecciona) la comp donde se crearán las capas.
+layer não encontrada na comp,layer not found in the comp,capa no encontrada en la comp
+"propriedade não encontrada em ""{0}""","property not found in ""{0}""","propiedad no encontrada en ""{0}"""
+essential property não encontrada,essential property not found,essential property no encontrada
+BIN: {0} aviso(s),BIN: {0} warning(s),BIN: {0} aviso(s)
+---- BIN: funções auxiliares (erros por propriedade não interrompem o script),---- BIN: helper functions (errors in one property don’t stop the script),---- BIN: funciones auxiliares (los errores por propiedad no detienen el script)
+"""texto {0}"" com os valores no lugar (as mensagens ficam inteiras para a tradução)","""text {0}"" with the values in place (messages stay whole for translation)","""texto {0}"" con los valores en su lugar (los mensajes quedan enteros para la traducción)"
+"no lugar do que não pôde ser criado (efeito de plug-in ausente, pseudo effect não instalado...):","instead of what could not be created (missing plug-in effect, pseudo effect not installed...):","en lugar de lo que no se pudo crear (efecto de plug-in ausente, pseudo effect no instalado...):"
+"aceita as chamadas seguintes sem fazer nada, e o resto do script continua","accepts the following calls without doing anything, and the rest of the script goes on","acepta las llamadas siguientes sin hacer nada, y el resto del script continúa"
+pseudo effect: só existe se estiver no PresetEffects.xml desta máquina (ou registrado por um .ffx),pseudo effect: only exists if it is in this machine’s PresetEffects.xml (or registered by a .ffx),pseudo effect: solo existe si está en el PresetEffects.xml de este equipo (o registrado por un .ffx)
+"pseudo effect com o .ffx embutido: se o AE não o conhece, o .ffx aplicado numa comp temporária o registra","pseudo effect with the embedded .ffx: if AE doesn’t know it, the .ffx applied in a temporary comp registers it","pseudo effect con el .ffx incrustado: si AE no lo conoce, el .ffx aplicado en una comp temporal lo registra"
+"já está assim, ou o AE não deixa mudar (canSetCollapseTransformation...): não mexe","already set, or AE doesn’t allow changing it (canSetCollapseTransformation...): leave it","ya está así, o AE no permite cambiarlo (canSetCollapseTransformation...): no se toca"
+converte os valores marcados (textos) usando o documento atual da propriedade como base,converts the marked values (texts) using the property’s current document as a base,convierte los valores marcados (textos) usando el documento actual de la propiedad como base
+ex.: o time remap já nasce com keys,e.g. time remap is created with keys,p. ej.: el time remap ya nace con keys
+roving só depois de todas as keys no lugar,roving only after all keys are in place,roving solo después de que todas las keys estén en su lugar
+onde fica uma propriedade: a layer dona e os índices até ela. Referências a propriedades,where a property is: the owner layer and the indices down to it. References to properties,dónde está una propiedad: la capa dueña y los índices hasta ella. Las referencias a propiedades
+se perdem quando outras entram no mesmo grupo; a layer e o caminho continuam valendo,are lost when others are added to the same group; the layer and the path stay valid,se pierden cuando entran otras en el mismo grupo; la capa y el camino siguen valiendo
+"as expressões entram só no fim, com todas as layers e comps prontas: assim nenhuma é avaliada","expressions go in only at the end, with all layers and comps ready: so none is evaluated","las expresiones entran solo al final, con todas las capas y comps listas: así ninguna se evalúa"
+"antes de as dependências existirem (o expression selector, por exemplo, não se recupera do erro)","before its dependencies exist (the expression selector, for example, doesn’t recover from the error)","antes de que existan sus dependencias (el expression selector, por ejemplo, no se recupera del error)"
+markers de layer ou de comp,layer or comp markers,marcadores de capa o de comp
+"precomp ou footage: procura no projeto pelo nome; se não achar, importa o arquivo ou cria um solid no lugar","precomp or footage: looks for it in the project by name; if not found, imports the file or creates a solid instead","precomp o material: lo busca en el proyecto por nombre; si no lo encuentra, importa el archivo o crea un sólido en su lugar"
+parâmetro que aponta para uma layer: guarda a layer dona e o caminho até ele (referências a,parameter that points to a layer: stores the owner layer and the path to it (references to,parámetro que apunta a una capa: guarda la capa dueña y el camino hasta él (las referencias a
+"propriedades se perdem quando outros efeitos entram) e resolve em bin.links, com todas as layers prontas","properties are lost when other effects are added) and resolves it in bin.links, with all layers ready","propiedades se pierden cuando entran otros efectos) y lo resuelve en bin.links, con todas las capas listas"
+"um nível do caminho até a propriedade: pelo nome, pelo índice ou pelo matchName (o que bater)","one level of the path to the property: by name, by index or by matchName (whichever matches)","un nivel del camino hasta la propiedad: por nombre, por índice o por matchName (el que coincida)"
+"controles do essential graphics da comp, na mesma ordem e com os mesmos nomes","the comp’s essential graphics controls, in the same order and with the same names","controles de essential graphics de la comp, en el mismo orden y con los mismos nombres"
+valores e expressões das essential properties de uma layer de precomp,values and expressions of a precomp layer’s essential properties,valores y expresiones de las essential properties de una capa de precomp
+"a expressão entra no fim, como as outras (o grupo é refeito pelo AE: guarda a layer e os nomes)","the expression goes in at the end, like the others (AE rebuilds the group: store the layer and the names)","la expresión entra al final, como las demás (AE rehace el grupo: guarda la capa y los nombres)"
+mantém os valores de transform como estão,keeps the transform values as they are,mantiene los valores de transformación como están
+AE 23+,AE 23+,AE 23+
+seleciona o que foi criado e deixa o resumo para o painel,selects what was created and leaves the summary for the panel,selecciona lo que se creó y deja el resumen para el panel
+{0} (linha {1}),{0} (line {1}),{0} (línea {1})
+"não foi possível ler ""{0}"": {1}","could not read ""{0}"": {1}","no se pudo leer ""{0}"": {1}"
+"não foi possível ler a essential property ""{0}"": {1}","could not read the essential property ""{0}"": {1}","no se pudo leer la essential property ""{0}"": {1}"
+"não foi possível ler o essential graphics de ""{0}"": {1}","could not read the essential graphics of ""{0}"": {1}","no se pudo leer el essential graphics de ""{0}"": {1}"
+"essential graphics de ""{0}"": este After Effects não diz de onde vem cada controle (precisa do AE 2022 ou mais novo); os controles não são recriados.","essential graphics of ""{0}"": this After Effects doesn’t tell where each control comes from (needs AE 2022 or newer); the controls are not recreated.","essential graphics de ""{0}"": este After Effects no indica de dónde viene cada control (requiere AE 2022 o posterior); los controles no se recrean."
+a comp de origem não está mais no projeto.,the source comp is no longer in the project.,la comp de origen ya no está en el proyecto.
+o pseudo effect não está mais nessa layer (capture de novo).,the pseudo effect is no longer on that layer (capture again).,el pseudo effect ya no está en esa capa (captura de nuevo).
+o menu Animation > Save Animation Preset não foi encontrado. O efeito ficou selecionado: salve por esse menu.,the Animation > Save Animation Preset menu was not found. The effect is selected: save it from that menu.,no se encontró el menú Animation > Save Animation Preset. El efecto quedó seleccionado: guárdalo desde ese menú.
+abra uma comp e selecione uma layer.,open a comp and select a layer.,abre una comp y selecciona una capa.
+selecione ao menos uma layer na comp.,select at least one layer in the comp.,selecciona al menos una capa en la comp.
+abra uma comp (ou selecione uma no painel Project).,open a comp (or select one in the Project panel).,abre una comp (o selecciona una en el panel Project).
+abra uma comp e selecione uma propriedade com expressão.,open a comp and select a property with an expression.,abre una comp y selecciona una propiedad con expresión.
+selecione uma propriedade com expressão.,select a property with an expression.,selecciona una propiedad con expresión.
+nenhuma expressão na seleção.,no expressions in the selection.,ninguna expresión en la selección.
+estilos de layer não são recriados (a API do After Effects não permite adicioná-los).,layer styles are not recreated (the After Effects API doesn’t allow adding them).,los estilos de capa no se recrean (la API de After Effects no permite añadirlos).
+erro no ExtendScript: {0},ExtendScript error: {0},error de ExtendScript: {0}
+resposta inválida do After Effects: {0},invalid response from After Effects: {0},respuesta no válida de After Effects: {0}
+After Effects não encontrado (painel fora do CEP).,After Effects not found (panel outside CEP).,After Effects no encontrado (panel fuera de CEP).
+sem acesso ao sistema de arquivos.,no access to the file system.,sin acceso al sistema de archivos.
+instalador,installer,instalador
+"olá! vamos instalar o BIN no After Effects.\n\na extensão será copiada para este computador: depois de instalada ela não depende mais desta pasta. para atualizar, rode o instalador da versão nova.","hi! let’s install BIN in After Effects.\n\nthe extension will be copied to this computer: once installed it no longer depends on this folder. to update, run the installer of the new version.","¡hola! vamos a instalar BIN en After Effects.\n\nla extensión se copiará a este equipo: una vez instalada ya no depende de esta carpeta. para actualizar, ejecuta el instalador de la versión nueva."
+conferindo o que o BIN precisa:,checking what BIN needs:,comprobando lo que BIN necesita:
+After Effects 2020 ou mais novo,After Effects 2020 or newer,After Effects 2020 o posterior
+o BIN precisa do After Effects 2020 (17.0) ou mais novo.,BIN needs After Effects 2020 (17.0) or newer.,BIN necesita After Effects 2020 (17.0) o posterior.
+acesso à rede e escrita de arquivos,network access and file writing,acceso a la red y escritura de archivos
+"habilite ""Allow Scripts to Write Files and Access Network"" nas preferências de scripts e expressões.","enable ""Allow Scripts to Write Files and Access Network"" in the scripting & expressions preferences.","activa ""Allow Scripts to Write Files and Access Network"" en las preferencias de scripts y expresiones."
+"pasta ""bin-cep"" ao lado do instalador","""bin-cep"" folder next to the installer","carpeta ""bin-cep"" junto al instalador"
+"rode o instalador direto da pasta do BIN (a que tem a pasta ""bin-cep"").","run the installer straight from the BIN folder (the one with the ""bin-cep"" folder).","ejecuta el instalador directamente desde la carpeta de BIN (la que tiene la carpeta ""bin-cep"")."
+abrir preferências de scripts e expressões,open scripting & expressions preferences,abrir preferencias de scripts y expresiones
+verificar de novo,check again,comprobar de nuevo
+tudo certo nas checagens! o que você quer fazer?,all checks passed! what do you want to do?,¡todas las comprobaciones están bien! ¿qué quieres hacer?
+o {0} já está instalado neste computador (esta pasta tem a v{1}) e tudo certo nas checagens. o que você quer fazer?,{0} is already installed on this computer (this folder has v{1}) and all checks passed. what do you want to do?,{0} ya está instalado en este equipo (esta carpeta tiene la v{1}) y las comprobaciones están bien. ¿qué quieres hacer?
+o {0} já está instalado neste computador e tudo certo nas checagens. o que você quer fazer?,{0} is already installed on this computer and all checks passed. what do you want to do?,{0} ya está instalado en este equipo y las comprobaciones están bien. ¿qué quieres hacer?
+instalar,install,instalar
+reinstalar,reinstall,reinstalar
+atualizar,update,actualizar
+remover,remove,quitar
+copia a extensão para este computador.,copies the extension to this computer.,copia la extensión a este equipo.
+remove o BIN deste computador.,removes BIN from this computer.,quita BIN de este equipo.
+origem: {0},source: {0},origen: {0}
+destino: {0},destination: {0},destino: {0}
+cancelar,cancel,cancelar
+anterior,back,anterior
+começar,start,empezar
+tudo certo!,all good!,¡todo bien!
+próximo,next,siguiente
+concluir,finish,finalizar
+removendo a cópia anterior…,removing the previous copy…,quitando la copia anterior…
+não foi possível instalar,could not install,no se pudo instalar
+"não foi possível remover a versão anterior em:\n{0}\n\nfeche o After Effects, apague essa pasta e rode o instalador de novo.","could not remove the previous version at:\n{0}\n\nclose After Effects, delete that folder and run the installer again.","no se pudo quitar la versión anterior en:\n{0}\n\ncierra After Effects, borra esa carpeta y ejecuta el instalador de nuevo."
+copiando a extensão…,copying the extension…,copiando la extensión…
+não foi possível copiar {0} arquivo(s) para:\n{1},could not copy {0} file(s) to:\n{1},no se pudieron copiar {0} archivo(s) a:\n{1}
+liberando extensões sem assinatura…,allowing unsigned extensions…,habilitando extensiones sin firma…
+pronto!,done!,¡listo!
+{0} atualizado! ({1} arquivos),{0} updated! ({1} files),¡{0} actualizado! ({1} archivos)
+{0} instalado! ({1} arquivos),{0} installed! ({1} files),¡{0} instalado! ({1} archivos)
+reinicie o After Effects e abra o painel em:\nWindow > Extensions > BIN,restart After Effects and open the panel at:\nWindow > Extensions > BIN,reinicia After Effects y abre el panel en:\nWindow > Extensions > BIN
+"se não aparecer, reinicie o computador (no macOS a liberação das extensões às vezes só vale depois disso).","if it doesn’t show up, restart the computer (on macOS, allowing extensions sometimes only takes effect after that).","si no aparece, reinicia el equipo (en macOS la habilitación de extensiones a veces solo vale después de eso)."
+removendo…,removing…,quitando…
+o BIN foi removido deste computador.\n\nreinicie o After Effects.,BIN was removed from this computer.\n\nrestart After Effects.,BIN se quitó de este equipo.\n\nreinicia After Effects.
+não foi possível remover:\n{0}\n\nfeche o After Effects e apague essa pasta manualmente.,could not remove:\n{0}\n\nclose After Effects and delete that folder manually.,no se pudo quitar:\n{0}\n\ncierra After Effects y borra esa carpeta manualmente.

@@ -274,7 +274,7 @@
 		clearTimeout(toastTimer);
 		t.className = 'toast ' + (kind || 'info');
 		var icon = { ok: 'check', error: 'alert', warn: 'alert', info: 'info' }[kind || 'info'];
-		var html = '<div class="toast-msg">' + UI.icon(icon) + '<span>' + msg + '</span><button class="toast-x" title="fechar">' + UI.icon('x') + '</button></div>';
+		var html = '<div class="toast-msg">' + UI.icon(icon) + '<span>' + msg + '</span><button class="toast-x" title="' + (global.BIN && global.BIN.t ? global.BIN.t('fechar') : 'fechar') + '">' + UI.icon('x') + '</button></div>';
 		if (opts.details && opts.details.length) {
 			html += '<ul class="toast-list">' + opts.details.map(function (d) { return '<li>' + UI.esc(d) + '</li>'; }).join('') + '</ul>';
 		}

@@ -315,6 +315,19 @@ com o painel em foco:
 
 com o painel em foco, essas teclas vão para o BIN e não para os atalhos do After Effects (como o **Quick Apply** do `⌘ + Enter`). no Mac, `⌃ Control` também vale no lugar do `⌘`. os tooltips mostram o símbolo junto do nome da tecla (`⌘ Cmd`, `⇧ Shift`).
 
+### 🌐 idiomas
+
+o BIN fala **português, inglês e espanhol**: o painel, os tooltips e avisos, as mensagens do After Effects, o script gerado (comentários, nomes das funções — `criar_…`, `create_…`, `crear_…` — e mensagens de erro) e o instalador. na primeira vez, segue o idioma do After Effects; depois, o botão **PT / EN / ES** no topo do painel troca (e fica guardado). o instalador segue o idioma do After Effects.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/img/instalador-en.png" width="300"><br><sub>instalador em inglês</sub></td>
+    <td align="center"><img src="docs/img/instalador-es.png" width="300"><br><sub>instalador em espanhol</sub></td>
+  </tr>
+</table>
+
+os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma linha por texto e uma coluna por idioma (`pt,en,es`). a coluna `pt` é a chave (o código continua escrito em português); partes variáveis usam `{0}`, `{1}`… e quebras de linha são escritas como `\n`. para corrigir uma tradução, edite a célula; para um idioma novo, acrescente uma coluna (e o código dele em `LANGS`, em `bin-cep/js/i18n.js`). o teste `tests/i18n_check.js` confere se todo texto do código está no CSV, com os mesmos `{0}` em cada idioma, e se o painel em inglês e espanhol não mostra nada em português.
+
 **versão:** o tooltip do logo mostra a assinatura dos arquivos instalados (ex.: `versão 611f0c31`). ao abrir, o painel recarrega a parte que conversa com o After Effects (`host.jsx`) da própria pasta, então uma atualização vale por inteiro mesmo sem reiniciar o AE (basta fechar e abrir o painel).
 
 <br>
@@ -415,6 +428,8 @@ tests/
   egp_panel.js        essential graphics no painel: cards, exclusões, avisos e recriação
   pseudo_panel.js     pseudo effects: salvar / escolher o .ffx, script com o .ffx embutido e avisos
   build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
+  i18n_keys.js        lista os textos do código que precisam estar no textos.csv
+  i18n_check.js       traduções: CSV completo, script gerado e painel em inglês e espanhol
   lib_panel.js        abre o painel com o After Effects simulado (usado pelos geradores abaixo)
   make_docs.js        capturas do README com destaques
   make_demo.js        GIF do uso simulado

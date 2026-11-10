@@ -54,7 +54,8 @@ function bin_json(v) {
 }
 
 function bin_error(e) {
-	return bin_json({ error: (e && e.message ? e.message : String(e)) + (e && e.line ? ' (linha ' + e.line + ')' : '') });
+	var msg = e && e.message ? e.message : String(e);
+	return bin_json({ error: e && e.line ? bin_f('{0} (linha {1})', msg, e.line) : msg });
 }
 
 // ---------------------------------------------------------- constantes --
@@ -96,6 +97,12 @@ function bin_interp(v) {
 }
 
 // lê um atributo sem deixar uma propriedade ausente derrubar a captura
+// "texto {0}" com os valores no lugar: as mensagens ficam inteiras, e o painel as traduz pelo modelo (i18n/textos.csv)
+function bin_f(s) {
+	var a = arguments;
+	return String(s).replace(/\{(\d)\}/g, function (m, n) { return a[+n + 1]; });
+}
+
 function bin_try(obj, key) {
 	try { return obj[key]; } catch (e) { return undefined; }
 }
@@ -262,7 +269,7 @@ function bin_walk(group, ctx, path) {
 		if (present && !present[i - 1]) continue;
 		var node = null;
 		try { node = bin_node(group.property(i), group, i, ctx, path); } catch (e) {
-			ctx.warnings.push('não foi possível ler "' + path + ' › ' + bin_try(group.property(i), 'name') + '": ' + e.message);
+			ctx.warnings.push(bin_f('não foi possível ler "{0}": {1}', path + ' › ' + bin_try(group.property(i), 'name'), e.message));
 		}
 		if (node) out.push(node);
 	}
@@ -465,7 +472,8 @@ function bin_layer(l) {
 // salva o .ffx de um pseudo effect pelo próprio After Effects (Animation > Save Animation Preset):
 // o arquivo leva a definição do efeito e funciona em máquinas sem ele no PresetEffects.xml.
 // Seleciona só o efeito, abre o diálogo de salvar do AE e procura o .ffx recém-salvo na pasta padrão.
-var BIN_SAVE_PRESET = ['Save Animation Preset...', 'Save Animation Preset…', 'Salvar predefinição de animação...', 'Salvar predefinição de animação…'];
+var BIN_SAVE_PRESET = ['Save Animation Preset...', 'Save Animation Preset…', 'Salvar predefinição de animação...', 'Salvar predefinição de animação…',
+	'Guardar ajuste preestablecido de animación...', 'Guardar ajuste preestablecido de animación…'];
 
 function bin_userPresets() {
 	var out = [];
@@ -534,6 +542,11 @@ function bin_savePseudo(compId, layerIndex, fxIndex, matchName) {
 	}
 }
 
+// idioma do After Effects (pt_BR, en_US, es_ES…): o painel abre no mesmo idioma
+function bin_lang() {
+	try { return bin_json({ iso: app.isoLanguage }); } catch (e) { return bin_json({ iso: '' }); }
+}
+
 // ------------------------------------------------------ essential graphics --
 // folhas do grupo Essential Properties de uma layer de precomp, com o caminho de nomes até cada uma
 function bin_egpLeaves(g, names, out) {
@@ -567,7 +580,7 @@ function bin_overrides(l, ctx) {
 				if (bin_try(p, 'expressionEnabled') === false) o.xoff = true;
 			}
 			out.push(o);
-		} catch (e) { ctx.warnings.push('não foi possível ler a essential property "' + leaves[i].names.join(' › ') + '": ' + e.message); }
+		} catch (e) { ctx.warnings.push(bin_f('não foi possível ler a essential property "{0}": {1}', leaves[i].names.join(' › '), e.message)); }
 	}
 	return out;
 }
@@ -615,11 +628,11 @@ function bin_egp(comp, warnings) {
 			out.push(e);
 		}
 	} catch (err) {
-		warnings.push('não foi possível ler o essential graphics de "' + comp.name + '": ' + err.message);
+		warnings.push(bin_f('não foi possível ler o essential graphics de "{0}": {1}', comp.name, err.message));
 	} finally {
 		if (tmp) try { tmp.remove(); } catch (e2) { }
 	}
-	if (out.length && out[0].missing) warnings.push('essential graphics de "' + comp.name + '": este After Effects não diz de onde vem cada controle (precisa do AE 2022 ou mais novo); os controles não são recriados.');
+	if (out.length && out[0].missing) warnings.push(bin_f('essential graphics de "{0}": este After Effects não diz de onde vem cada controle (precisa do AE 2022 ou mais novo); os controles não são recriados.', comp.name));
 	return out;
 }
 

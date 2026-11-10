@@ -165,6 +165,29 @@ const next = () => {
 	const stays = pageNow() === 1 && buttons['começar'].enabled === false; // o botão é criado como 'começar'
 	console.log((stays ? 'ok    ' : 'FALHA ') + 'com algo errado: começar para na checagem, sem avançar');
 	if (!stays || !flow) process.exitCode = 1;
+
+	// em inglês e espanhol (segue o idioma do After Effects): título, botões e nenhum texto em português
+	global.__writeBlocked = false;
+	const texts = (c, out = []) => { if (c.text) out.push(c.text); (c.children || []).forEach((k) => texts(k, out)); if (c.helpTip) out.push(c.helpTip); return out; };
+	const PT = /\b(não|você|olá|checagens|computador|pasta|começar|próximo|instalador da versão)\b/i;
+	const shotLang = async (name) => {
+		const b2 = await chromium.launch();
+		const pg2 = await b2.newPage({ deviceScaleFactor: 2 });
+		await pg2.setContent(page());
+		await (await pg2.$('#stage')).screenshot({ path: path.join(outDir, name + '.png'), omitBackground: true });
+		await b2.close();
+	};
+	for (const [iso, lang, start, title] of [['en_US', 'en', 'start', 'installer'], ['es_ES', 'es', 'empezar', 'instalador']]) {
+		ctx.app.isoLanguage = iso;
+		Object.keys(buttons).forEach((k) => delete buttons[k]);
+		vm.runInContext(src, ctx, { filename: 'INSTALAR O BIN.jsx' });
+		const all = texts(win).join('\n');
+		const left = all.split('\n').filter((l) => PT.test(l));
+		const okLang = new RegExp('· ' + title + '$').test(win.text) && !!buttons[start] && !left.length;
+		console.log((okLang ? 'ok    ' : 'FALHA ') + 'instalador em ' + lang + ': título, botões e textos traduzidos' + (left.length ? ' · ' + left.slice(0, 4).join(' | ') : ''));
+		if (!okLang) process.exitCode = 1;
+		await shotLang('instalador-' + lang);
+	}
 	console.log('janela:', win.text);
 	console.log('extensão copiada:', ok ? 'ok' : 'FALHOU', '(' + dest.replace(userData, '<userData>') + ')');
 	console.log('PlayerDebugMode:', calls.filter((c) => /PlayerDebugMode/.test(c)).length, 'versões do CSXS');

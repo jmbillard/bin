@@ -81,7 +81,10 @@
 	// efeitos nativos do After Effects (o resto pode ser plug-in de terceiro)
 	var NATIVE_FX = /^(ADBE |CC |APC |CS |VISINF |ISL |PEDG |SYNTHAP |BE |CINEMA 4D|Mettle)/;
 
-	function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+	// tradução (i18n/textos.csv): T(texto em português, ...valores para {0}, {1}…)
+	var T = BIN.t;
+	function plural(n, one, many) { return n + ' ' + T(n === 1 ? one : many); }
+	function typeName(type) { return T(TYPE_NAME[type] || type); }
 
 	function fmtNum(n, d) {
 		if (typeof n !== 'number') return String(n);
@@ -116,7 +119,7 @@
 	function preview(v, mn) {
 		if (v === undefined) return '';
 		if (v === null) return '—';
-		if (typeof v === 'boolean') return v ? 'sim' : 'não';
+		if (typeof v === 'boolean') return T(v ? 'sim' : 'não');
 		if (typeof v === 'number') return esc(TIME_KEYS.test(mn || '') ? fmtTime(v) : fmtNum(v, 2));
 		if (typeof v === 'string') return '<span class="vt">"' + esc(v) + '"</span>';
 		if (isColor(v, mn)) return '<span class="sw-c" style="background:' + hex(v) + '"></span>' + hex(v);
@@ -148,7 +151,7 @@
 		}
 		root.dataset.theme = mode;
 		$('themeBtn').dataset.mode = S.theme;
-		UI.setTip($('themeBtn'), THEME_LABEL[S.theme] + '\nclique para trocar');
+		UI.setTip($('themeBtn'), T(THEME_LABEL[S.theme]) + '\n' + T('clique para trocar'));
 	}
 
 	// ------------------------------------------------------ abas ------------
@@ -281,12 +284,12 @@
 			if (!quiet) {
 				if (m.mode === 'comp') {
 					var pre = m.comps.length - 1;
-					msg = 'comp “' + esc(m.rootComp.name) + '” capturada' + (pre ? ' com ' + plural(pre, 'precomp', 'precomps') : '') + '.';
-				} else msg = plural(m.rootComp.layers.length, 'layer capturada', 'layers capturadas') + ' de “' + esc(m.rootComp.name) + '”.';
+					msg = pre ? T('comp “{0}” capturada com {1}.', esc(m.rootComp.name), plural(pre, 'precomp', 'precomps')) : T('comp “{0}” capturada.', esc(m.rootComp.name));
+				} else msg = T('{0} de “{1}”.', plural(m.rootComp.layers.length, 'layer capturada', 'layers capturadas'), esc(m.rootComp.name));
 			}
 			if (!proposeFfx(msg) && msg) UI.toast(msg, 'ok', { life: 1800 });
 		}).catch(function (e) {
-			if (!quiet) UI.toast(esc(e.message), 'error');
+			if (!quiet) UI.toast(esc(BIN.tr(e.message)), 'error');
 		});
 	}
 
@@ -325,7 +328,7 @@
 
 	function selLabel(sel) {
 		var n = sel.layers.length;
-		return n === 1 ? '“' + esc(sel.layers[0].name) + '”' : n + ' layers';
+		return n === 1 ? '“' + esc(sel.layers[0].name) + '”' : plural(n, 'layer', 'layers');
 	}
 
 	function renderSelection() {
@@ -333,8 +336,8 @@
 		if (!state.m) {
 			// tela inicial: mostra o que vai ser capturado
 			var n = sel && sel.comp ? sel.layers.length : 0;
-			$('emptyTitle').textContent = !sel || !sel.comp ? 'abra uma comp e selecione uma layer' : n ? (n === 1 ? '1 layer selecionada' : n + ' layers selecionadas') + ' em “' + sel.comp.name + '”' : 'selecione uma layer em “' + sel.comp.name + '”';
-			$('captureTxt').textContent = n === 1 ? 'capturar “' + sel.layers[0].name + '”' : n > 1 ? 'capturar ' + n + ' layers' : 'capturar seleção';
+			$('emptyTitle').textContent = !sel || !sel.comp ? T('abra uma comp e selecione uma layer') : n ? T('{0} em “{1}”', plural(n, 'layer selecionada', 'layers selecionadas'), sel.comp.name) : T('selecione uma layer em “{0}”', sel.comp.name);
+			$('captureTxt').textContent = n === 1 ? T('capturar “{0}”', sel.layers[0].name) : n > 1 ? T('capturar {0}', plural(n, 'layer', 'layers')) : T('capturar seleção');
 			$('captureBtn').disabled = !n;
 			$('captureCompBtn').disabled = !(sel && sel.comp);
 			return;
@@ -344,14 +347,14 @@
 			var key = selKey(sel, mode);
 			if (mode === 'comp') stale = key !== watch.cap && key !== watch.ack;
 			else stale = sel.layers.length > 0 && key !== watch.cap && key !== watch.ack;
-			txt = 'atualizar para ' + (mode === 'comp' ? 'a comp “' + esc(sel.comp.name) + '”' : selLabel(sel));
-			var tip = mode === 'comp' ? 'a comp ativa agora é “' + sel.comp.name + '”'
-				: 'selecionado agora em “' + sel.comp.name + '”:\n' + sel.layers.slice(0, 8).map(function (l) { return '• ' + l.name; }).join('\n') + (sel.layers.length > 8 ? '\n…' : '');
+			txt = mode === 'comp' ? T('atualizar para a comp “{0}”', esc(sel.comp.name)) : T('atualizar para {0}', selLabel(sel));
+			var tip = mode === 'comp' ? T('a comp ativa agora é “{0}”', sel.comp.name)
+				: T('selecionado agora em “{0}”:', sel.comp.name) + '\n' + sel.layers.slice(0, 8).map(function (l) { return '• ' + l.name; }).join('\n') + (sel.layers.length > 8 ? '\n…' : '');
 		}
 		var chip = $('chip');
 		chip.classList.toggle('stale', stale);
 		$('chipMeta').innerHTML = stale ? txt : esc(chip.dataset.meta || '');
-		UI.setTip(chip, stale ? 'a captura ficou para trás\n' + tip + '\nclique para capturar de novo' : 'atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects');
+		UI.setTip(chip, stale ? T('a captura ficou para trás') + '\n' + tip + '\n' + T('clique para capturar de novo') : T('atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects'));
 	}
 
 	function setMode(mode) {
@@ -388,8 +391,8 @@
 		delete ffxCache[mn];
 		saveSettings();
 		var ok = !!ffxBytes(mn);
-		if (!ok) { delete S.ffx[mn]; saveSettings(); UI.toast('não foi possível ler ' + esc(BIN.fs.basename(path)) + '.', 'error'); }
-		else if (!quiet) UI.toast('<b>' + esc(BIN.fs.basename(path)) + '</b> entra no script: o pseudo effect funciona em qualquer máquina.', 'ok', { life: 2600 });
+		if (!ok) { delete S.ffx[mn]; saveSettings(); UI.toast(T('não foi possível ler {0}.', esc(BIN.fs.basename(path))), 'error'); }
+		else if (!quiet) UI.toast(T('<b>{0}</b> entra no script: o pseudo effect funciona em qualquer máquina.', esc(BIN.fs.basename(path))), 'ok', { life: 2600 });
 		state.code = null;
 		renderPseudo();
 		if (state.m) { renderTree(); renderSummary(); }
@@ -400,15 +403,15 @@
 	// abre o Save Animation Preset do AE para um pseudo effect; resolve true se o .ffx entrou
 	function savePseudo(p, quiet) {
 		var at = p.at[0];
-		if (!quiet) UI.toast('salve o .ffx de <b>' + esc(p.mn.replace(/^Pseudo\//, '')) + '</b> no diálogo do After Effects…', 'info', { life: 2600 });
+		if (!quiet) UI.toast(T('salve o .ffx de <b>{0}</b> no diálogo do After Effects…', esc(p.mn.replace(/^Pseudo\//, ''))), 'info', { life: 2600 });
 		return BIN.callHostJSON('bin_savePseudo', [at.comp, at.layer, at.fx, p.mn]).then(function (r) {
 			if (r.file) return useFfx(p.mn, r.file, quiet);
-			if (!quiet) UI.toast('o .ffx foi salvo fora da pasta de presets (ou o diálogo foi cancelado).', 'warn', {
+			if (!quiet) UI.toast(T('o .ffx foi salvo fora da pasta de presets (ou o diálogo foi cancelado).'), 'warn', {
 				sticky: true,
-				actions: [{ label: 'escolher o .ffx', icon: 'open', run: function () { pickFfx(p); } }]
+				actions: [{ label: T('escolher o .ffx'), icon: 'open', run: function () { pickFfx(p); } }]
 			});
 			return false;
-		}).catch(function (e) { UI.toast(esc(e.message), 'error', { sticky: true }); return false; });
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error', { sticky: true }); return false; });
 	}
 
 	// vários: um diálogo de cada vez, e um resumo no fim
@@ -418,11 +421,11 @@
 		var next = function () {
 			if (i >= list.length) {
 				var miss = list.filter(function (p) { return !ffxBytes(p.mn); });
-				UI.toast(done + ' de ' + list.length + ' .ffx salvos' + (miss.length ? '. faltam: ' + miss.map(function (p) { return esc(p.mn.replace(/^Pseudo\//, '')); }).join(', ') + ' (escolha o arquivo na aba utilitários).' : ': entram no script.'), miss.length ? 'warn' : 'ok', { sticky: !!miss.length, life: 3200 });
+				UI.toast(miss.length ? T('{0} de {1} .ffx salvos. faltam: {2} (escolha o arquivo na aba utilitários).', done, list.length, miss.map(function (p) { return esc(p.mn.replace(/^Pseudo\//, '')); }).join(', ')) : T('{0} de {1} .ffx salvos: entram no script.', done, list.length), miss.length ? 'warn' : 'ok', { sticky: !!miss.length, life: 3200 });
 				return Promise.resolve(done);
 			}
 			var p = list[i++];
-			UI.toast('salvando ' + i + ' de ' + list.length + ': <b>' + esc(p.mn.replace(/^Pseudo\//, '')) + '</b> (diálogo do After Effects)…', 'info', { sticky: true });
+			UI.toast(T('salvando {0} de {1}: <b>{2}</b> (diálogo do After Effects)…', i, list.length, esc(p.mn.replace(/^Pseudo\//, ''))), 'info', { sticky: true });
 			return savePseudo(p, true).then(function (ok) { if (ok) done++; return next(); });
 		};
 		return next();
@@ -436,20 +439,19 @@
 		if (!list.length) return false;
 		list.forEach(function (p) { ffxAsked[p.mn] = true; });
 		var names = list.map(function (p) { return '<b>' + esc(p.mn.replace(/^Pseudo\//, '')) + '</b>'; });
-		var msg = (captureMsg ? captureMsg + ' ' : '') + (list.length === 1 ? 'o pseudo effect ' + names[0] + ' ainda não tem .ffx' : list.length + ' pseudo effects ainda não têm .ffx (' + names.join(', ') + ')') +
-			': salve para incorporar no código, e o script funciona em qualquer máquina.';
+		var msg = (captureMsg ? captureMsg + ' ' : '') + (list.length === 1 ? T('o pseudo effect {0} ainda não tem .ffx: salve para incorporar no código, e o script funciona em qualquer máquina.', names[0]) : T('{0} pseudo effects ainda não têm .ffx ({1}): salve para incorporar no código, e o script funciona em qualquer máquina.', list.length, names.join(', ')));
 		UI.toast(msg, 'info', {
 			sticky: true,
 			actions: [
-				{ label: list.length === 1 ? 'salvar .ffx' : 'salvar os ' + list.length, icon: 'save', run: function () { UI.hideToast(); saveAllPseudo(list); } },
-				{ label: 'agora não', icon: 'x', run: UI.hideToast }
+				{ label: list.length === 1 ? T('salvar .ffx') : T('salvar os {0}', list.length), icon: 'save', run: function () { UI.hideToast(); saveAllPseudo(list); } },
+				{ label: T('agora não'), icon: 'x', run: UI.hideToast }
 			]
 		});
 		return true;
 	}
 
 	function pickFfx(p) {
-		BIN.dialog.openFiles('escolha o .ffx de ' + p.name, ['ffx'], true).then(function (paths) {
+		BIN.dialog.openFiles(T('escolha o .ffx de {0}', p.name), ['ffx'], true).then(function (paths) {
 			if (paths && paths.length) useFfx(p.mn, paths[0]);
 		});
 	}
@@ -464,11 +466,11 @@
 			return '<div class="pseudo-item' + (has ? ' ok' : '') + '">' +
 				'<div class="pseudo-head"><b>' + esc(p.mn.replace(/^Pseudo\//, '')) + '</b><small>' + esc(where) + '</small></div>' +
 				'<div class="pseudo-state">' + (has
-					? UI.icon('check') + '<span>' + esc(BIN.fs.basename(S.ffx[p.mn])) + ' · entra no script</span>'
-					: UI.icon('alert') + '<span>sem .ffx: o script só cria o efeito onde ele estiver instalado</span>') + '</div>' +
+					? UI.icon('check') + '<span>' + T('{0} · entra no script', esc(BIN.fs.basename(S.ffx[p.mn]))) + '</span>'
+					: UI.icon('alert') + '<span>' + T('sem .ffx: o script só cria o efeito onde ele estiver instalado') + '</span>') + '</div>' +
 				'<div class="pseudo-acts">' +
-				'<button class="btn small" data-pseudo-save="' + i + '" title="salvar .ffx\nabre o “Save Animation Preset” do After Effects com o efeito selecionado"><i data-icon="save"></i>' + (has ? 'salvar de novo' : 'salvar .ffx') + '</button>' +
-				'<button class="btn small ghost" data-pseudo-pick="' + i + '" title="escolher .ffx\nusa um .ffx que você já tem"><i data-icon="open"></i>escolher .ffx</button>' +
+				'<button class="btn small" data-pseudo-save="' + i + '" title="' + esc(T('salvar .ffx\nabre o “Save Animation Preset” do After Effects com o efeito selecionado')) + '"><i data-icon="save"></i>' + T(has ? 'salvar de novo' : 'salvar .ffx') + '</button>' +
+				'<button class="btn small ghost" data-pseudo-pick="' + i + '" title="' + esc(T('escolher .ffx\nusa um .ffx que você já tem')) + '"><i data-icon="open"></i>' + T('escolher .ffx') + '</button>' +
 				'</div></div>';
 		}).join('');
 		UI.hydrateIcons($('pseudoList'));
@@ -495,18 +497,18 @@
 			if (m.comps.length > 1) meta.push(plural(m.comps.length - 1, 'precomp', 'precomps'));
 		} else if (C.layers.length === 1) {
 			var L = C.layers[0];
-			t.textContent = TYPE_LABEL[L.type] || 'LAYER';
+			t.textContent = T(TYPE_LABEL[L.type] || 'LAYER');
 			t.className = 'ltype t-' + L.type;
 			$('chipName').textContent = L.name;
 			meta = [C.name, plural(st.props, 'prop', 'props')];
 		} else {
-			t.textContent = C.layers.length + ' LAYERS';
+			t.textContent = T('{0} LAYERS', C.layers.length);
 			t.className = 'ltype t-multi';
 			$('chipName').textContent = C.layers.map(function (l) { return l.name; }).join(', ');
 			meta = [C.name, plural(st.props, 'prop', 'props')];
 		}
 		if (st.keys) meta.push(plural(st.keys, 'key', 'keys'));
-		if (st.expr) meta.push(st.expr + ' expr');
+		if (st.expr) meta.push(T('{0} expr', st.expr));
 		$('chip').dataset.meta = meta.join(' · ');
 		$('chipMeta').textContent = meta.join(' · ');
 	}
@@ -531,8 +533,8 @@
 
 	function cntHTML(c, total) {
 		var h = '';
-		if (c.keys) h += '<i title="keyframes"><span class="dot k"></span>' + c.keys + '</i>';
-		if (c.expr) h += '<i title="expressões"><span class="dot e"></span>' + c.expr + '</i>';
+		if (c.keys) h += '<i title="' + T('keyframes') + '"><span class="dot k"></span>' + c.keys + '</i>';
+		if (c.expr) h += '<i title="' + T('expressões') + '"><span class="dot e"></span>' + c.expr + '</i>';
 		if (total !== undefined) h += '<i>' + total + '</i>';
 		return h;
 	}
@@ -542,7 +544,7 @@
 		if (locked) return '<span class="eye-sp"></span>';
 		var on = !excluded(id);
 		var mixed = on && anyExcludedBelow(id);
-		var tip = !on ? 'fora do script\nclique para incluir' : mixed ? 'parte está fora do script\nclique para incluir tudo' : 'no script\nclique para tirar';
+		var tip = T(!on ? 'fora do script\nclique para incluir' : mixed ? 'parte está fora do script\nclique para incluir tudo' : 'no script\nclique para tirar');
 		return '<button class="eye' + (!on ? ' off' : mixed ? ' mixed' : '') + '" data-id="' + id + '" title="' + tip + '">' + UI.icon(on ? 'eye' : 'eyeOff') + '</button>';
 	}
 
@@ -550,9 +552,9 @@
 
 	function label(n) {
 		switch (n.kind) {
-			case 'attr': return ATTR_LABEL[n.node.key] || n.node.key;
+			case 'attr': return T(ATTR_LABEL[n.node.key] || n.node.key);
 			case 'csetting':
-			case 'cinfo': return COMP_LABEL[n.node.key] || n.node.key;
+			case 'cinfo': return T(COMP_LABEL[n.node.key] || n.node.key);
 			case 'marker': return n.node.comment || '';
 			case 'ctrl': return n.node.name;
 			case 'override': return n.node.names.join(' › ');
@@ -580,11 +582,11 @@
 		switch (n.kind) {
 			case 'prop': {
 				var val;
-				if (v.sep) val = 'dimensões separadas';
+				if (v.sep) val = T('dimensões separadas');
 				else if (v.keys) val = keysHTML(v.keys) + '<span class="vt">' + preview(v.keys[0].v, v.mn) + '</span>';
 				else val = preview(v.v, v.mn);
-				if (v.add && v.v === undefined && !v.keys) val = '<span class="faint">adicionada</span>';
-				if (v.x) val = '<span class="xf' + (S.expr ? '' : ' dis') + '" title="expressão' + (v.xoff ? ' (desligada)' : '') + '\n' + esc(v.x.split(/\r|\n/)[0].slice(0, 80)) + '">ƒ</span>' + val;
+				if (v.add && v.v === undefined && !v.keys) val = '<span class="faint">' + T('adicionada') + '</span>';
+				if (v.x) val = '<span class="xf' + (S.expr ? '' : ' dis') + '" title="' + T(v.xoff ? 'expressão (desligada)' : 'expressão') + '\n' + esc(v.x.split(/\r|\n/)[0].slice(0, 80)) + '">ƒ</span>' + val;
 				return val;
 			}
 			case 'attr':
@@ -603,13 +605,13 @@
 				return fmtNum(C.frameRate, 3) + ' fps';
 			}
 			case 'marker':
-				return '<span class="vt">' + (v.comment ? '"' + esc(v.comment) + '"' : '<span class="faint">sem comentário</span>') + '</span>';
+				return '<span class="vt">' + (v.comment ? '"' + esc(v.comment) + '"' : '<span class="faint">' + T('sem comentário') + '</span>') + '</span>';
 			case 'ctrl':
-				if (v.missing) return '<span class="faint">origem desconhecida</span>';
+				if (v.missing) return '<span class="faint">' + T('origem desconhecida') + '</span>';
 				return '<span class="vt">' + esc(v.layer.name) + ' › ' + esc(v.path[v.path.length - 1].name) + '</span>';
 			case 'override': {
-				var ov = v.v !== undefined ? preview(v.v) : '<span class="faint">igual à da precomp</span>';
-				if (v.x) ov = '<span class="xf' + (S.expr ? '' : ' dis') + '" title="expressão' + (v.xoff ? ' (desligada)' : '') + '\n' + esc(v.x.split(/\r|\n/)[0].slice(0, 80)) + '">ƒ</span>' + ov;
+				var ov = v.v !== undefined ? preview(v.v) : '<span class="faint">' + T('igual à da precomp') + '</span>';
+				if (v.x) ov = '<span class="xf' + (S.expr ? '' : ' dis') + '" title="' + T(v.xoff ? 'expressão (desligada)' : 'expressão') + '\n' + esc(v.x.split(/\r|\n/)[0].slice(0, 80)) + '">ƒ</span>' + ov;
 				return ov;
 			}
 		}
@@ -622,9 +624,9 @@
 	function ffxTag(g) {
 		if (!g.pseudo) return '';
 		var has = !!ffxBytes(g.mn);
-		return '<button class="ffx-tag' + (has ? ' ok' : '') + '" data-ffx="' + esc(g.mn) + '" title="' + (has
+		return '<button class="ffx-tag' + (has ? ' ok' : '') + '" data-ffx="' + esc(g.mn) + '" title="' + esc(T(has
 			? '.ffx no script\no pseudo effect funciona em qualquer máquina; clique para salvar de novo'
-			: 'sem .ffx\nclique para salvar o .ffx pelo After Effects e incorporar no código') + '">' + (has ? UI.icon('check') : UI.icon('save')) + '.ffx</button>';
+			: 'sem .ffx\nclique para salvar o .ffx pelo After Effects e incorporar no código')) + '">' + (has ? UI.icon('check') : UI.icon('save')) + '.ffx</button>';
 	}
 
 	function rowHTML(id, depth, q) {
@@ -638,7 +640,7 @@
 			var open = q ? true : isOpen(id, true);
 			var g = n.node;
 			return '<div class="grp' + (open ? '' : ' closed') + '"><div class="row group' + off + hit + '" data-toggle="' + id + '"' + d + '>' +
-				'<span class="tw">' + UI.icon('chevron', 'chev') + '</span><span class="n">' + esc(g.name) + (g.off ? '<small>desligado</small>' : '') + '</span><span class="cnt">' + cntHTML(counts(id)) + '</span>' + ffxTag(g) + eyeHTML(id) + '</div>' +
+				'<span class="tw">' + UI.icon('chevron', 'chev') + '</span><span class="n">' + esc(g.name) + (g.off ? '<small>' + T('desligado') + '</small>' : '') + '</span><span class="cnt">' + cntHTML(counts(id)) + '</span>' + ffxTag(g) + eyeHTML(id) + '</div>' +
 				'<div class="grp-kids">' + n.kids.map(function (k) { return rowHTML(k, depth + 1, q); }).join('') + '</div></div>';
 		}
 
@@ -646,17 +648,17 @@
 		var title = '';
 		if (!fixedKind(n)) {
 			var tipLines = [label(n)];
-			if (n.kind === 'ctrl') tipLines.push(n.node.missing ? 'este After Effects não diz de onde vem o controle (precisa do AE 2022 ou mais novo)' : 'controle do essential graphics: ' + n.node.layer.name + ' › ' + n.node.path.map(function (s) { return s.name; }).join(' › ') + (n.node.group ? '\ngrupo “' + n.node.group + '” (grupos não são recriados)' : ''));
+			if (n.kind === 'ctrl') tipLines.push(n.node.missing ? T('este After Effects não diz de onde vem o controle (precisa do AE 2022 ou mais novo)') : T('controle do essential graphics: {0}', n.node.layer.name + ' › ' + n.node.path.map(function (s) { return s.name; }).join(' › ')) + (n.node.group ? '\n' + T('grupo “{0}” (grupos não são recriados)', n.node.group) : ''));
 			if (n.kind === 'override') {
-				if (n.node.v !== undefined) tipLines.push('valor mudado nas essential properties desta layer');
-				if (n.node.x) tipLines.push('• expressão' + (n.node.xoff ? ' (desligada)' : '') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
+				if (n.node.v !== undefined) tipLines.push(T('valor mudado nas essential properties desta layer'));
+				if (n.node.x) tipLines.push('• ' + T(n.node.xoff ? 'expressão (desligada)' : 'expressão') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
 			}
 			if (n.kind === 'prop') {
 				tipLines.push(n.node.mn);
 				if (n.node.keys) tipLines.push('• ' + plural(n.node.keys.length, 'keyframe', 'keyframes'));
-				if (n.node.x) tipLines.push('• expressão' + (n.node.xoff ? ' (desligada)' : '') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
+				if (n.node.x) tipLines.push('• ' + T(n.node.xoff ? 'expressão (desligada)' : 'expressão') + ': ' + n.node.x.split(/\r|\n/)[0].slice(0, 60));
 			}
-			tipLines.push(excluded(id) ? 'clique para incluir no script' : 'clique para tirar do script');
+			tipLines.push(T(excluded(id) ? 'clique para incluir no script' : 'clique para tirar do script'));
 			title = ' title="' + esc(tipLines.join('\n')) + '"';
 		}
 		// a linha inteira liga / desliga (tamanho, duração e fps da comp sempre entram)
@@ -677,14 +679,14 @@
 	}
 
 	function layerCards(L, single, q) {
-		var html = cardHTML(L.attrsId, 'layer · ' + (TYPE_NAME[L.type] || L.type), 'attrs', single, q);
+		var html = cardHTML(L.attrsId, T('layer · {0}', typeName(L.type)), 'attrs', single, q);
 		L.groups.forEach(function (g, i) {
-			var t = GROUP_TITLE[g.mn] || [g.name.toLowerCase(), 'layers'];
+			var t = GROUP_TITLE[g.mn] ? [T(GROUP_TITLE[g.mn][0]), GROUP_TITLE[g.mn][1]] : [g.name.toLowerCase(), 'layers'];
 			var def = single && (g.mn === 'ADBE Transform Group' || g.mn === 'ADBE Root Vectors Group' || g.mn === 'ADBE Text Properties' || i === 0);
 			html += cardHTML(g.id, t[0], t[1], def, q);
 		});
-		if (L.markers.length) html += cardHTML(L.markersId, 'markers', 'marker', false, q);
-		if (L.overrides.length) html += cardHTML(L.overridesId, 'essential properties', 'egp', false, q);
+		if (L.markers.length) html += cardHTML(L.markersId, T('markers'), 'marker', false, q);
+		if (L.overrides.length) html += cardHTML(L.overridesId, T('essential properties'), 'egp', false, q);
 		return html;
 	}
 
@@ -694,7 +696,7 @@
 		var c = counts(L.id);
 		return '<div class="lyr' + (open ? '' : ' closed') + '">' +
 			'<div class="layer-head' + (excluded(L.id) ? ' off' : '') + '" data-toggle="' + L.id + '">' +
-			'<span class="ltype t-' + L.type + '">' + (TYPE_LABEL[L.type] || '') + '</span><span class="lname">' + esc(L.name) + '</span>' +
+			'<span class="ltype t-' + L.type + '">' + T(TYPE_LABEL[L.type] || '') + '</span><span class="lname">' + esc(L.name) + '</span>' +
 			'<span class="cnt">' + cntHTML(c) + '<i class="faint">#' + L.index + '</i></span>' + eyeHTML(L.id) + UI.icon('chevron', 'chev') + '</div>' +
 			(open ? '<div class="lyr-kids">' + layerCards(L, false, q) + '</div>' : '') + '</div>';
 	}
@@ -702,16 +704,16 @@
 	function compHTML(C, inScript, q) {
 		var c = counts(C.key);
 		var html = '<div class="comp-head' + (inScript ? '' : ' off') + '">' +
-			'<span class="ltype t-comp">COMP</span><span class="lname">' + esc(C.name) + '<small>' + (C.root ? 'principal' : 'precomp') + '</small></span>' +
+			'<span class="ltype t-comp">COMP</span><span class="lname">' + esc(C.name) + '<small>' + T(C.root ? 'principal' : 'precomp') + '</small></span>' +
 			'<span class="cnt">' + cntHTML(c) + '<i>' + plural(c.layers, 'layer', 'layers') + '</i></span>' + eyeHTML(C.key, C.root) + '</div>';
 		if (!inScript) {
-			return html + '<div class="comp-note">' + (state.ex[C.key] ? 'fora do script: as layers que usam esta comp procuram a original no projeto pelo nome.' : 'fora do script: só é usada por uma precomp desmarcada.') + '</div>';
+			return html + '<div class="comp-note">' + T(state.ex[C.key] ? 'fora do script: as layers que usam esta comp procuram a original no projeto pelo nome.' : 'fora do script: só é usada por uma precomp desmarcada.') + '</div>';
 		}
-		html += cardHTML(C.settingsId, 'comp · configurações', 'monitor', false, q);
-		if (C.markers.length) html += cardHTML(C.markersId, 'markers da comp', 'marker', false, q);
-		if (C.egp.length) html += cardHTML(C.egpId, 'essential graphics' + (C.mgtName ? ' · ' + C.mgtName : ''), 'egp', false, q);
+		html += cardHTML(C.settingsId, T('comp · configurações'), 'monitor', false, q);
+		if (C.markers.length) html += cardHTML(C.markersId, T('markers da comp'), 'marker', false, q);
+		if (C.egp.length) html += cardHTML(C.egpId, T('essential graphics') + (C.mgtName ? ' · ' + C.mgtName : ''), 'egp', false, q);
 		var rows = C.layers.map(function (L) { return layerRowHTML(L, q); }).join('');
-		if (rows) html += '<div class="card list"><div class="list-head">layers<span class="faint">' + C.layers.length + '</span></div><div class="rows">' + rows + '</div></div>';
+		if (rows) html += '<div class="card list"><div class="list-head">' + T('layers') + '<span class="faint">' + C.layers.length + '</span></div><div class="rows">' + rows + '</div></div>';
 		return html;
 	}
 
@@ -721,22 +723,22 @@
 		var c = counts(L.id);
 		var off = excluded(L.id) ? ' off' : '';
 		var marks = '';
-		if (c.keys) marks += '<i title="keyframes"><span class="dot k"></span>' + c.keys + '</i>';
-		if (c.expr) marks += '<i title="expressões"><span class="dot e"></span>' + c.expr + '</i>';
-		var tipLines = [L.name, (TYPE_NAME[L.type] || L.type) + ' · #' + L.index];
+		if (c.keys) marks += '<i title="' + T('keyframes') + '"><span class="dot k"></span>' + c.keys + '</i>';
+		if (c.expr) marks += '<i title="' + T('expressões') + '"><span class="dot e"></span>' + c.expr + '</i>';
+		var tipLines = [L.name, typeName(L.type) + ' · #' + L.index];
 		if (c.keys) tipLines.push('• ' + plural(c.keys, 'keyframe', 'keyframes'));
 		if (c.expr) tipLines.push('• ' + plural(c.expr, 'expressão', 'expressões'));
-		tipLines.push('clique para abrir');
+		tipLines.push(T('clique para abrir'));
 		return '<div class="row layer-row' + off + '" data-open="' + L.id + '" title="' + esc(tipLines.join('\n')) + '">' +
 			'<span class="n">' + esc(L.name) + '</span>' +
-			'<span class="cnt">' + marks + '</span><span class="lt">' + esc(TYPE_NAME[L.type] || L.type) + '</span>' +
+			'<span class="cnt">' + marks + '</span><span class="lt">' + esc(typeName(L.type)) + '</span>' +
 			eyeHTML(L.id) + UI.icon('chevron', 'go') + '</div>';
 	}
 
 	// detalhe de uma layer da comp: mesmo formato do modo layer, com "voltar"
 	function focusHTML(L, C, q) {
 		return '<button class="back" data-back="1">' + UI.icon('chevron', 'back-ico') + esc(C.name) + '</button>' +
-			'<div class="focus-head' + (excluded(L.id) ? ' off' : '') + '"><span class="ltype t-' + L.type + '">' + (TYPE_LABEL[L.type] || '') + '</span>' +
+			'<div class="focus-head' + (excluded(L.id) ? ' off' : '') + '"><span class="ltype t-' + L.type + '">' + T(TYPE_LABEL[L.type] || '') + '</span>' +
 			'<span class="lname">' + esc(L.name) + '<small>#' + L.index + '</small></span>' + eyeHTML(L.id) + '</div>' +
 			layerCards(L, true, q);
 	}
@@ -759,7 +761,7 @@
 			if (layers.length === 1) html = layerCards(layers[0], true, q);
 			else layers.forEach(function (L) { html += layerHTML(L, true, q); });
 		}
-		if (!html) html = '<div class="empty" style="padding:24px"><small>nada encontrado para “' + esc(q) + '”</small></div>';
+		if (!html) html = '<div class="empty" style="padding:24px"><small>' + T('nada encontrado para “{0}”', esc(q)) + '</small></div>';
 		$('tree').innerHTML = html;
 	}
 
@@ -772,26 +774,26 @@
 		CG.compsIn(m, ex).forEach(function (C) { inScript[C.id] = true; });
 
 		CG.compsIn(m, ex).forEach(function (C) {
-			(C.warnings || []).forEach(add);
+			(C.warnings || []).forEach(function (w) { add(BIN.tr(w)); });
 			// controle do essential graphics cuja layer saiu do script
 			if (C.egp && !ex[C.egpId]) {
 				var inL = {};
 				CG.layersIn(C, ex).forEach(function (L) { inL[L.index] = L; });
 				C.egp.forEach(function (e) {
-					if (!ex[e.id] && e.layer && !(inL[e.layer.index] && inL[e.layer.index].name === e.layer.name)) add('essential graphics: “' + e.name + '” fica de fora porque a layer “' + e.layer.name + '” saiu do script.');
-					if (!ex[e.id] && e.group) add('essential graphics: o grupo “' + e.group + '” não é recriado (o After Effects não deixa criar grupos por script); os controles entram soltos.');
+					if (!ex[e.id] && e.layer && !(inL[e.layer.index] && inL[e.layer.index].name === e.layer.name)) add(T('essential graphics: “{0}” fica de fora porque a layer “{1}” saiu do script.', e.name, e.layer.name));
+					if (!ex[e.id] && e.group) add(T('essential graphics: o grupo “{0}” não é recriado (o After Effects não deixa criar grupos por script); os controles entram soltos.', e.group));
 				});
 			}
 			CG.layersIn(C, ex).forEach(function (L) {
-				L.warnings.forEach(add);
+				L.warnings.forEach(function (w) { add(BIN.tr(w)); });
 				var src = L.source;
-				if (L.type === 'footage') add('“' + L.name + '” usa “' + src.name + '”: o script procura esse item no projeto pelo nome' + (src.file ? ' (ou importa o arquivo original)' : '') + '.');
-				if (L.type === 'precomp' && !(m.mode === 'comp' && inScript[src.id])) add('“' + L.name + '” usa a precomp “' + src.name + '”: o script procura essa comp no projeto pelo nome.');
+				if (L.type === 'footage') add(T(src.file ? '“{0}” usa “{1}”: o script procura esse item no projeto pelo nome (ou importa o arquivo original).' : '“{0}” usa “{1}”: o script procura esse item no projeto pelo nome.', L.name, src.name));
+				if (L.type === 'precomp' && !(m.mode === 'comp' && inScript[src.id])) add(T('“{0}” usa a precomp “{1}”: o script procura essa comp no projeto pelo nome.', L.name, src.name));
 				(function walk(list) {
 					list.forEach(function (n) {
 						if (ex[n.id]) return;
 						if (n.pseudo) {
-							if (!ffxBytes(n.mn)) add('pseudo effect “' + n.mn.replace(/^Pseudo\//, '') + '”: sem o .ffx, o script só cria o efeito onde ele estiver instalado. Salve o .ffx na aba utilitários.');
+							if (!ffxBytes(n.mn)) add(T('pseudo effect “{0}”: sem o .ffx, o script só cria o efeito onde ele estiver instalado. Salve o .ffx na aba utilitários.', n.mn.replace(/^Pseudo\//, '')));
 						} else if (n.fx && !NATIVE_FX.test(n.mn)) fx[n.name + ' (' + n.mn + ')'] = true;
 						if (n.mn === 'ADBE Text Document') [n.v].concat((n.keys || []).map(function (k) { return k.v; })).forEach(function (v) {
 							if (v && v.doc) {
@@ -805,8 +807,8 @@
 			});
 		});
 		var f = Object.keys(fonts), e = Object.keys(fx);
-		if (f.length) add(f.length === 1 ? 'fonte usada: ' + f[0] + '. precisa estar instalada onde o script rodar.' : 'fontes usadas: ' + f.join(', ') + '. precisam estar instaladas onde o script rodar.');
-		if (e.length) add((e.length === 1 ? 'efeito que pode ser plug-in de terceiro: ' : 'efeitos que podem ser plug-ins de terceiros: ') + e.join(', ') + '.');
+		if (f.length) add(f.length === 1 ? T('fonte usada: {0}. precisa estar instalada onde o script rodar.', f[0]) : T('fontes usadas: {0}. precisam estar instaladas onde o script rodar.', f.join(', ')));
+		if (e.length) add(T(e.length === 1 ? 'efeito que pode ser plug-in de terceiro: {0}.' : 'efeitos que podem ser plug-ins de terceiros: {0}.', e.join(', ')));
 		return out;
 	}
 
@@ -827,9 +829,9 @@
 
 		var parts = [];
 		if (m.mode === 'comp') {
-			parts.push('<b>' + st.comps + '</b> ' + (st.comps === 1 ? 'comp' : 'comps'));
+			parts.push('<b>' + st.comps + '</b> ' + T(st.comps === 1 ? 'comp' : 'comps'));
 			parts.push(plural(st.layers, 'layer', 'layers'));
-		} else parts.push('<b>' + st.layers + '</b> ' + (st.layers === 1 ? 'layer' : 'layers'));
+		} else parts.push('<b>' + st.layers + '</b> ' + T(st.layers === 1 ? 'layer' : 'layers'));
 		parts.push(plural(lines, 'linha', 'linhas'));
 		if (st.keys && S.keys) parts.push(plural(st.keys, 'key', 'keys'));
 		$('sumText').innerHTML = UI.icon(m.mode === 'comp' ? 'monitor' : 'layers') + parts.join('<span class="sep">·</span>');
@@ -838,15 +840,15 @@
 		var pill = $('warnPill');
 		pill.classList.toggle('hidden', !state.warnings.length);
 		pill.querySelector('span').textContent = plural(state.warnings.length, 'aviso', 'avisos');
-		UI.setTip(pill, plural(state.warnings.length, 'aviso', 'avisos') + '\n' + state.warnings.map(function (w) { return '• ' + w; }).join('\n') + '\nclique para ver tudo');
+		UI.setTip(pill, plural(state.warnings.length, 'aviso', 'avisos') + '\n' + state.warnings.map(function (w) { return '• ' + w; }).join('\n') + '\n' + T('clique para ver tudo'));
 
-		if (m.mode === 'comp') $('runTxt').textContent = st.comps > 1 ? 'recriar comp + ' + plural(st.comps - 1, 'precomp', 'precomps') : 'recriar comp';
-		else $('runTxt').textContent = st.layers > 1 ? 'recriar ' + st.layers + ' layers' : 'recriar layer';
+		if (m.mode === 'comp') $('runTxt').textContent = st.comps > 1 ? T('recriar comp + {0}', plural(st.comps - 1, 'precomp', 'precomps')) : T('recriar comp');
+		else $('runTxt').textContent = st.layers > 1 ? T('recriar {0}', plural(st.layers, 'layer', 'layers')) : T('recriar layer');
 		$('runBtn').disabled = m.mode === 'layers' && !st.layers;
 		updateRun();
 
 		var first = CG.layersIn(m.rootComp, state.ex)[0] || m.rootComp.layers[0];
-		$('fnHint').textContent = S.wrap ? (first ? 'criar_' + CG.snake(first.name) + '(comp)' : 'uma função por layer') : 'código corrido, sem funções';
+		$('fnHint').textContent = S.wrap ? (first ? T('criar_') + CG.snake(first.name) + '(comp)' : T('uma função por layer')) : T('código corrido, sem funções');
 		$('targetRow').classList.toggle('hidden', m.mode === 'comp');
 		$('compRow').classList.toggle('hidden', m.mode !== 'comp');
 	}
@@ -869,8 +871,8 @@
 	// a aba código é um editor: com uma captura, mostra o código gerado (que pode ser editado);
 	// sem captura, é um rascunho livre para digitar e executar qualquer script.
 	// as funções auxiliares do BIN ficam numa linha só e voltam ao rodar, copiar e exportar.
-	var HELPERS_START = /\/\/ ---- funções auxiliares do BIN/;
-	var MARKER = /^([ \t]*)\/\/ ⋯ funções auxiliares do BIN.*$/m;
+	var HELPERS_START = /\/\/ ---- BIN:/; // o resto do comentário muda com o idioma
+	var MARKER = /^([ \t]*)\/\/ ⋯ .*$/m;
 	var SCRATCH_KEY = 'bin.scratch';
 	var BIG = 3000; // acima disso, sem cores (o editor continua leve)
 
@@ -882,7 +884,7 @@
 		});
 		if (start < 0 || end < 0) return code;
 		var indent = lines[start].match(/^[ \t]*/)[0];
-		lines.splice(start, end - start + 1, indent + '// ⋯ funções auxiliares do BIN (' + (end - start + 1) + ' linhas): entram ao rodar, copiar e exportar');
+		lines.splice(start, end - start + 1, indent + '// ⋯ ' + T('funções auxiliares do BIN ({0} linhas): entram ao rodar, copiar e exportar', end - start + 1));
 		return lines.join('\n');
 	}
 
@@ -960,10 +962,10 @@
 		var b = $('runBtn');
 		if (b.classList.contains('working') || b.classList.contains('done')) return;
 		if (!state.m) {
-			$('runTxt').textContent = 'executar script';
+			$('runTxt').textContent = T('executar script');
 			b.disabled = !editorText().trim();
 		} else if (state.ed.edited) {
-			$('runTxt').textContent = 'executar código editado';
+			$('runTxt').textContent = T('executar código editado');
 			b.disabled = !editorText().trim();
 		}
 	}
@@ -973,10 +975,10 @@
 		var line = 0;
 		var out = String(msg).replace(/\(linha (\d+)\)/, function (all, n) {
 			n = +n;
-			if (!info.at || n < info.at) { line = n; return '(linha ' + n + ')'; }
-			if (n <= info.at + info.extra) return '(nas funções auxiliares do BIN)';
+			if (!info.at || n < info.at) { line = n; return T('(linha {0})', n); }
+			if (n <= info.at + info.extra) return T('(nas funções auxiliares do BIN)');
 			line = n - info.extra;
-			return '(linha ' + line + ')';
+			return T('(linha {0})', line);
 		});
 		return { msg: out, line: line };
 	}
@@ -998,9 +1000,9 @@
 		var m = state.m;
 		if (state.ed.file && freeMode()) return state.ed.file.replace(/\.(js|jsxinc|txt)$/i, '') + (/\.jsx$/i.test(state.ed.file) ? '' : '.jsx');
 		if (!m) return 'script.jsx';
-		if (m.mode === 'comp') return 'criar_comp_' + CG.snake(m.rootComp.name) + '.jsx';
+		if (m.mode === 'comp') return T('criar_comp_') + CG.snake(m.rootComp.name) + '.jsx';
 		var L = CG.layersIn(m.rootComp, state.ex);
-		return 'criar_' + CG.snake(L.length === 1 ? L[0].name : m.rootComp.name) + '.jsx';
+		return T('criar_') + CG.snake(L.length === 1 ? L[0].name : m.rootComp.name) + '.jsx';
 	}
 
 	function changed() {
@@ -1014,16 +1016,16 @@
 	function saveText(text, name) {
 		return BIN.dialog.saveFile('exportar…', name).then(function (p) {
 			if (p) {
-				if (!BIN.fs.writeText(p, text)) throw new Error('não foi possível gravar o arquivo.');
+				if (!BIN.fs.writeText(p, text)) throw new Error(T('não foi possível gravar o arquivo.'));
 				return p;
 			}
 			// sem o diálogo do CEP (versões antigas): o After Effects salva
 			if (!BIN.isCEP || (global.cep && global.cep.fs && global.cep.fs.showSaveDialogEx)) return null;
 			return BIN.callHostJSON('bin_saveText', [text, name]).then(function (r) { return r.path || null; });
 		}).then(function (p) {
-			if (p) UI.toast('salvo em <b>' + esc(BIN.fs.basename(p)) + '</b>.', 'ok');
+			if (p) UI.toast(T('salvo em <b>{0}</b>.', esc(BIN.fs.basename(p))), 'ok');
 			return p;
-		}).catch(function (e) { UI.toast(esc(e.message), 'error'); });
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
 
 	// pacote para o app de documentação de templates (docs-app): captura original, script gerado e,
@@ -1055,14 +1057,14 @@
 			};
 			var name = CG.snake(state.m.rootComp.name) + '_doc.json';
 			return saveText(JSON.stringify(pack), name).then(function (p) {
-				if (p && template && !template.config) UI.toast('pacote salvo, mas sem _config.json: a comp não parece ser um template do padeiro.', 'warn');
+				if (p && template && !template.config) UI.toast(T('pacote salvo, mas sem _config.json: a comp não parece ser um template do padeiro.'), 'warn');
 			});
 		});
 	}
 
 	function copyText(text, what) {
 		BIN.copy(text).then(function (ok) {
-			UI.toast(ok ? what + ' copiado.' : 'não foi possível copiar: selecione o texto e use Ctrl/Cmd+C.', ok ? 'ok' : 'warn', { life: 1600 });
+			UI.toast(ok ? T('{0} copiado.', T(what)) : T('não foi possível copiar: selecione o texto e use Ctrl/Cmd+C.'), ok ? 'ok' : 'warn', { life: 1600 });
 		});
 	}
 
@@ -1083,10 +1085,11 @@
 		var msg;
 		if (isCompResult(r)) {
 			var pre = (r.comps || []).length - 1;
-			msg = 'comp <b>' + esc(r.comp) + '</b> criada com ' + plural(r.count || 0, 'layer', 'layers') + (pre > 0 ? ' e ' + plural(pre, 'precomp', 'precomps') : '') + '.';
+			msg = pre > 0 ? T('comp <b>{0}</b> criada com {1} e {2}.', esc(r.comp), plural(r.count || 0, 'layer', 'layers'), plural(pre, 'precomp', 'precomps')) : T('comp <b>{0}</b> criada com {1}.', esc(r.comp), plural(r.count || 0, 'layer', 'layers'));
 		} else {
 			var names = r.layers || [];
-			msg = (names.length === 1 ? '<b>' + esc(names[0]) + '</b> criada' : '<b>' + names.length + '</b> layers criadas') + (r.comp ? ' em “' + esc(r.comp) + '”.' : '.');
+			var what = names.length === 1 ? T('<b>{0}</b> criada', esc(names[0])) : T('<b>{0}</b> layers criadas', names.length);
+			msg = r.comp ? T('{0} em “{1}”.', what, esc(r.comp)) : what + '.';
 		}
 		if (errs.length) msg += ' ' + plural(errs.length, 'propriedade não pôde ser aplicada:', 'propriedades não puderam ser aplicadas:');
 		return msg;
@@ -1102,7 +1105,7 @@
 		if (!code.trim()) return;
 		UI.hideToast();
 		b.classList.add('working');
-		$('runTxt').textContent = free ? 'executando…' : 'recriando…';
+		$('runTxt').textContent = T(free ? 'executando…' : 'recriando…');
 		var after = function () { resetRun(); if (state.m) renderSummary(); else updateRun(); };
 
 		var tmp = BIN.fs.tmpFile('bin_run.jsx');
@@ -1114,15 +1117,15 @@
 			markSeen(false); // o script seleciona o que criou: não é motivo para avisar
 			b.querySelector('.ico').outerHTML = UI.icon('check');
 			var errs = r.errors || [];
-			if (free && !(r.layers || r.comps)) $('runTxt').textContent = 'script executado';
-			else $('runTxt').textContent = isCompResult(r) ? 'comp criada' : ((r.layers || []).length > 1 ? r.layers.length + ' layers criadas' : 'layer criada');
-			var msg = free && !(r.layers || r.comps) ? 'script executado.' : runMessage(r);
+			if (free && !(r.layers || r.comps)) $('runTxt').textContent = T('script executado');
+			else $('runTxt').textContent = isCompResult(r) ? T('comp criada') : ((r.layers || []).length > 1 ? T('{0} layers criadas', r.layers.length) : T('layer criada'));
+			var msg = free && !(r.layers || r.comps) ? T('script executado.') : runMessage(r);
 			UI.toast(msg, errs.length ? 'warn' : 'ok', {
 				sticky: true,
 				details: errs,
 				actions: [
-					{ label: 'desfazer', icon: 'undo', run: function () { BIN.callHostJSON('bin_undo').then(function () { UI.toast('desfeito.', 'info', { life: 1400 }); after(); }); } },
-					{ label: 'exportar .jsx', icon: 'save', run: function () { saveText(code, fileName()); } }
+					{ label: T('desfazer'), icon: 'undo', run: function () { BIN.callHostJSON('bin_undo').then(function () { UI.toast(T('desfeito.'), 'info', { life: 1400 }); after(); }); } },
+					{ label: T('exportar .jsx'), icon: 'save', run: function () { saveText(code, fileName()); } }
 				]
 			});
 			resetRun.t = setTimeout(after, 4000);
@@ -1130,9 +1133,9 @@
 			b.classList.remove('working');
 			after();
 			var err = mapError(e.message, info);
-			UI.toast(esc(err.msg), 'error', {
+			UI.toast(esc(BIN.tr(err.msg)), 'error', {
 				sticky: true,
-				actions: err.line && free ? [{ label: 'ir para a linha ' + err.line, icon: 'code', run: function () { selectLine(err.line); } }] : []
+				actions: err.line && free ? [{ label: T('ir para a linha {0}', err.line), icon: 'code', run: function () { selectLine(err.line); } }] : []
 			});
 		});
 	}
@@ -1159,11 +1162,11 @@
 		var scripts = list.filter(function (f) { return SCRIPT_RE.test(name(f)); });
 		if (!scripts.length) {
 			var n = list.length ? name(list[0]) : '';
-			UI.toast(/\.jsxbin$/i.test(n) ? '.jsxbin é compilado e não dá para editar: use o .jsx original.' : 'só scripts abrem no editor: .jsx, .js, .jsxinc ou .txt.' + (state.m || state.tab !== 'tools' ? ' Para virar binário, use os utilitários.' : ''), 'warn', { life: 4200 });
+			UI.toast(/\.jsxbin$/i.test(n) ? T('.jsxbin é compilado e não dá para editar: use o .jsx original.') : T('só scripts abrem no editor: .jsx, .js, .jsxinc ou .txt.') + (state.m || state.tab !== 'tools' ? ' ' + T('Para virar binário, use os utilitários.') : ''), 'warn', { life: 4200 });
 			return;
 		}
 		readScript(scripts[0]).then(function (r) {
-			if (r.bytes.length > MAX_SCRIPT) throw new Error('“' + r.name + '” tem mais de 2 MB: grande demais para o editor.');
+			if (r.bytes.length > MAX_SCRIPT) throw new Error(T('“{0}” tem mais de 2 MB: grande demais para o editor.', r.name));
 			var text = decodeText(r.bytes).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
 			if (state.m) state.ed.edited = true;
 			else state.ed.scratch = true;
@@ -1178,9 +1181,8 @@
 			t.setSelectionRange(0, 0);
 			t.scrollTop = 0;
 			syncScroll();
-			var extra = scripts.length > 1 ? ' (só o primeiro de ' + scripts.length + ' scripts)' : '';
-			UI.toast('<b>' + esc(r.name) + '</b> aberto no editor' + extra + '.', 'info', { life: 2600 });
-		}).catch(function (e) { UI.toast(esc(e.message), 'error', { sticky: true }); });
+			UI.toast(scripts.length > 1 ? T('<b>{0}</b> aberto no editor (só o primeiro de {1} scripts).', esc(r.name), scripts.length) : T('<b>{0}</b> aberto no editor.', esc(r.name)), 'info', { life: 2600 });
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error', { sticky: true }); });
 	}
 
 	// ----------------------------------------------------- utilitários -----
@@ -1195,7 +1197,7 @@
 	function getExpressions() {
 		BIN.callHostJSON('bin_expressions').then(function (r) {
 			showOut('expr', CG.expressions(r.items), plural(r.items.length, 'expressão', 'expressões'));
-		}).catch(function (e) { UI.toast(esc(e.message), 'error'); });
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
 
 	function convertFiles(list) {
@@ -1207,7 +1209,7 @@
 			var total = files.reduce(function (s, f) { return s + f.bytes.length; }, 0);
 			state.tools.binName = (files.length === 1 ? CG.snake(files[0].name.replace(/\.[^.]+$/, '')) : 'arquivos') + '_bin.jsxinc';
 			showOut('bin', CG.binaryFiles(files), plural(files.length, 'arquivo', 'arquivos') + ' · ' + CG.size(total));
-		}).catch(function (e) { UI.toast(esc(e.message), 'error'); });
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
 
 	// ----------------------------------------------------------- bind ------
@@ -1334,7 +1336,7 @@
 		});
 		$('discardBtn').onclick = function () { state.ed.edited = false; state.ed.file = null; renderCode(); renderSummary(); };
 		$('openBtn').onclick = function () {
-			BIN.dialog.openFiles('abrir script', SCRIPT_TYPES, true).then(function (paths) {
+			BIN.dialog.openFiles(T('abrir script'), SCRIPT_TYPES, true).then(function (paths) {
 				if (paths && paths.length) openScripts([{ path: paths[0] }]);
 			});
 		};
@@ -1345,7 +1347,7 @@
 		$('exprBtn').onclick = getExpressions;
 		var drop = $('binDrop');
 		drop.onclick = function () {
-			BIN.dialog.openFiles('escolha os arquivos').then(function (paths) {
+			BIN.dialog.openFiles(T('escolha os arquivos')).then(function (paths) {
 				convertFiles(paths.map(function (p) { return { path: p }; }));
 			});
 		};
@@ -1418,8 +1420,32 @@
 		});
 	}
 
+	// ----------------------------------------------------------- idioma ----
+	var I18N = BIN.i18n;
+	var LANG_NEXT = { pt: 'en', en: 'es', es: 'pt' };
+	function applyLang() {
+		I18N.set(S.lang || 'pt');
+		I18N.dom(document.body);
+		$('langTxt').textContent = I18N.lang.toUpperCase();
+		UI.setTip($('langBtn'), T('idioma: {0}', I18N.NAMES[I18N.lang]) + '\n' + T('clique para trocar') + '\n' + T('os textos ficam em i18n/textos.csv'));
+		applyTheme(false);
+		state.code = null;
+		if (state.m) render();
+		else renderPseudo();
+		renderCode();
+		renderSelection();
+		setTimeout(placeTabInk, 0);
+		UI.opticalCenter();
+	}
+
 	function bind() {
 		$('logo').innerHTML = UI.logo;
+		// idioma: o escolhido no painel ou, na primeira vez, o do After Effects
+		I18N.init();
+		I18N.set(S.lang || 'pt');
+		I18N.dom(document.body);
+		$('langTxt').textContent = I18N.lang.toUpperCase();
+		$('langBtn').onclick = function () { S.lang = LANG_NEXT[I18N.lang] || 'pt'; saveSettings(); applyLang(); };
 		UI.hydrateIcons();
 		UI.tooltips();
 		UI.opticalCenter();
@@ -1453,7 +1479,7 @@
 		$('scriptBtn').onclick = function () { showTab('code'); $('codeEdit').focus(); };
 		$('runBtn').onclick = run;
 		$('warnPill').onclick = function () {
-			UI.toast(plural(state.warnings.length, 'aviso', 'avisos') + ' sobre o script gerado:', 'warn', { sticky: true, details: state.warnings });
+			UI.toast(T('{0} sobre o script gerado:', plural(state.warnings.length, 'aviso', 'avisos')), 'warn', { sticky: true, details: state.warnings });
 		};
 
 		bindTree();
@@ -1466,8 +1492,11 @@
 		if (S.tab && S.tab !== 'props' && TABS.indexOf(S.tab) >= 0) showTab(S.tab);
 		// host sempre na mesma versão do painel; a assinatura dos arquivos aparece no logo
 		var stamp = BIN.localStamp();
-		if (stamp) UI.setTip($('logo'), 'BIN 3.0 · versão ' + stamp + '\nengenharia reversa de layers');
+		if (stamp) UI.setTip($('logo'), T('BIN 3.0 · versão {0}', stamp) + '\n' + T('engenharia reversa de layers'));
 		BIN.reloadHost().then(function () {
+			if (S.lang) return null;
+			return BIN.callHostJSON('bin_lang').then(function (r) { S.lang = I18N.pick(r.iso); saveSettings(); if (S.lang !== I18N.lang) applyLang(); }, function () { });
+		}).then(function () {
 			return capture(true);
 		}).then(function () { if (!state.m) pollSelection(); });
 	}

@@ -639,7 +639,7 @@ function createContext() {
 		PropertyType, PropertyValueType, KeyframeInterpolationType, Shape, TextDocument, KeyframeEase, MarkerValue,
 		Layer, AVLayer, ShapeLayer, TextLayer, CameraLayer, LightLayer, CompItem, FootageItem, SolidSource, FileSource,
 		app: {
-			project, version: '24.6.0x1', beginUndoGroup() { }, endUndoGroup() { },
+			project, version: '24.6.0x1', isoLanguage: 'pt_BR', beginUndoGroup() { }, endUndoGroup() { },
 			findMenuCommandId: (n) => (n === 'Save Animation Preset...' ? SAVE_PRESET : 0),
 			executeCommand(id) { if (id === SAVE_PRESET) savePreset(project, fs2); }
 		},

@@ -17,6 +17,17 @@
 (function (root) {
 	'use strict';
 
+	// tradução (i18n/textos.csv): no painel vem de BIN.i18n; no Node (testes), do próprio i18n.js
+	var I18N = (typeof window !== 'undefined' && window.BIN && window.BIN.i18n) || null;
+	if (!I18N && typeof require === 'function' && typeof window === 'undefined') {
+		try { I18N = require('./i18n.js'); } catch (e) { I18N = null; }
+	}
+	function T(s) {
+		var a = arguments;
+		if (I18N) return I18N.t.apply(null, a);
+		return String(s).replace(/\{(\d)\}/g, function (m, n) { return a[+n + 1]; });
+	}
+
 	var CG = {};
 	var I = '\t';
 
@@ -371,7 +382,7 @@
 		var ov = ex[L.overridesId] ? [] : L.overrides.filter(function (o) { return !ex[o.id]; });
 		if (ov.length) {
 			out.push('');
-			this.comment(out, ind, 'essential properties (valores mudados nesta layer)');
+			this.comment(out, ind, T('essential properties (valores mudados nesta layer)'));
 			out.push(ind + 'bin.over(' + lv + ', [');
 			ov.forEach(function (o, i) {
 				var parts = ['n: ' + lit(o.names)];
@@ -421,7 +432,7 @@
 			var v = namer.take(n.name, 'grp');
 			if (n.fx || (n.add && ITEM.test(n.mn))) {
 				out.push('');
-				this.comment(out, ind, (n.fx ? 'efeito › ' : '') + n.name);
+				this.comment(out, ind, n.fx ? T('efeito › {0}', n.name) : n.name);
 			} else if (!n.add && SECTION.test(n.mn)) {
 				out.push('');
 				this.comment(out, ind, n.name.toLowerCase());
@@ -466,7 +477,7 @@
 			out.push(ind + 'var ' + t + ' = ' + target + ';');
 		}
 		ops.forEach(function (op) {
-			if (op === 'set' && n.lyr) out.push(ind + 'bin.ref(' + t + ', ' + obj({ name: n.lyr.name, index: n.lyr.index }) + ');' + (o.comments ? ' // aponta para a layer quando todas existirem' : ''));
+			if (op === 'set' && n.lyr) out.push(ind + 'bin.ref(' + t + ', ' + obj({ name: n.lyr.name, index: n.lyr.index }) + ');' + (o.comments ? ' // ' + T('aponta para a layer quando todas existirem') : ''));
 			else if (op === 'set') out.push(ind + 'bin.set(' + t + ', ' + lit(value) + ');');
 			if (op === 'keys') {
 				out.push(ind + 'bin.keys(' + t + ', [');
@@ -527,15 +538,15 @@
 			if (L.attrs.locked && on(L, 'locked')) locks.push(ind + 'L[' + L.index + '].locked = true;');
 			if (!ex[L.id] && hasRef(L.groups, ex)) refs = true;
 		});
-		if (refs) { out.push(''); this.comment(out, ind, 'efeitos que apontam para outras layers'); out.push(ind + 'bin.links(comp, L);'); }
-		if (links.length) { out.push(''); this.comment(out, ind, 'parentesco'); links.forEach(function (l) { out.push(l); }); }
-		if (mattes.length) { out.push(''); this.comment(out, ind, 'track matte'); mattes.forEach(function (l) { out.push(l); }); }
+		if (refs) { out.push(''); this.comment(out, ind, T('efeitos que apontam para outras layers')); out.push(ind + 'bin.links(comp, L);'); }
+		if (links.length) { out.push(''); this.comment(out, ind, T('parentesco')); links.forEach(function (l) { out.push(l); }); }
+		if (mattes.length) { out.push(''); this.comment(out, ind, T('track matte')); mattes.forEach(function (l) { out.push(l); }); }
 		if (locks.length) { out.push(''); locks.forEach(function (l) { out.push(l); }); }
 
 		var egp = CG.egpIn(C, plans.map(function (p) { return p.L; }), ex);
 		if (egp.length) {
 			out.push('');
-			this.comment(out, ind, 'essential graphics (' + egp.length + (egp.length === 1 ? ' controle' : ' controles') + ')');
+			this.comment(out, ind, T(egp.length === 1 ? 'essential graphics (1 controle)' : 'essential graphics ({0} controles)', egp.length));
 			out.push(ind + 'bin.egp(comp, L, [');
 			egp.forEach(function (e, i) {
 				out.push(ind + I + '{ n: ' + str(e.name) + ', l: ' + obj({ index: e.layer.index, name: e.layer.name }) + ', p: ' +
@@ -563,7 +574,7 @@
 	Gen.prototype.compMarkers = function (C, ind, out) {
 		if (!C.markers.length || this.ex[C.markersId]) return;
 		out.push('');
-		this.comment(out, ind, 'markers da comp');
+		this.comment(out, ind, T('markers da comp'));
 		this.markers(C.markers, C.markersId, 'comp', ind, out);
 	};
 
@@ -579,7 +590,7 @@
 		var o = this.o, self = this;
 		return CG.layersIn(C, this.ex).map(function (L) {
 			var namer = o.wrap ? new Namer() : shared;
-			var fn = o.wrap ? self.top.take('criar_' + snake(L.name), 'criar', true) : null;
+			var fn = o.wrap ? self.top.take(T('criar_') + snake(L.name), T('criar'), true) : null;
 			var lv = o.wrap ? 'layer' : namer.take(L.name, 'layer');
 			var body = [];
 			self.layer(L, lv, namer, I + I, body);
@@ -609,16 +620,16 @@
 		out.push('/*');
 		if (m.mode === 'comp') {
 			var pre = this.comps.length - 1;
-			out.push(' * BIN 3.0 · comp "' + plain(root.name) + '"' + (pre ? ' + ' + pre + (pre === 1 ? ' precomp' : ' precomps') : ''));
-			out.push(' * gerado em ' + stamp);
+			out.push(' * BIN 3.0 · comp "' + plain(root.name) + '"' + (pre ? ' + ' + pre + ' ' + T(pre === 1 ? 'precomp' : 'precomps') : ''));
+			out.push(' * ' + T('gerado em {0}', stamp));
 			out.push(' *');
-			out.push(' * cria a' + (pre ? 's comps' : ' comp') + ' no projeto, com todas as layers.');
+			out.push(' * ' + T(pre ? 'cria as comps no projeto, com todas as layers.' : 'cria a comp no projeto, com todas as layers.'));
 		} else {
 			var L = CG.layersIn(root, this.ex);
-			out.push(' * BIN 3.0 · ' + (L.length === 1 ? 'layer "' + plain(L[0].name) + '"' : L.length + ' layers') + ' · comp "' + plain(root.name) + '"');
-			out.push(' * gerado em ' + stamp);
+			out.push(' * BIN 3.0 · ' + (L.length === 1 ? 'layer "' + plain(L[0].name) + '"' : T('{0} layers', L.length)) + ' · comp "' + plain(root.name) + '"');
+			out.push(' * ' + T('gerado em {0}', stamp));
 			out.push(' *');
-			out.push(' * recria as layers na ' + (o.target === 'new' ? 'nova comp "' + plain(root.name) + '"' : 'comp ativa') + '.');
+			out.push(' * ' + (o.target === 'new' ? T('recria as layers na nova comp "{0}".', plain(root.name)) : T('recria as layers na comp ativa.')));
 		}
 		out.push(' * File > Scripts > Run Script File...');
 		out.push(' */');
@@ -634,7 +645,7 @@
 		out.push(I + 'var comp = ' + (o.target === 'new' ? this.newComp(C, I) : 'bin.comp()') + ';');
 		out.push(I + 'if (!comp) return;');
 		out.push(I + 'var L = {};');
-		out.push(I + 'app.beginUndoGroup(' + str('BIN · ' + (names.length === 1 ? names[0] : names.length + ' layers')) + ');');
+		out.push(I + 'app.beginUndoGroup(' + str('BIN · ' + (names.length === 1 ? names[0] : T('{0} layers', names.length))) + ');');
 		out.push(I + 'try {');
 		this.compBody(C, plans, I + I, out);
 		if (o.target === 'new') this.compMarkers(C, I + I, out);
@@ -653,7 +664,7 @@
 
 		var all = this.comps.map(function (C) {
 			var shared = new Namer(self.top);
-			return { C: C, plans: self.plan(C, shared), fn: self.top.take('criar_comp_' + snake(C.name), 'criar_comp', true) };
+			return { C: C, plans: self.plan(C, shared), fn: self.top.take(T('criar_comp_') + snake(C.name), T('criar_comp'), true) };
 		});
 
 		if (o.wrap) all.forEach(function (c) {
@@ -662,7 +673,7 @@
 		});
 
 		all.forEach(function (c) {
-			self.comment(out, I, 'comp ' + c.C.name + (c.C.root ? ' (principal)' : ' (precomp)'));
+			self.comment(out, I, T(c.C.root ? 'comp {0} (principal)' : 'comp {0} (precomp)', c.C.name));
 			out.push(I + 'function ' + c.fn + '() {');
 			out.push(I + I + 'var comp = ' + self.newComp(c.C, I + I) + ';');
 			out.push(I + I + 'var L = {};');
@@ -684,6 +695,12 @@
 	};
 
 	CG.generate = function (m, opts) {
+		var prev = I18N && opts && opts.lang ? I18N.lang : null;
+		if (prev) I18N.set(opts.lang);
+		try { return generate(m, opts); } finally { if (prev) I18N.set(prev); }
+	};
+
+	function generate(m, opts) {
 		var g = new Gen(m, opts);
 		var out = [];
 		g.ffx = ffxUsed(g);
@@ -692,8 +709,8 @@
 		CG.helpers().split('\n').forEach(function (l) { out.push(l ? I + l : ''); });
 		out.push('');
 		if (g.ffx) {
-			g.comment(out, I, 'pseudo effects: .ffx salvos pelo After Effects. Numa máquina sem o efeito no PresetEffects.xml,');
-			g.comment(out, I, 'o script aplica o .ffx numa comp temporária para registrar o efeito e depois o cria normalmente.');
+			g.comment(out, I, T('pseudo effects: .ffx salvos pelo After Effects. Numa máquina sem o efeito no PresetEffects.xml,'));
+			g.comment(out, I, T('o script aplica o .ffx numa comp temporária para registrar o efeito e depois o cria normalmente.'));
 			out.push(I + 'var FFX = {');
 			var keys = Object.keys(g.ffx);
 			keys.forEach(function (mn, i) { out.push(I + I + str(mn) + ': ' + CG.binaryString(g.ffx[mn]) + (i < keys.length - 1 ? ',' : '')); });
@@ -705,15 +722,17 @@
 		out.push('})();');
 		out.push('');
 		return out.join('\n');
-	};
+	}
 
 	// ============================================ auxiliares do script ======
 	// Escrito como JS de verdade (ES3, roda no ExtendScript) e copiado para o script
 	// gerado com toString(). Só o corpo entra, sem o "function binRuntime() {".
 	function binRuntime() {
-		// ---- funções auxiliares do BIN (erros por propriedade não interrompem o script)
+		// ---- BIN: funções auxiliares (erros por propriedade não interrompem o script)
 		var bin = {
 			errors: [],
+			// "texto {0}" com os valores no lugar (as mensagens ficam inteiras para a tradução)
+			f: function (s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, n) { return a[+n + 1]; }); },
 			err: function (what, e) { bin.errors.push(what + ': ' + (e && e.message ? e.message : e)); },
 			path: function (p) {
 				var n = [];
@@ -756,7 +775,7 @@
 					l.selected = true;
 					l.applyPreset(f);
 				} catch (e) {
-					bin.err('pseudo effect ' + mn + ' (.ffx)', e);
+					bin.err(bin.f('pseudo effect {0} (.ffx)', mn), e);
 				} finally {
 					if (tmp) try { tmp.remove(); } catch (e2) { }
 					if (f) try { f.remove(); } catch (e3) { }
@@ -858,7 +877,7 @@
 				try {
 					p.expression = x;
 					if (on === false) p.expressionEnabled = false;
-				} catch (e2) { bin.err(bin.path(p) + ' (expressão)', e2); }
+				} catch (e2) { bin.err(bin.f('{0} (expressão)', bin.path(p)), e2); }
 			},
 			exprs: function () {
 				var list = bin.pend;
@@ -869,7 +888,7 @@
 						p = e.get ? e.get() : bin.at(e.at);
 						p.expression = e.x;
 						if (e.on === false) p.expressionEnabled = false;
-					} catch (err) { bin.err((e.label || (p ? bin.path(p) : e.at.layer.name + ' › ' + e.at.mn)) + ' (expressão)', err); }
+					} catch (err) { bin.err(bin.f('{0} (expressão)', e.label || (p ? bin.path(p) : e.at.layer.name + ' › ' + e.at.mn)), err); }
 				}
 			},
 			// markers de layer ou de comp
@@ -879,7 +898,7 @@
 					for (var k in m) if (m.hasOwnProperty(k) && k !== 'comment' && k !== 'params') try { mv[k] = m[k]; } catch (e) { }
 					if (m.params) mv.setParameters(m.params);
 					(o.markerProperty || o.property('ADBE Marker')).setValueAtTime(t, mv);
-				} catch (e) { bin.err('marker ' + t, e); }
+				} catch (e) { bin.err(bin.f('marker {0}', t), e); }
 			},
 			// precomp ou footage: procura no projeto pelo nome; se não achar, importa o arquivo ou cria um solid no lugar
 			source: function (comp, o) {
@@ -891,7 +910,7 @@
 				if (!item && o.file && new File(o.file).exists) try { item = app.project.importFile(new ImportOptions(new File(o.file))); } catch (e) { }
 				if (item) return comp.layers.add(item);
 				bin.err(o.name, 'item não encontrado no projeto: criado um solid no lugar');
-				return comp.layers.addSolid([0.5, 0.5, 0.5], o.name + ' [faltando]', o.width || comp.width, o.height || comp.height, 1);
+				return comp.layers.addSolid([0.5, 0.5, 0.5], bin.f('{0} [faltando]', o.name), o.width || comp.width, o.height || comp.height, 1);
 			},
 			comp: function () {
 				var c = app.project.activeItem;
@@ -950,11 +969,11 @@
 					var e = list[i], p = made[e.l.index];
 					if (!p || p.name !== e.l.name) p = bin.find(comp, e.l.name, {});
 					for (var k = 0; p && k < e.p.length; k++) p = bin.seg(p, e.p[k]);
-					if (!p) { bin.err(e.n + ' (essential graphics)', 'propriedade não encontrada em "' + e.l.name + '"'); continue; }
+					if (!p) { bin.err(bin.f('{0} (essential graphics)', e.n), bin.f('propriedade não encontrada em "{0}"', e.l.name)); continue; }
 					try {
 						if (p.addToMotionGraphicsTemplateAs) p.addToMotionGraphicsTemplateAs(comp, e.n);
 						else p.addToMotionGraphicsTemplate(comp);
-					} catch (err) { bin.err(e.n + ' (essential graphics)', err); }
+					} catch (err) { bin.err(bin.f('{0} (essential graphics)', e.n), err); }
 				}
 			},
 			// valores e expressões das essential properties de uma layer de precomp
@@ -1001,13 +1020,27 @@
 					comp.openInViewer();
 				} catch (e) { }
 				$.global.BIN_LAST = { ok: true, comp: comp ? comp.name : '', count: comp ? comp.numLayers : 0, layers: names, comps: list, errors: bin.errors };
-				if (!$.global.BIN_PANEL && bin.errors.length) alert('BIN: ' + bin.errors.length + ' aviso(s)\n\n' + bin.errors.slice(0, 12).join('\n'));
+				if (!$.global.BIN_PANEL && bin.errors.length) alert(bin.f('BIN: {0} aviso(s)', bin.errors.length) + '\n\n' + bin.errors.slice(0, 12).join('\n'));
 			}
 		};
 	}
 
 	var HELPERS = null;
+	// as auxiliares no idioma atual: textos entre aspas e comentários que estão no CSV são trocados
 	CG.helpers = function () {
+		var base = helpersPT();
+		if (!I18N || I18N.lang === 'pt') return base;
+		if (HELPERS_TR[I18N.lang]) return HELPERS_TR[I18N.lang];
+		var out = base.replace(/'((?:[^'\\\n]|\\.)*)'/g, function (all, inner) {
+			if (!I18N.table[inner]) return all;
+			return "'" + T(inner).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+		}).replace(/\/\/ (.+)$/gm, function (all, c) { return I18N.table[c] ? '// ' + T(c) : all; });
+		HELPERS_TR[I18N.lang] = out;
+		return out;
+	};
+	var HELPERS_TR = {};
+
+	function helpersPT() {
 		if (HELPERS) return HELPERS;
 		var src = binRuntime.toString();
 		var lines = src.slice(src.indexOf('{') + 1, src.lastIndexOf('}')).split('\n');
