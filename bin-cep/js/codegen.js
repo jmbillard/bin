@@ -29,6 +29,8 @@
 	}
 
 	var CG = {};
+	// nome e versão do BIN, iguais ao ExtensionBundleName do CSXS/manifest.xml (um teste confere)
+	CG.NAME = 'BIN v3 beta 1';
 	var I = '\t';
 
 	// ============================================================ literais ==
@@ -620,13 +622,13 @@
 		out.push('/*');
 		if (m.mode === 'comp') {
 			var pre = this.comps.length - 1;
-			out.push(' * BIN 3.0 · comp "' + plain(root.name) + '"' + (pre ? ' + ' + pre + ' ' + T(pre === 1 ? 'precomp' : 'precomps') : ''));
+			out.push(' * ' + CG.NAME + ' · comp "' + plain(root.name) + '"' + (pre ? ' + ' + pre + ' ' + T(pre === 1 ? 'precomp' : 'precomps') : ''));
 			out.push(' * ' + T('gerado em {0}', stamp));
 			out.push(' *');
 			out.push(' * ' + T(pre ? 'cria as comps no projeto, com todas as layers.' : 'cria a comp no projeto, com todas as layers.'));
 		} else {
 			var L = CG.layersIn(root, this.ex);
-			out.push(' * BIN 3.0 · ' + (L.length === 1 ? 'layer "' + plain(L[0].name) + '"' : T('{0} layers', L.length)) + ' · comp "' + plain(root.name) + '"');
+			out.push(' * ' + CG.NAME + ' · ' + (L.length === 1 ? 'layer "' + plain(L[0].name) + '"' : T('{0} layers', L.length)) + ' · comp "' + plain(root.name) + '"');
 			out.push(' * ' + T('gerado em {0}', stamp));
 			out.push(' *');
 			out.push(' * ' + (o.target === 'new' ? T('recria as layers na nova comp "{0}".', plain(root.name)) : T('recria as layers na comp ativa.')));

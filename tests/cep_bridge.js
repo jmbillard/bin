@@ -50,5 +50,11 @@ function load(sysPath, platform) {
 	const a = BIN.stamp(read), b = BIN.stamp(read), c = BIN.stamp((f) => read(f) + (f === 'jsx/host.jsx' ? ' ' : ''));
 	const crlf = BIN.stamp((f) => read(f).replace(/\n/g, '\r\n'));
 	check(/^[0-9a-f]{8}$/.test(a) && a === b && a !== c && a === crlf, 'assinatura: 8 dígitos, estável, muda com o host, igual com quebras de linha do Windows');
+	// nome de exibição: o mesmo no manifest (instalador) e no código (painel, script gerado)
+	const manifest = fs.readFileSync(path.join(__dirname, '../bin-cep/CSXS/manifest.xml'), 'utf8');
+	const name = (manifest.match(/ExtensionBundleName="([^"]+)"/) || [])[1];
+	const CG = require('../bin-cep/js/codegen.js');
+	const html = fs.readFileSync(path.join(__dirname, '../bin-cep/index.html'), 'utf8');
+	check(name === 'BIN v3 beta 1' && CG.NAME === name && html.indexOf('title="' + name + '&#10;') >= 0, 'nome “' + name + '” igual no manifest, no código e no HTML');
 	process.exit(failed ? 1 : 0);
 })();

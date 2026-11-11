@@ -118,6 +118,23 @@ Instalar / atualizar:
 	}
 
 	// ExtensionBundleVersion do manifest de uma pasta
+	// nome de exibição (ExtensionBundleName, ex.: "BIN v3 beta 1"); sem ele, BIN + a versão
+	function bundleName(folder) {
+		try {
+			var f = new File(folder.fsName + '/CSXS/manifest.xml');
+
+			if (!f.exists) return '';
+
+			var m = readText(f).match(/ExtensionBundleName="([^"]+)"/);
+			var v = readText(f).match(/ExtensionBundleVersion="([^"]+)"/);
+
+			if (m && m[1] !== 'BIN') return m[1];
+			return 'BIN' + (v ? ' v' + v[1] : '');
+		} catch (err) {
+			return 'BIN';
+		}
+	}
+
 	function bundleVersion(folder) {
 		try {
 			var f = new File(folder.fsName + '/CSXS/manifest.xml');
@@ -258,7 +275,9 @@ Instalar / atualizar:
 	var newVersion = bundleVersion(src);
 	var oldVersion = bundleVersion(dest);
 	var installed = dest.exists;
-	var win = new Window('window', 'BIN' + (newVersion ? ' v' + newVersion : '') + ' · ' + L('instalador'), undefined, { closeButton: false });
+	var newName = bundleName(src);
+	var oldName = bundleName(dest);
+	var win = new Window('window', newName + ' · ' + L('instalador'), undefined, { closeButton: false });
 
 	win.orientation = 'column';
 	win.alignChildren = ['center', 'top'];
@@ -345,9 +364,8 @@ Instalar / atualizar:
 	var actionMsg = L('tudo certo nas checagens! o que você quer fazer?');
 
 	if (installed) {
-		var bin = 'BIN' + (oldVersion ? ' v' + oldVersion : '');
-		if (newVersion && oldVersion && newVersion !== oldVersion) actionMsg = L('o {0} já está instalado neste computador (esta pasta tem a v{1}) e tudo certo nas checagens. o que você quer fazer?', bin, newVersion);
-		else actionMsg = L('o {0} já está instalado neste computador e tudo certo nas checagens. o que você quer fazer?', bin);
+		if (oldName !== newName || oldVersion !== newVersion) actionMsg = L('o {0} já está instalado neste computador (esta pasta tem o {1}) e tudo certo nas checagens. o que você quer fazer?', oldName, newName);
+		else actionMsg = L('o {0} já está instalado neste computador e tudo certo nas checagens. o que você quer fazer?', oldName);
 	}
 
 	text(p2, actionMsg, 34);
@@ -359,7 +377,7 @@ Instalar / atualizar:
 
 	var installLabel = L('instalar');
 
-	if (installed) installLabel = newVersion && newVersion === oldVersion ? L('reinstalar') : L('atualizar');
+	if (installed) installLabel = newVersion === oldVersion && newName === oldName ? L('reinstalar') : L('atualizar');
 
 	var installRdo = radios.add('radiobutton', undefined, installLabel);
 	var removeRdo = radios.add('radiobutton', undefined, L('remover'));
@@ -490,7 +508,7 @@ Instalar / atualizar:
 		enableDebugMode();
 
 		step(L('pronto!'), 100);
-		var bin2 = 'BIN' + (newVersion ? ' v' + newVersion : '');
+		var bin2 = newName;
 		resultText.text =
 			(installed ? L('{0} atualizado! ({1} arquivos)', bin2, res.count) : L('{0} instalado! ({1} arquivos)', bin2, res.count)) + '\n\n' +
 			L('reinicie o After Effects e abra o painel em:\nWindow > Extensions > BIN') +

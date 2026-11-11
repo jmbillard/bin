@@ -4,7 +4,7 @@
 
 # BIN
 
-🗨️ **pt-BR** ⚡ extensão do After Effects para **engenharia reversa de layers** ⚡
+🗨️ **pt-BR** · **v3 beta 1** ⚡ extensão do After Effects para **engenharia reversa de layers** ⚡
 
 O **BIN** lê as layers selecionadas (ou uma **comp inteira**, com as precomps) e gera um script **.jsx** que recria tudo do zero, em qualquer projeto: propriedades, keyframes com easing e tangentes, expressões, efeitos, máscaras, shapes, textos, markers, parentesco, track matte e as configurações da comp.
 

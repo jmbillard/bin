@@ -1500,7 +1500,7 @@
 		if (S.tab && S.tab !== 'props' && TABS.indexOf(S.tab) >= 0) showTab(S.tab);
 		// host sempre na mesma versão do painel; a assinatura dos arquivos aparece no logo
 		var stamp = BIN.localStamp();
-		if (stamp) UI.setTip($('logo'), T('BIN 3.0 · versão {0}', stamp) + '\n' + T('engenharia reversa de layers'));
+		UI.setTip($('logo'), (stamp ? T('{0} · versão {1}', CG.NAME, stamp) : CG.NAME) + '\n' + T('engenharia reversa de layers'));
 		BIN.reloadHost().then(function () {
 			if (S.lang) return null;
 			return BIN.callHostJSON('bin_lang').then(function (r) { S.lang = I18N.pick(r.iso); saveSettings(); if (S.lang !== I18N.lang) applyLang(); }, function () { });

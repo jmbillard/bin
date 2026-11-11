@@ -136,7 +136,7 @@ expressoes.jsxinc,expressions.jsxinc,expresiones.jsxinc
 idioma: {0},language: {0},idioma: {0}
 os textos ficam em i18n/textos.csv,texts live in i18n/textos.csv,los textos están en i18n/textos.csv
 {0} sobre o script gerado:,{0} about the generated script:,{0} sobre el script generado:
-BIN 3.0 · versão {0},BIN 3.0 · version {0},BIN 3.0 · versión {0}
+{0} · versão {1},{0} · version {1},{0} · versión {1}
 engenharia reversa de layers,reverse engineering of layers,ingeniería inversa de capas
 precomps,precomps,precomps
 layer capturada,layer captured,capa capturada
@@ -278,7 +278,7 @@ pseudo effects → .ffx,pseudo effects → .ffx,pseudo effects → .ffx
 nenhum pseudo effect na captura.,no pseudo effects in the capture.,ningún pseudo effect en la captura.
 solte para abrir no editor,drop to open in the editor,suelta para abrir en el editor
 .jsx · .js · .jsxinc · .txt,.jsx · .js · .jsxinc · .txt,.jsx · .js · .jsxinc · .txt
-BIN 3.0\nengenharia reversa de layers,BIN 3.0\nreverse engineering of layers,BIN 3.0\ningeniería inversa de capas
+BIN v3 beta 1\nengenharia reversa de layers,BIN v3 beta 1\nreverse engineering of layers,BIN v3 beta 1\ningeniería inversa de capas
 ajuda\nabre o guia do BIN no navegador,help\nopens the BIN guide in the browser,ayuda\nabre la guía de BIN en el navegador
 idioma,language,idioma
 tema,theme,tema
@@ -371,7 +371,7 @@ acesso à rede e escrita de arquivos,network access and file writing,acceso a la
 abrir preferências de scripts e expressões,open scripting & expressions preferences,abrir preferencias de scripts y expresiones
 verificar de novo,check again,comprobar de nuevo
 tudo certo nas checagens! o que você quer fazer?,all checks passed! what do you want to do?,¡todas las comprobaciones están bien! ¿qué quieres hacer?
-o {0} já está instalado neste computador (esta pasta tem a v{1}) e tudo certo nas checagens. o que você quer fazer?,{0} is already installed on this computer (this folder has v{1}) and all checks passed. what do you want to do?,{0} ya está instalado en este equipo (esta carpeta tiene la v{1}) y las comprobaciones están bien. ¿qué quieres hacer?
+o {0} já está instalado neste computador (esta pasta tem o {1}) e tudo certo nas checagens. o que você quer fazer?,{0} is already installed on this computer (this folder has {1}) and all checks passed. what do you want to do?,{0} ya está instalado en este equipo (esta carpeta tiene {1}) y las comprobaciones están bien. ¿qué quieres hacer?
 o {0} já está instalado neste computador e tudo certo nas checagens. o que você quer fazer?,{0} is already installed on this computer and all checks passed. what do you want to do?,{0} ya está instalado en este equipo y las comprobaciones están bien. ¿qué quieres hacer?
 instalar,install,instalar
 reinstalar,reinstall,reinstalar
