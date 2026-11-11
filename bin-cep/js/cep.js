@@ -158,6 +158,12 @@
 			if (mock() && mock().readBinary) return mock().readBinary(p);
 			throw new Error('sem acesso ao sistema de arquivos.');
 		},
+		// tamanho em bytes (ou -1), sem ler o arquivo
+		size: function (p) {
+			try { if (fs) return fs.statSync(p).size; } catch (e) { return -1; }
+			if (mock() && mock().size) return mock().size(p);
+			return -1;
+		},
 		// UTF-8 com BOM: o ExtendScript lê os acentos certos em qualquer sistema
 		writeText: function (p, text) {
 			if (fs) { fs.writeFileSync(p, '﻿' + text, 'utf8'); return true; }

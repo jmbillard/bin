@@ -127,8 +127,12 @@ ir para a linha {0},go to line {0},ir a la línea {0}
 “{0}” tem mais de 2 MB: grande demais para o editor.,“{0}” is larger than 2 MB: too big for the editor.,“{0}” tiene más de 2 MB: demasiado grande para el editor.
 <b>{0}</b> aberto no editor (só o primeiro de {1} scripts).,<b>{0}</b> opened in the editor (only the first of {1} scripts).,<b>{0}</b> abierto en el editor (solo el primero de {1} scripts).
 <b>{0}</b> aberto no editor.,<b>{0}</b> opened in the editor.,<b>{0}</b> abierto en el editor.
+“{0}” tem {1}: grande demais para virar string (o limite é {2}).,“{0}” is {1}: too big to turn into a string (the limit is {2}).,“{0}” tiene {1}: demasiado grande para convertirlo en string (el límite es {2}).
+os arquivos somam {1}: grande demais para virar string (o limite é {2}).,the files add up to {1}: too big to turn into a string (the limit is {2}).,los archivos suman {1}: demasiado grande para convertirlos en string (el límite es {2}).
+arquivos,files,archivos
 abrir script,open script,abrir script
 escolha os arquivos,choose the files,elige los archivos
+expressoes.jsxinc,expressions.jsxinc,expresiones.jsxinc
 idioma: {0},language: {0},idioma: {0}
 os textos ficam em i18n/textos.csv,texts live in i18n/textos.csv,los textos están en i18n/textos.csv
 {0} sobre o script gerado:,{0} about the generated script:,{0} sobre el script generado:
@@ -152,7 +156,6 @@ avisos,warnings,avisos
 propriedade não pôde ser aplicada:,property could not be applied:,propiedad no se pudo aplicar:
 propriedades não puderam ser aplicadas:,properties could not be applied:,propiedades no se pudieron aplicar:
 arquivo,file,archivo
-arquivos,files,archivos
 código,code,código
 essential properties (valores mudados nesta layer),essential properties (values changed in this layer),essential properties (valores cambiados en esta capa)
 efeito › {0},effect › {0},efecto › {0}
@@ -174,6 +177,8 @@ comp {0} (principal),comp {0} (main),comp {0} (principal)
 comp {0} (precomp),comp {0} (precomp),comp {0} (precomp)
 "pseudo effects: .ffx salvos pelo After Effects. Numa máquina sem o efeito no PresetEffects.xml,","pseudo effects: .ffx saved by After Effects. On a machine without the effect in PresetEffects.xml,","pseudo effects: .ffx guardados por After Effects. En un equipo sin el efecto en PresetEffects.xml,"
 o script aplica o .ffx numa comp temporária para registrar o efeito e depois o cria normalmente.,the script applies the .ffx in a temporary comp to register the effect and then creates it normally.,el script aplica el .ffx en una comp temporal para registrar el efecto y luego lo crea normalmente.
+{0} arquivo(s),{0} file(s),{0} archivo(s)
+grava uma string binária de volta como arquivo,writes a binary string back to a file,guarda un string binario de vuelta como archivo
 fechar,close,cerrar
 SHAPE,SHAPE,SHAPE
 TEXT,TEXT,TEXTO

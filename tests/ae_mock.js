@@ -392,7 +392,13 @@ class Layer {
 		if (typeof n === 'number') return this._kids[n - 1] || null;
 		return this._kids.find((k) => k.matchName === n || k._name === n) || null;
 	}
-	get selectedProperties() { return []; }
+	// como no AE: grupos e propriedades marcados com selected = true, na ordem da timeline
+	get selectedProperties() {
+		const out = [];
+		const walk = (list) => list.forEach((k) => { if (k.selected) out.push(k); if (k._kids) walk(k._kids); });
+		walk(this._kids);
+		return out;
+	}
 	setParentWithJump(p) { this.parent = p; }
 }
 class AVLayer extends Layer {

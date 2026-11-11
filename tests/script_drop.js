@@ -70,6 +70,17 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	const shownTools = await drag('#tab-tools', [{ name: 'outro.jsx', text: 'var nada;' }]);
 	check(!shownTools && await page.$eval('.tab.active', (e) => e.dataset.tab) === 'tools' && /ação/.test(await page.inputValue('#codeEdit')), 'utilitários: script solto fora do binário é ignorado');
 
+	// 4b · arquivo → binário: grande demais vira aviso (a string ficaria ~4× maior e travaria o painel)
+	const bigMsg = await page.evaluate(() => new Promise((ok) => {
+		const d = new DataTransfer();
+		d.items.add(new File([new Uint8Array(21 * 1024 * 1024)], 'video.mov'));
+		const drop = document.getElementById('binDrop');
+		drop.dispatchEvent(new DragEvent('drop', { dataTransfer: d, bubbles: true, cancelable: true }));
+		setTimeout(() => ok({ toast: document.getElementById('toast').textContent, out: !document.getElementById('binOut').classList.contains('hidden') }), 300);
+	}));
+	check(/“video\.mov” tem 21,0 MB: grande demais para virar string \(o limite é 20,0 MB\)/.test(bigMsg.toast) && !bigMsg.out, 'arquivo → binário: arquivo grande demais vira aviso, sem travar');
+	await page.evaluate(() => window.BIN.ui.hideToast());
+
 	// 5 · com captura: o script entra como código editado; descartar volta ao gerado
 	await page.click('.tab[data-tab=props]');
 	select(['TITULO_principal']);

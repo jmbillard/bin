@@ -341,9 +341,9 @@ os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma lin
     <td width="300"><img src="docs/img/07-utilitarios.png" width="280"></td>
     <td>
 
-1. **expressão → string** → pega a expressão da propriedade selecionada (ou todas as expressões das layers selecionadas)…
+1. **expressão → string** → pega a expressão da propriedade selecionada; com um grupo selecionado (um efeito, o transform…), as expressões de dentro dele; sem nada selecionado dentro da layer, todas as dela…
 2. … e formata como string JS, uma linha por item, pronta para colar em um script. copie ou exporte pela barra.
-3. **arquivo → binário** → arraste arquivos (PNG, WAV, FFX…) ou clique para escolher. o BIN gera uma variável com o conteúdo de cada um, mais a função `binToFile()` para gravar de volta no disco. no ScriptUI, a string de um PNG já serve direto como imagem.
+3. **arquivo → binário** → arraste arquivos (PNG, WAV, FFX…) ou clique para escolher (até 20 MB no total: a string fica umas 4 vezes maior que o arquivo). o BIN gera uma variável com o conteúdo de cada um, mais a função `binToFile()` para gravar de volta no disco. no ScriptUI, a string de um PNG já serve direto como imagem.
 4. **pseudo effects → .ffx** → cada pseudo effect da captura (matchName `Pseudo/…`) ganha o botão **salvar .ffx**: o BIN seleciona só aquele efeito na layer original e abre o *Save Animation Preset* do After Effects. o arquivo é do próprio AE e leva a definição do efeito. salvo na pasta padrão (User Presets), o BIN o encontra sozinho; salvo em outro lugar, use **escolher .ffx**. o .ffx entra embutido no script gerado: numa máquina sem o efeito no PresetEffects.xml, o script aplica o .ffx numa comp temporária para registrar o efeito, apaga a comp e o cria normalmente. o BIN lembra o .ffx de cada pseudo effect. ao capturar uma layer ou comp com pseudo effects ainda sem .ffx, o BIN já propõe salvar (**salvar .ffx**, ou **salvar os N**, um diálogo de cada vez); na aba propriedades, a linha do pseudo effect tem o selo **.ffx** (verde quando entra no script; clique para salvar).
 
   </td>

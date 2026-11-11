@@ -799,11 +799,24 @@ function bin_expressions() {
 		if (!sel.length) return bin_json({ error: 'selecione uma propriedade com expressão.' });
 		var out = [], i, j;
 
+		// propriedade selecionada: a expressão dela; grupo (efeito, transform…): as de dentro dele;
+		// nada selecionado dentro da layer: todas as dela. Sem repetir (grupo e propriedade dele selecionados)
+		var picked = false;
 		for (i = 0; i < sel.length; i++) {
 			var props = sel[i].selectedProperties;
-			for (j = 0; j < props.length; j++) bin_pushExpr(out, sel[i], props[j]);
+			for (j = 0; j < props.length; j++) {
+				picked = true;
+				if (props[j].propertyType === PropertyType.PROPERTY) bin_pushExpr(out, sel[i], props[j]);
+				else bin_collectExpr(out, sel[i], props[j]);
+			}
 		}
-		if (!out.length) for (i = 0; i < sel.length; i++) bin_collectExpr(out, sel[i], sel[i]);
+		if (!picked) for (i = 0; i < sel.length; i++) bin_collectExpr(out, sel[i], sel[i]);
+		var seen = {}, uniq = [];
+		for (i = 0; i < out.length; i++) {
+			var k = out[i].layer + '\n' + out[i].path;
+			if (!seen[k]) { seen[k] = true; uniq.push(out[i]); }
+		}
+		out = uniq;
 		if (!out.length) return bin_json({ error: 'nenhuma expressão na seleção.' });
 		return bin_json({ items: out });
 	} catch (e) {

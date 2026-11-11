@@ -392,4 +392,24 @@ const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c
 	report(ok, '[arquivo → binário]');
 }
 
+// ------------------------------------------- expressão → string: o que a seleção pega
+{
+	const { ctx, comp } = setup();
+	const sh = comp.layer('TITULO_principal');
+	const ex = () => { const r = JSON.parse(ctx.bin_expressions()); return r.error ? r.error : r.items.map((i) => i.path).join(' | '); };
+	const tr = sh.property('ADBE Transform Group');
+	sh.property('ADBE Effect Parade').property('ADBE Fill').property('ADBE Fill-0002').expression = '[1, 0, 0, 1]'; // expressão fora do transform
+	comp._layers.forEach((l) => { l.selected = l === sh; });
+	const all = ex(); // nada selecionado dentro da layer: todas as expressões dela
+	tr.property('ADBE Rotate Z').selected = true;
+	const one = ex();
+	tr.property('ADBE Rotate Z').selected = false;
+	tr.selected = true; // o grupo transform: as expressões de dentro dele, não as da layer inteira
+	const grp = ex();
+	tr.property('ADBE Opacity').selected = true; // grupo e uma propriedade dele: sem repetir
+	const both = ex();
+	report(/Rotation/.test(all) && /Color/.test(all) && one === 'Transform › Rotation' && /Rotation/.test(grp) && /Opacity/.test(grp) && !/Color/.test(grp) && grp.split(' | ').length === 2 && both === grp,
+		'[expressão → string] propriedade, grupo (só o que está dentro) e sem repetir', 'tudo: ' + all + ' · grupo: ' + grp + ' · grupo + propriedade: ' + both);
+}
+
 process.exit(failed ? 1 : 0);

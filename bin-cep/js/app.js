@@ -1200,14 +1200,22 @@
 		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
 
+	// arquivo → binário: a string fica ~4× maior que o arquivo; acima disso o painel trava
+	var MAX_BINARY = 20 * 1024 * 1024;
 	function convertFiles(list) {
+		var big = list.map(function (f) { return { name: f.path ? BIN.fs.basename(f.path) : f.file.name, size: f.path ? BIN.fs.size(f.path) : f.file.size }; });
+		var sum = big.reduce(function (s, f) { return s + Math.max(0, f.size); }, 0);
+		if (sum > MAX_BINARY) {
+			UI.toast(T(list.length === 1 ? '“{0}” tem {1}: grande demais para virar string (o limite é {2}).' : 'os arquivos somam {1}: grande demais para virar string (o limite é {2}).', esc(big[0].name), CG.size(sum), CG.size(MAX_BINARY)), 'warn', { life: 4200 });
+			return;
+		}
 		Promise.all(list.map(function (f) {
 			if (f.path) return { name: BIN.fs.basename(f.path), bytes: BIN.fs.readBinary(f.path) };
 			return f.file.arrayBuffer().then(function (buf) { return { name: f.file.name, bytes: new Uint8Array(buf) }; });
 		})).then(function (files) {
 			if (!files.length) return;
 			var total = files.reduce(function (s, f) { return s + f.bytes.length; }, 0);
-			state.tools.binName = (files.length === 1 ? CG.snake(files[0].name.replace(/\.[^.]+$/, '')) : 'arquivos') + '_bin.jsxinc';
+			state.tools.binName = (files.length === 1 ? CG.snake(files[0].name.replace(/\.[^.]+$/, '')) : T('arquivos')) + '_bin.jsxinc';
 			showOut('bin', CG.binaryFiles(files), plural(files.length, 'arquivo', 'arquivos') + ' · ' + CG.size(total));
 		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
@@ -1394,7 +1402,7 @@
 			b.onclick = function () { copyText(state.tools[b.dataset.copy], b.dataset.copy === 'expr' ? 'expressão' : 'código'); };
 		});
 		each(document.querySelectorAll('[data-save]'), function (b) {
-			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? 'expressoes.jsxinc' : state.tools.binName); };
+			b.onclick = function () { saveText(state.tools[b.dataset.save], b.dataset.save === 'expr' ? T('expressoes.jsxinc') : state.tools.binName); };
 		});
 	}
 

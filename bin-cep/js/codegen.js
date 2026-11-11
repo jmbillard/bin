@@ -1091,13 +1091,13 @@
 	CG.binaryFiles = function (files) {
 		var namer = new Namer();
 		var total = files.reduce(function (s, f) { return s + f.bytes.length; }, 0);
-		var out = ['// ' + files.length + ' arquivo(s) · ' + CG.size(total)];
+		var out = ['// ' + T('{0} arquivo(s)', files.length) + ' · ' + CG.size(total)];
 		files.forEach(function (f) {
 			var ext = (String(f.name).match(/\.([^.]+)$/) || [])[1] || '';
-			var v = namer.take(String(f.name).replace(/\.[^.]+$/, '') + ' ' + ext, 'arquivo');
+			var v = namer.take(String(f.name).replace(/\.[^.]+$/, '') + ' ' + ext, T('arquivo'));
 			out.push('', '// ' + plain(f.name) + ' · ' + CG.size(f.bytes.length), 'var ' + v + ' = ' + CG.binaryString(f.bytes) + ';');
 		});
-		out.push('', '// grava uma string binária de volta como arquivo', 'function binToFile(str, path) {',
+		out.push('', '// ' + T('grava uma string binária de volta como arquivo'), 'function binToFile(str, path) {',
 			I + 'var f = new File(path);', I + "f.encoding = 'BINARY';", I + "f.open('w');", I + 'f.write(str);', I + 'f.close();', I + 'return f;', '}', '');
 		return out.join('\n');
 	};
