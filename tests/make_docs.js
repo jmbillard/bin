@@ -1,17 +1,19 @@
 // Gera as capturas do README (docs/img) com o painel real e os destaques numerados.
-// uso: node tests/make_docs.js
+// uso: node tests/make_docs.js [pt|en|es]   (en e es vão para docs/img/en e docs/img/es)
 'use strict';
 const { chromium } = require('playwright');
 const path = require('path');
-const { setup, url, annotate, clearMarks, ROOT } = require('./lib_panel');
+const { setup, serve, annotate, clearMarks, ROOT } = require('./lib_panel');
 
-const OUT = path.join(ROOT, 'docs/img');
+const LANG = process.argv[2] || 'pt';
+const OUT = path.join(ROOT, 'docs/img', LANG === 'pt' ? '' : LANG);
+require('fs').mkdirSync(OUT, { recursive: true });
 
 (async () => {
 	const browser = await chromium.launch();
 	const page = await browser.newPage({ viewport: { width: 420, height: 760 }, deviceScaleFactor: 2 });
 	page.on('pageerror', (e) => { console.log('[pageerror]', e.message); process.exitCode = 1; });
-	const { comp, select, ctx } = await setup(page, { theme: 'dark', mode: 'layers' });
+	const { comp, select, ctx } = await setup(page, { theme: 'dark', mode: 'layers', lang: LANG });
 	const w = (ms) => page.waitForTimeout(ms);
 
 	async function shot(name, marks, opts) {
@@ -32,7 +34,8 @@ const OUT = path.join(ROOT, 'docs/img');
 
 	// 01 · vazio
 	select([]);
-	await page.goto(url);
+	const srv = await serve(); // por HTTP: o painel carrega as traduções (i18n/textos.csv)
+	await page.goto(srv.url);
 	await w(600);
 	await shot('01-vazio', [
 		{ sel: '#captureBtn', n: 1, side: 'left' },
@@ -47,7 +50,7 @@ const OUT = path.join(ROOT, 'docs/img');
 	await page.waitForSelector('#propsView:not(.hidden)');
 	await w(700);
 	await hideToast();
-	await page.click('xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="track matte"]]');
+	await page.click('.row.leaf[data-id$="/attrs/matte"]');
 	await w(300);
 	await shot('02-propriedades', [
 		{ sel: '#chip', n: 1, pad: 2 },
@@ -57,7 +60,7 @@ const OUT = path.join(ROOT, 'docs/img');
 		{ sel: '.row.leaf.off', n: 5, pad: 0, radius: 4 },
 		{ sel: '#sum', n: 6, pad: 2, side: 'top' }
 	]);
-	await page.click('xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="track matte"]]');
+	await page.click('.row.leaf[data-id$="/attrs/matte"]');
 
 	// 02b · uma linha fora (com o mouse em cima)
 	const round = 'xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="Roundness"]]';
@@ -72,7 +75,7 @@ const OUT = path.join(ROOT, 'docs/img');
 	// 11 · tooltip
 	await page.mouse.move(1, 1);
 	await w(600);
-	await page.hover('xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="blend mode"]]');
+	await page.hover('.row.leaf[data-id$="/attrs/blendingMode"]');
 	await w(900);
 	await shot('11-tooltip', null, { mouse: true, tip: true });
 
@@ -165,5 +168,35 @@ const OUT = path.join(ROOT, 'docs/img');
 	await w(800);
 	await shot('08-claro', [{ sel: '#themeBtn', n: 1, pad: 0 }]);
 
+	// 12 · editor livre (sem captura) e 13 · código gerado editado à mão
+	const p2 = await browser.newPage({ viewport: { width: 420, height: 760 }, deviceScaleFactor: 2 });
+	const s2 = await setup(p2, { theme: 'dark', mode: 'layers', lang: LANG });
+	s2.select([]);
+	await p2.goto(srv.url);
+	await p2.waitForTimeout(600);
+	await p2.click('#scriptBtn');
+	await p2.keyboard.type('var comp = app.project.activeItem;\nvar t = comp.layers.addText("BIN");\nt.property("ADBE Transform Group").property("ADBE Position").setValue([960, 540]);\nt.selected = true;', { delay: 0 });
+	await p2.mouse.move(1, 1);
+	await p2.waitForTimeout(300);
+	await p2.screenshot({ path: path.join(OUT, '12-editor-livre.png') });
+	console.log('✓', '12-editor-livre');
+	await p2.fill('#codeEdit', '');
+	await p2.dispatchEvent('#codeEdit', 'input');
+	s2.select(['TITULO_principal']);
+	await p2.evaluate(() => window.BIN.app.capture(true));
+	await p2.waitForTimeout(500);
+	await p2.evaluate(() => window.BIN.ui.hideToast());
+	await p2.click('.tab[data-tab=code]');
+	await p2.waitForTimeout(300);
+	const txt = (await p2.inputValue('#codeEdit')).replace("name: 'TITULO_principal'", "name: 'TITULO_editado'");
+	await p2.fill('#codeEdit', txt);
+	await p2.dispatchEvent('#codeEdit', 'input');
+	await p2.evaluate(() => { const t = document.getElementById('codeEdit'); t.scrollTop = 140; t.dispatchEvent(new Event('scroll')); });
+	await p2.mouse.move(1, 1);
+	await p2.waitForTimeout(300);
+	await p2.screenshot({ path: path.join(OUT, '13-editor-editado.png') });
+	console.log('✓', '13-editor-editado');
+
 	await browser.close();
+	srv.close();
 })();

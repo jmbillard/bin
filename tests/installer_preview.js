@@ -1,6 +1,6 @@
 // Executa "INSTALAR O BIN.jsx" em Node com File/Folder/ScriptUI simulados, confere a instalação
 // e desenha cada passo da janela (a partir dos controles que o script cria) em PNG.
-// uso: node tests/installer_preview.js [pasta de saída]
+// uso: node tests/installer_preview.js [pasta de saída] [pt|en|es]   (o idioma simula o do After Effects)
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -9,6 +9,8 @@ const vm = require('vm');
 const { chromium } = require('playwright');
 
 const outDir = path.resolve(process.argv[2] || path.join(__dirname, 'out'));
+const LANG = process.argv[3] || '';
+const ISO = { pt: 'pt_BR', en: 'en_US', es: 'es_ES' }[LANG] || '';
 const script = path.resolve(__dirname, '../INSTALAR O BIN.jsx');
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'bin-inst-'));
 fs.mkdirSync(outDir, { recursive: true });
@@ -56,7 +58,7 @@ function ctrl(type, text, props) {
 const calls = [];
 const ctx = {
 	$: { os: 'Windows', fileName: script }, File, Folder, decodeURI, encodeURI,
-	app: { version: '25.1.0', preferences: { getPrefAsLong: () => (global.__writeBlocked ? 0 : 1) }, executeCommand() { } },
+	app: { version: '25.1.0', isoLanguage: ISO, preferences: { getPrefAsLong: () => (global.__writeBlocked ? 0 : 1) }, executeCommand() { } },
 	system: { callSystem: (c) => { calls.push(c); return ''; } },
 	Window: function (t, title) { win = ctrl('window', title); return win; }
 };
@@ -82,7 +84,7 @@ function html(c) {
 	switch (c.type) {
 		case 'image': return '<img class="banner" src="' + bannerURL + '">';
 		case 'statictext': return '<div class="st' + (c.props.truncate ? ' trunc' : '') + '" style="' + size + color + '">' + esc(c.text).replace(/\n/g, '<br>') + '</div>';
-		case 'button': return '<span class="btn' + (/começar|próximo|instalar|atualizar|reinstalar|remover|concluir/.test(c.text) && c.text !== 'cancelar' ? ' default' : '') + (c.enabled ? '' : ' dis') + '">' + esc(c.text) + '</span>';
+		case 'button': return '<span class="btn' + (c === btn(2) ? ' default' : '') + (c.enabled ? '' : ' dis') + '">' + esc(c.text) + '</span>';
 		case 'radiobutton': return '<span class="radio' + (c.value ? ' on' : '') + (c.enabled ? '' : ' dis') + '"><i></i>' + esc(c.text) + '</span>';
 		case 'progressbar': return '<div class="bar" style="' + size + '"><b style="width:' + (c.value || 0) + '%"></b></div>';
 		default: {
@@ -116,7 +118,7 @@ body { margin: 0; background: transparent; font: 12px/1.45 "Segoe UI", Inter, Ar
 
 // caminhos de exemplo (Windows) no lugar das pastas temporárias do teste
 const pretty = (h) => h
-	.split(userData).join('C:\\Users\\voce\\AppData\\Roaming')
+	.split(userData).join('C:\\Users\\user\\AppData\\Roaming')
 	.split(path.dirname(script)).join('D:\\Downloads\\bin')
 	.replace(/(Roaming|bin)((?:\/[\w.-]+)+)/g, (m, a, b) => a + b.replace(/\//g, '\\'));
 
@@ -125,10 +127,9 @@ function page() {
 		win.children.map(html).join('') + '</div></div></div>');
 }
 
-const next = () => {
-	const b = Object.values(buttons).find((x) => x.type === 'button' && x.visible !== false && x.text !== 'cancelar' && x.text !== 'anterior' && x.onClick);
-	b.onClick();
-};
+// botões pela ordem em que o instalador os cria (cancelar, anterior, próximo): vale em qualquer idioma
+const btn = (i) => Object.values(buttons).filter((x) => x.type === 'button')[i];
+const next = () => btn(2).onClick();
 
 (async () => {
 	const browser = await chromium.launch();
@@ -146,7 +147,7 @@ const next = () => {
 	flow = pageNow() === 2 && flow;
 	console.log((pageNow() === 2 ? 'ok    ' : 'FALHA ') + 'tudo certo: começar vai direto para instalar / atualizar');
 	await shot('03-instalador-acao');
-	buttons['anterior'].onClick(); // a checagem continua a um clique
+	btn(1).onClick(); // a checagem continua a um clique
 	flow = pageNow() === 1 && flow;
 	console.log((pageNow() === 1 ? 'ok    ' : 'FALHA ') + "a checagem continua acessível em 'anterior'");
 	await shot('02-instalador-checagem');
@@ -162,7 +163,7 @@ const next = () => {
 	Object.keys(buttons).forEach((k) => delete buttons[k]);
 	vm.runInContext(src, ctx, { filename: 'INSTALAR O BIN.jsx' });
 	next();
-	const stays = pageNow() === 1 && buttons['começar'].enabled === false; // o botão é criado como 'começar'
+	const stays = pageNow() === 1 && btn(2).enabled === false;
 	console.log((stays ? 'ok    ' : 'FALHA ') + 'com algo errado: começar para na checagem, sem avançar');
 	if (!stays || !flow) process.exitCode = 1;
 
@@ -177,7 +178,7 @@ const next = () => {
 		await (await pg2.$('#stage')).screenshot({ path: path.join(outDir, name + '.png'), omitBackground: true });
 		await b2.close();
 	};
-	for (const [iso, lang, start, title] of [['en_US', 'en', 'start', 'installer'], ['es_ES', 'es', 'empezar', 'instalador']]) {
+	for (const [iso, lang, start, title] of LANG ? [] : [['en_US', 'en', 'start', 'installer'], ['es_ES', 'es', 'empezar', 'instalador']]) {
 		ctx.app.isoLanguage = iso;
 		Object.keys(buttons).forEach((k) => delete buttons[k]);
 		vm.runInContext(src, ctx, { filename: 'INSTALAR O BIN.jsx' });

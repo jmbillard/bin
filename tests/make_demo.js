@@ -2,12 +2,13 @@
 // A gravação headless não mostra o mouse: um cursor desenhado na página acompanha os movimentos e marca os cliques.
 // uso: node tests/make_demo.js
 'use strict';
+const LANG = process.argv[2] || 'pt'; // node tests/make_demo.js [pt|en|es]
 const { chromium } = require('playwright');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
-const { setup, url, ROOT } = require('./lib_panel');
+const { setup, serve, ROOT } = require('./lib_panel');
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'bin-demo-'));
 const W = 420, H = 760;
@@ -16,7 +17,7 @@ const W = 420, H = 760;
 	const browser = await chromium.launch();
 	const context = await browser.newContext({ viewport: { width: W, height: H }, recordVideo: { dir: TMP, size: { width: W, height: H } } });
 	const page = await context.newPage();
-	const { select, comp, ctx } = await setup(page, { theme: 'dark', mode: 'layers', target: 'active' });
+	const { select, comp, ctx } = await setup(page, { theme: 'dark', mode: 'layers', target: 'active', lang: LANG });
 
 	// cursor desenhado
 	await page.addInitScript(() => {
@@ -66,7 +67,8 @@ const W = 420, H = 760;
 	const row = (name) => 'xpath=//div[contains(@class,"row") and contains(@class,"leaf") and .//span[text()="' + name + '"]]';
 
 	select([]); // abre vazio; a layer é "selecionada no After Effects" antes do clique
-	await page.goto(url);
+	const srv = await serve(); // por HTTP: o painel carrega as traduções (i18n/textos.csv)
+	await page.goto(srv.url);
 	await page.mouse.move(pos.x, pos.y);
 	await w(900);
 
@@ -76,13 +78,14 @@ const W = 420, H = 760;
 	await hideToast();
 
 	// 2 · dica e linha clicável
-	await move(row('blend mode'), 18);
+	const blend = '.row.leaf[data-id$="/attrs/blendingMode"]'; // a linha do blend mode (o rótulo muda com o idioma)
+	await move(blend, 18);
 	await w(1300);
-	await click(row('blend mode'), 700);
-	await click(row('blend mode'), 600);
+	await click(blend, 700);
+	await click(blend, 600);
 
 	// 3 · desligar um efeito
-	await click('xpath=//div[contains(@class,"card-head")][.//b[text()="effects"]]', 600);
+	await click('.card-head:has(.i-fx)', 600); // o card de efeitos
 	const glow = 'xpath=//div[contains(@class,"row") and contains(@class,"group") and .//span[text()="Glow"]]';
 	await move(glow);
 	await w(400);
@@ -112,10 +115,11 @@ const W = 420, H = 760;
 
 	await context.close();
 	await browser.close();
+	srv.close();
 
 	const video = fs.readdirSync(TMP).find((f) => f.endsWith('.webm'));
 	const src = path.join(TMP, video);
-	const out = path.join(ROOT, 'docs/img/demo.gif');
+	const out = path.join(ROOT, 'docs/img', LANG === 'pt' ? '' : LANG, 'demo.gif');
 	const pal = path.join(TMP, 'pal.png');
 	execSync(`ffmpeg -y -loglevel error -i "${src}" -vf "fps=10,scale=360:-1:flags=lanczos,palettegen=max_colors=128:stats_mode=diff" "${pal}"`);
 	execSync(`ffmpeg -y -loglevel error -i "${src}" -i "${pal}" -lavfi "fps=10,scale=360:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=none:diff_mode=rectangle" "${out}"`);

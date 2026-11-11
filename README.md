@@ -4,7 +4,9 @@
 
 # BIN
 
-🗨️ **pt-BR** · **v3 beta 1** ⚡ extensão do After Effects para **engenharia reversa de layers** ⚡
+🌐 **português** · [English](README.en.md) · [español](README.es.md)
+
+🗨️ **v3 beta 1** ⚡ extensão do After Effects para **engenharia reversa de layers** ⚡
 
 O **BIN** lê as layers selecionadas (ou uma **comp inteira**, com as precomps) e gera um script **.jsx** que recria tudo do zero, em qualquer projeto: propriedades, keyframes com easing e tangentes, expressões, efeitos, máscaras, shapes, textos, markers, parentesco, track matte e as configurações da comp.
 
@@ -439,9 +441,9 @@ node tests/roundtrip.js      # ida e volta: 8 tipos de layer e uma comp com prec
 node tests/run_panel.js      # painel de ponta a ponta + capturas de tela em tests/out
 node tests/make_icons.js     # ícones da aba e logo
 node tests/make_banner.js    # banner do instalador
-node tests/installer_preview.js  # roda o instalador num ScriptUI simulado e desenha cada passo
-node tests/make_docs.js      # capturas do README com os destaques numerados
-node tests/make_demo.js      # grava o uso simulado e gera docs/img/demo.gif (precisa do ffmpeg)
+node tests/installer_preview.js  # roda o instalador num ScriptUI simulado e desenha cada passo (em outro idioma: node tests/installer_preview.js docs/img/en en)
+node tests/make_docs.js      # capturas do README com os destaques numerados (en / es: node tests/make_docs.js en → docs/img/en)
+node tests/make_demo.js      # grava o uso simulado e gera docs/img/demo.gif (precisa do ffmpeg; en / es: node tests/make_demo.js en)
 node tests/docs_app.js       # BIN docs de ponta a ponta com um webhook falso
 ```
 
