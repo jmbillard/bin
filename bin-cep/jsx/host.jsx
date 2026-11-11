@@ -3,8 +3,8 @@
  *
  * Funções chamadas pelo painel via evalScript. Todas retornam uma string JSON.
  *
- * A captura é SOMENTE LEITURA: nada na layer original é alterado (o bin.js antigo
- * chamava setValue / renomeava propriedades para testar se eram graváveis, o que
+ * A captura é SOMENTE LEITURA: nada na layer original é alterado (o script ScriptUI
+ * antigo chamava setValue / renomeava propriedades para testar se eram graváveis, o que
  * sujava o histórico de undo). O painel recebe a descrição da layer e gera o
  * script de recriação.
  *

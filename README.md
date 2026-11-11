@@ -18,8 +18,7 @@ Serve para transformar um layout pronto em ferramenta: o script gerado pode vira
 > 📂 **arquivos:**\
 > • **INSTALAR O BIN.jsx** → instalador (roda dentro do After Effects).\
 > • **bin-cep/** → a extensão (painel CEP).\
-> • **instalar_windows.bat** / **instalar_mac.command** → instaladores alternativos, sem abrir o After Effects.\
-> • **bin.js** → versão anterior (script ScriptUI), mantida só como referência.
+> • **instalar_windows.bat** / **instalar_mac.command** → instaladores alternativos, sem abrir o After Effects.
 
 <br>
 
