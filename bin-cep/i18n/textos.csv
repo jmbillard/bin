@@ -127,6 +127,13 @@ ir para a linha {0},go to line {0},ir a la línea {0}
 “{0}” tem mais de 2 MB: grande demais para o editor.,“{0}” is larger than 2 MB: too big for the editor.,“{0}” tiene más de 2 MB: demasiado grande para el editor.
 <b>{0}</b> aberto no editor (só o primeiro de {1} scripts).,<b>{0}</b> opened in the editor (only the first of {1} scripts).,<b>{0}</b> abierto en el editor (solo el primero de {1} scripts).
 <b>{0}</b> aberto no editor.,<b>{0}</b> opened in the editor.,<b>{0}</b> abierto en el editor.
+absoluto (com a comp),absolute (with the comp),absoluta (con la comp)
+relativo à comp,relative to the comp,relativa a la comp
+relativo à layer,relative to the layer,relativa a la capa
+por matchName (qualquer idioma do AE),by matchName (any AE language),por matchName (cualquier idioma de AE)
+script (ExtendScript),script (ExtendScript),script (ExtendScript)
+absoluto (comp pela posição no projeto),absolute (comp by its position in the project),absoluto (comp por su posición en el proyecto)
+copiar,copy,copiar
 “{0}” tem {1}: grande demais para virar string (o limite é {2}).,“{0}” is {1}: too big to turn into a string (the limit is {2}).,“{0}” tiene {1}: demasiado grande para convertirlo en string (el límite es {2}).
 os arquivos somam {1}: grande demais para virar string (o limite é {2}).,the files add up to {1}: too big to turn into a string (the limit is {2}).,los archivos suman {1}: demasiado grande para convertirlos en string (el límite es {2}).
 arquivos,files,archivos
@@ -157,6 +164,7 @@ propriedade não pôde ser aplicada:,property could not be applied:,propiedad no
 propriedades não puderam ser aplicadas:,properties could not be applied:,propiedades no se pudieron aplicar:
 arquivo,file,archivo
 código,code,código
+caminho,path,ruta
 essential properties (valores mudados nesta layer),essential properties (values changed in this layer),essential properties (valores cambiados en esta capa)
 efeito › {0},effect › {0},efecto › {0}
 aponta para a layer quando todas existirem,points to the layer once all of them exist,apunta a la capa cuando todas existan
@@ -266,9 +274,11 @@ envolver em função,wrap in functions,envolver en funciones
 manter parentesco,keep parenting,mantener emparentado
 parent e track matte entre as layers,parent and track matte between layers,parent y track matte entre las capas
 comentários no código,comments in the code,comentarios en el código
+caminho da propriedade,property path,ruta de la propiedad
+"o caminho completo até a propriedade selecionada (um efeito, um path, o transform…): absoluto, com o nome da comp, e relativo, como expressão e como script.","the full path to the selected property (an effect, a path, the transform…): absolute, with the comp name, and relative, as an expression and as a script.","la ruta completa hasta la propiedad seleccionada (un efecto, un trazado, el transform…): absoluta, con el nombre de la comp, y relativa, como expresión y como script."
+pegar da seleção,get from selection,tomar de la selección
 expressão → string,expression → string,expresión → string
 "formata a expressão da propriedade selecionada (ou de todas as layers selecionadas) como string JS, pronta para colar em um script.","formats the expression of the selected property (or of all selected layers) as a JS string, ready to paste into a script.","formatea la expresión de la propiedad seleccionada (o de todas las capas seleccionadas) como string JS, lista para pegar en un script."
-pegar da seleção,get from selection,tomar de la selección
 arquivo → binário,file → binary,archivo → binario
 "converte arquivos (PNG, WAV, FFX…) em strings para embutir no script. ScriptUI usa a string de um PNG direto como imagem.","converts files (PNG, WAV, FFX…) into strings to embed in the script. ScriptUI uses a PNG string directly as an image.","convierte archivos (PNG, WAV, FFX…) en strings para incrustar en el script. ScriptUI usa el string de un PNG directamente como imagen."
 arraste arquivos aqui,drag files here,arrastra archivos aquí
@@ -284,7 +294,7 @@ idioma,language,idioma
 tema,theme,tema
 propriedades\no que foi capturado e o que entra no script,properties\nwhat was captured and what goes into the script,propiedades\nlo que se capturó y lo que entra en el script
 código\no script que recria o que foi capturado,code\nthe script that recreates what was captured,código\nel script que recrea lo capturado
-utilitários\n• expressão → string\n• arquivo → binário,tools\n• expression → string\n• file → binary,utilidades\n• expresión → string\n• archivo → binario
+utilitários\n• caminho da propriedade\n• expressão → string\n• arquivo → binário\n• pseudo effects → .ffx,tools\n• property path\n• expression → string\n• file → binary\n• pseudo effects → .ffx,utilidades\n• ruta de la propiedad\n• expresión → string\n• archivo → binario\n• pseudo effects → .ffx
 capturar seleção\nas layers selecionadas na comp ativa,capture selection\nthe selected layers in the active comp,capturar selección\nlas capas seleccionadas en la comp activa
 "capturar comp inteira\ntodas as layers da comp ativa, com as precomps","capture whole comp\nall layers of the active comp, with the precomps","capturar comp entera\ntodas las capas de la comp activa, con las precomps"
 aba código\ndigite e execute qualquer script do After Effects; arrastar um .jsx para o painel também abre no editor,code tab\ntype and run any After Effects script; dragging a .jsx onto the panel also opens it in the editor,pestaña código\nescribe y ejecuta cualquier script de After Effects; arrastrar un .jsx al panel también lo abre en el editor
@@ -302,7 +312,7 @@ copiar o código,copy the code,copiar el código
 pacote para documentação\nsalva um .json para o app de documentação de templates (docs-app),documentation pack\nsaves a .json for the template documentation app (docs-app),paquete de documentación\nguarda un .json para la app de documentación de plantillas (docs-app)
 exportar .jsx\nsalva o script para rodar em File › Scripts,export .jsx\nsaves the script to run from File › Scripts,exportar .jsx\nguarda el script para ejecutarlo desde File › Scripts
 // digite um script do After Effects (ExtendScript)\n// ou arraste um arquivo .jsx para cá\n// e execute com Ctrl/⌘ + Enter,// type an After Effects script (ExtendScript)\n// or drag a .jsx file here\n// and run it with Ctrl/⌘ + Enter,// escribe un script de After Effects (ExtendScript)\n// o arrastra un archivo .jsx aquí\n// y ejecútalo con Ctrl/⌘ + Enter
-copiar,copy,copiar
+pegar da seleção\nselecione uma ou mais propriedades (ou grupos) na timeline,get from selection\nselect one or more properties (or groups) in the timeline,tomar de la selección\nselecciona una o más propiedades (o grupos) en la línea de tiempo
 exportar,export,exportar
 recriar\nroda o script dentro de um único undo,recreate\nruns the script inside a single undo,recrear\nejecuta el script dentro de un solo deshacer
 pseudo effect não instalado nesta máquina. Salve o .ffx dele na aba utilitários do BIN e gere o script de novo.,pseudo effect not installed on this machine. Save its .ffx in BIN’s tools tab and generate the script again.,pseudo effect no instalado en este equipo. Guarda su .ffx en la pestaña utilidades de BIN y genera el script de nuevo.
@@ -351,6 +361,8 @@ o menu Animation > Save Animation Preset não foi encontrado. O efeito ficou sel
 abra uma comp e selecione uma layer.,open a comp and select a layer.,abre una comp y selecciona una capa.
 selecione ao menos uma layer na comp.,select at least one layer in the comp.,selecciona al menos una capa en la comp.
 abra uma comp (ou selecione uma no painel Project).,open a comp (or select one in the Project panel).,abre una comp (o selecciona una en el panel Project).
+abra uma comp e selecione uma propriedade.,open a comp and select a property.,abre una comp y selecciona una propiedad.
+selecione uma propriedade (ou um grupo) na timeline.,select a property (or a group) in the timeline.,selecciona una propiedad (o un grupo) en la línea de tiempo.
 abra uma comp e selecione uma propriedade com expressão.,open a comp and select a property with an expression.,abre una comp y selecciona una propiedad con expresión.
 selecione uma propriedade com expressão.,select a property with an expression.,selecciona una propiedad con expresión.
 nenhuma expressão na seleção.,no expressions in the selection.,ninguna expresión en la selección.

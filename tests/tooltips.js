@@ -120,7 +120,7 @@ const check = (ok, label) => { console.log((ok ? 'ok    ' : 'FALHA ') + label); 
 	await page.click('#themeBtn');
 	await page.waitForTimeout(600);
 	t = await hover('.tab[data-tab=tools]', 'claro');
-	check(t.show && t.list.length === 2, 'tema claro: dica com lista');
+	check(t.show && t.list.length === 4, 'tema claro: dica com lista (as 4 ferramentas)');
 
 	await browser.close();
 	process.exit(failed ? 1 : 0);

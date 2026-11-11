@@ -791,6 +791,35 @@ function bin_collectExpr(out, layer, group) {
 }
 
 // expressões das propriedades selecionadas (ou de todas as layers selecionadas)
+// caminho de cada propriedade selecionada: comp (nome e posição no projeto), layer e cada nível até a
+// propriedade (nome, matchName, índice e se o nível pai é um grupo indexado: efeitos, máscaras, contents…)
+function bin_propertyPaths() {
+	try {
+		var comp = bin_activeComp();
+		if (!comp) return bin_json({ error: 'abra uma comp e selecione uma propriedade.' });
+		var sel = comp.selectedLayers, out = [], i, j, k;
+		var itemIndex = 0;
+		for (i = 1; i <= app.project.numItems; i++) if (app.project.item(i) === comp || app.project.item(i).id === comp.id) { itemIndex = i; break; }
+		for (i = 0; i < sel.length; i++) {
+			var props = sel[i].selectedProperties;
+			for (j = 0; j < props.length; j++) {
+				var chain = [], q = props[j];
+				while (q && q.parentProperty) {
+					var up = q.parentProperty, indexed = false;
+					try { indexed = up.propertyType === PropertyType.INDEXED_GROUP; } catch (e0) { }
+					chain.unshift({ name: q.name, mn: q.matchName, i: q.propertyIndex, prop: q.propertyType === PropertyType.PROPERTY, indexed: indexed });
+					q = up;
+				}
+				out.push({ comp: { name: comp.name, index: itemIndex }, layer: { name: sel[i].name, index: sel[i].index }, chain: chain });
+			}
+		}
+		if (!out.length) return bin_json({ error: 'selecione uma propriedade (ou um grupo) na timeline.' });
+		return bin_json({ items: out });
+	} catch (e) {
+		return bin_error(e);
+	}
+}
+
 function bin_expressions() {
 	try {
 		var comp = bin_activeComp();

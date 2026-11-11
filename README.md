@@ -337,6 +337,19 @@ os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma lin
 
 ## 7 · utilitários
 
+**caminho da propriedade** → selecione uma ou mais propriedades (ou grupos) na timeline (um parâmetro de efeito, um path de shape, a posição, uma máscara, o Source Text, uma essential property…) e clique em **pegar da seleção**. para cada uma, o BIN mostra o caminho legível (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) e os caminhos prontos para copiar:
+
+| | exemplo |
+|---|---|
+| expressão absoluta (com a comp) | `comp("ABERTURA_v03").layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expressão relativa à comp | `thisComp.layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expressão relativa à layer | `effect("Glow")("Glow Radius")` |
+| expressão por matchName (vale em qualquer idioma do AE) | `comp("ABERTURA_v03").layer("TITULO_principal")("ADBE Effect Parade")("Glow")("ADBE Glo2-0002")` |
+| script absoluto (comp pela posição no projeto) | `app.project.item(4).layer("TITULO_principal").property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+| script relativo à layer | `layer.property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+
+as expressões usam os atalhos do After Effects (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
+
 <table>
   <tr>
     <td width="300"><img src="docs/img/07-utilitarios.png" width="280"></td>
@@ -428,6 +441,7 @@ tests/
   cep_bridge.js       ponte com o CEP: recarga do host, teclas reservadas e assinatura da versão
   egp_panel.js        essential graphics no painel: cards, exclusões, avisos e recriação
   pseudo_panel.js     pseudo effects: salvar / escolher o .ffx, script com o .ffx embutido e avisos
+  path_panel.js       caminho da propriedade: blocos, caminhos, copiar e idiomas
   build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
   i18n_keys.js        lista os textos do código que precisam estar no textos.csv
   i18n_check.js       traduções: CSV completo, script gerado e painel em inglês e espanhol

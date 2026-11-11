@@ -330,6 +330,19 @@ the texts live in [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): one row 
 
 ## 7 · tools
 
+**property path** → select one or more properties (or groups) in the timeline (an effect parameter, a shape path, the position, a mask, Source Text, an essential property…) and click **get from selection**. for each one, BIN shows the readable path (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) and the paths ready to copy:
+
+| | example |
+|---|---|
+| absolute expression (with the comp) | `comp("ABERTURA_v03").layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expression relative to the comp | `thisComp.layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expression relative to the layer | `effect("Glow")("Glow Radius")` |
+| expression by matchName (works in any AE language) | `comp("ABERTURA_v03").layer("TITULO_principal")("ADBE Effect Parade")("Glow")("ADBE Glo2-0002")` |
+| absolute script (comp by its position in the project) | `app.project.item(4).layer("TITULO_principal").property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+| script relative to the layer | `layer.property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+
+the expressions use After Effects’ shortcuts (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
+
 <table>
   <tr>
     <td width="300"><img src="docs/img/en/07-utilitarios.png" width="280"></td>

@@ -1194,6 +1194,32 @@
 		$(which + 'Info').textContent = info;
 	}
 
+	// caminho da propriedade: um bloco por propriedade selecionada, cada caminho com seu botão de copiar
+	function pathRows() {
+		return [
+			[T('expressão'), [['exprAbs', T('absoluto (com a comp)')], ['exprComp', T('relativo à comp')], ['exprLayer', T('relativo à layer')], ['exprMatch', T('por matchName (qualquer idioma do AE)')]]],
+			[T('script (ExtendScript)'), [['jsxAbs', T('absoluto (comp pela posição no projeto)')], ['jsxLayer', T('relativo à layer')]]]
+		];
+	}
+	function getPaths() {
+		BIN.callHostJSON('bin_propertyPaths').then(function (r) {
+			state.paths = r.items.map(CG.propertyPaths);
+			var box = $('pathOut');
+			box.innerHTML = state.paths.map(function (p, i) {
+				var crumb = p.crumb.map(esc);
+				crumb[crumb.length - 1] = '<b>' + crumb[crumb.length - 1] + '</b>';
+				return '<div class="path-item"><div class="path-crumb">' + crumb.join('<span class="sep">›</span>') + '</div>' +
+					pathRows().map(function (sec) {
+						return '<div class="path-sec">' + sec[0] + '</div>' + sec[1].map(function (r) {
+							return '<div class="path-row"><span class="path-lab">' + r[1] + '</span><code>' + esc(p[r[0]]).replace(/([.)])/g, '$1<wbr>') + '</code>' + // quebra entre as partes do caminho
+								'<button class="icon-btn" data-path="' + i + ':' + r[0] + '" title="' + esc(T('copiar')) + '">' + UI.icon('copy') + '</button></div>';
+						}).join('');
+					}).join('') + '</div>';
+			}).join('');
+			box.classList.remove('hidden');
+		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
+	}
+
 	function getExpressions() {
 		BIN.callHostJSON('bin_expressions').then(function (r) {
 			showOut('expr', CG.expressions(r.items), plural(r.items.length, 'expressão', 'expressões'));
@@ -1353,6 +1379,13 @@
 
 	function bindTools() {
 		$('exprBtn').onclick = getExpressions;
+		$('pathBtn').onclick = getPaths;
+		$('pathOut').addEventListener('click', function (e) {
+			var b = e.target.closest && e.target.closest('[data-path]');
+			if (!b) return;
+			var k = b.dataset.path.split(':');
+			copyText(state.paths[+k[0]][k[1]], 'caminho');
+		});
 		var drop = $('binDrop');
 		drop.onclick = function () {
 			BIN.dialog.openFiles(T('escolha os arquivos')).then(function (paths) {

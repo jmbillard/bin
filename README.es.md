@@ -330,6 +330,19 @@ los textos están en [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): una f
 
 ## 7 · utilidades
 
+**ruta de la propiedad** → selecciona una o más propiedades (o grupos) en la línea de tiempo (un parámetro de efecto, un trazado de forma, la posición, una máscara, el Source Text, una essential property…) y haz clic en **tomar de la selección**. para cada una, BIN muestra la ruta legible (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) y las rutas listas para copiar:
+
+| | ejemplo |
+|---|---|
+| expresión absoluta (con la comp) | `comp("ABERTURA_v03").layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expresión relativa a la comp | `thisComp.layer("TITULO_principal").effect("Glow")("Glow Radius")` |
+| expresión relativa a la capa | `effect("Glow")("Glow Radius")` |
+| expresión por matchName (vale en cualquier idioma de AE) | `comp("ABERTURA_v03").layer("TITULO_principal")("ADBE Effect Parade")("Glow")("ADBE Glo2-0002")` |
+| script absoluto (comp por su posición en el proyecto) | `app.project.item(4).layer("TITULO_principal").property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+| script relativo a la capa | `layer.property("ADBE Effect Parade").property("Glow").property("ADBE Glo2-0002")` |
+
+las expresiones usan los atajos de After Effects (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
+
 <table>
   <tr>
     <td width="300"><img src="docs/img/es/07-utilitarios.png" width="280"></td>

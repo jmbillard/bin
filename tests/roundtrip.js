@@ -412,4 +412,88 @@ const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c
 		'[expressão → string] propriedade, grupo (só o que está dentro) e sem repetir', 'tudo: ' + all + ' · grupo: ' + grp + ' · grupo + propriedade: ' + both);
 }
 
+// ------------------------------------------------ caminho da propriedade
+// cada caminho gerado (expressão absoluta, relativa à comp, à layer, por matchName; script absoluto e relativo)
+// é avaliado contra o After Effects simulado e tem de chegar exatamente à propriedade selecionada
+{
+	const { ctx, comp } = egpScene();
+	const P = ctx.app.project;
+	// atalhos das expressões → matchNames possíveis
+	const SHORT = {
+		transform: ['ADBE Transform Group', 'ADBE Vector Transform Group'], text: ['ADBE Text Properties'], sourceText: ['ADBE Text Document'],
+		position: ['ADBE Position', 'ADBE Vector Position', 'ADBE Vector Rect Position', 'ADBE Vector Ellipse Position'], anchorPoint: ['ADBE Anchor Point', 'ADBE Vector Anchor'],
+		scale: ['ADBE Scale', 'ADBE Vector Scale'], rotation: ['ADBE Rotate Z', 'ADBE Vector Rotation'], xPosition: ['ADBE Position_0'], yPosition: ['ADBE Position_1'],
+		opacity: ['ADBE Opacity', 'ADBE Vector Group Opacity', 'ADBE Vector Fill Opacity', 'ADBE Vector Stroke Opacity'],
+		maskPath: ['ADBE Mask Shape'], maskFeather: ['ADBE Mask Feather'], maskOpacity: ['ADBE Mask Opacity'], maskExpansion: ['ADBE Mask Offset'],
+		size: ['ADBE Vector Rect Size', 'ADBE Vector Ellipse Size'], path: ['ADBE Vector Shape'], color: ['ADBE Vector Fill Color', 'ADBE Vector Stroke Color'],
+		strokeWidth: ['ADBE Vector Stroke Width'], roundness: ['ADBE Vector Rect Roundness'], timeRemap: ['ADBE Time Remapping'], marker: ['ADBE Marker']
+	};
+	const RAW = Symbol('raw');
+	const wrap = (o) => {
+		if (!o) throw new Error('caminho não encontrado');
+		const f = function (k) { return wrap(o.property(k)); };
+		return new Proxy(f, {
+			has: (t, k) => typeof k === 'string' && (k in SHORT || ['effect', 'mask', 'content', 'essentialProperty'].includes(k)), // o que o with (thisLayer) resolve
+			get(t, k) {
+				if (k === RAW) return o;
+				if (k === Symbol.unscopables) return undefined;
+				if (k === 'layer') return (n) => wrap(o.layer(n));
+				if (k === 'effect') return (n) => wrap(o.property('ADBE Effect Parade').property(n));
+				if (k === 'mask') return (n) => wrap(o.property('ADBE Mask Parade').property(n));
+				if (k === 'essentialProperty') return (n) => wrap(o.property('ADBE Layer Overrides').property(n));
+				if (k === 'content') return (n) => wrap((o.property('ADBE Root Vectors Group') || o.property('ADBE Vectors Group')).property(n));
+				if (SHORT[k]) { for (const mn of SHORT[k]) { const r = o.property && o.property(mn); if (r) return wrap(r); } throw new Error('atalho sem propriedade: ' + k); }
+				return t[k];
+			}
+		});
+	};
+	const evalExpr = (expr, layer) => {
+		const compFn = (n) => wrap(P._items.find((i) => i.constructor.name === 'CompItem' && i.name === n));
+		const r = new Function('comp', 'thisComp', 'thisLayer', 'with (thisLayer) { return ' + expr + '; }')(compFn, wrap(layer.containingComp), wrap(layer));
+		return r[RAW];
+	};
+	const evalJsx = (code, layer) => vm.runInContext('(function (layer) { return ' + code + '; })', ctx)(layer);
+
+	const sh = comp.layer('TITULO_principal'), tx = comp.layer('CRÉDITO direção'), pre = comp.layer('PRE logo');
+	const targets = [
+		['efeito', sh, sh.property('ADBE Effect Parade').property('Glow').property('ADBE Glo2-0002')],
+		['posição', sh, sh.property('ADBE Transform Group').property('ADBE Position')],
+		['shape › tamanho', sh, sh.property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property(1).property('ADBE Vector Rect Size')],
+		['máscara › path', sh, sh.property('ADBE Mask Parade').property(1).property('ADBE Mask Shape')],
+		['source text', tx, tx.property('ADBE Text Properties').property('ADBE Text Document')],
+		['essential property', pre, pre.property('ADBE Layer Overrides').property('Tamanho')],
+		['grupo (efeito inteiro)', sh, sh.property('ADBE Effect Parade').property('Glow')]
+	];
+	const fails = [];
+	for (const [label, layer, target] of targets) {
+		comp._layers.forEach((l) => { l.selected = l === layer; });
+		// limpa seleções anteriores e marca só o alvo (o grupo Essential Properties é refeito a cada acesso: usa o host direto)
+		const walk = (list) => list.forEach((k) => { k.selected = false; if (k._kids) walk(k._kids); });
+		walk(layer._kids);
+		let item;
+		if (label === 'essential property') {
+			const g = layer.property('ADBE Layer Overrides');
+			item = { comp: { name: comp.name, index: P._items.indexOf(comp) + 1 }, layer: { name: layer.name, index: layer.index }, chain: [
+				{ name: 'Essential Properties', mn: 'ADBE Layer Overrides', i: 0, prop: false, indexed: false },
+				{ name: 'Tamanho', mn: 'ADBE Layer Overrides Property', i: 1, prop: true, indexed: false }] };
+			void g;
+		} else {
+			target.selected = true;
+			const r = JSON.parse(ctx.bin_propertyPaths());
+			item = r.items && r.items[0];
+		}
+		const p = CG.propertyPaths(item);
+		const same = (x) => x === target || (label === 'essential property' && x && x.name === 'Tamanho' && x.essentialPropertySource === target.essentialPropertySource);
+		const checks = { exprAbs: () => evalExpr(p.exprAbs, layer), exprComp: () => evalExpr(p.exprComp, layer), exprLayer: () => evalExpr(p.exprLayer, layer) };
+		if (label !== 'essential property') Object.assign(checks, { exprMatch: () => evalExpr(p.exprMatch, layer), jsxAbs: () => evalJsx(p.jsxAbs, layer), jsxLayer: () => evalJsx(p.jsxLayer, layer) });
+		for (const k of Object.keys(checks)) {
+			let got = null;
+			try { got = checks[k](); } catch (e) { got = e.message; }
+			if (!same(got)) fails.push(label + ' · ' + k + ': ' + p[k] + ' → ' + (typeof got === 'string' ? got : got && got.name));
+		}
+		if (label === 'efeito' && !(p.crumb.join(' › ') === 'ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius' && p.exprLayer === 'effect("Glow")("Glow Radius")')) fails.push('efeito: caminho legível ou relativo diferente');
+	}
+	report(!fails.length, '[caminho da propriedade] cada caminho (4 de expressão, 2 de script) chega à propriedade selecionada', fails.slice(0, 6).join(' | '));
+}
+
 process.exit(failed ? 1 : 0);

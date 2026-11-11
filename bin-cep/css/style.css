@@ -615,6 +615,19 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .drop b { color: var(--txt); }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 
+/* caminho da propriedade */
+.paths { display: flex; flex-direction: column; gap: 10px; align-self: stretch; }
+.path-item { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 10px 6px 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.path-crumb { font-size: 11.5px; color: var(--muted); line-height: 1.5; padding-right: 6px; margin-bottom: 4px; word-break: break-word; }
+.path-crumb b { color: var(--txt); font-weight: 600; }
+.path-crumb .sep { color: var(--faint); margin: 0 4px; }
+.path-sec { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--faint); margin-top: 6px; }
+.path-row { display: grid; grid-template-columns: 1fr 26px; grid-template-rows: auto auto; column-gap: 4px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
+.path-sec + .path-row { border-top: 0; }
+.path-lab { grid-column: 1; font-size: 10.5px; color: var(--muted); }
+.path-row code { grid-column: 1; font: 11px/1.45 var(--mono); color: var(--txt); overflow-wrap: anywhere; user-select: text; }
+.path-row .icon-btn { grid-column: 2; grid-row: 1 / span 2; width: 26px; height: 26px; }
+
 /* pseudo effects → .ffx */
 .ffx-tag { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 5px; border-radius: 999px; border: 1px solid var(--warn); background: transparent; color: var(--warn); font: 600 10px/1 var(--mono); }
 .ffx-tag .ico { width: 11px; height: 11px; }

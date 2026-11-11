@@ -280,6 +280,81 @@
 		return s;
 	};
 
+	// ================================================= caminho da propriedade ==
+	// a partir do que o host leu (comp, layer e cada nível até a propriedade), os caminhos prontos para colar:
+	// expressão (absoluta, relativa à comp, relativa à layer, por matchName) e ExtendScript (absoluto e relativo)
+	function q(s) { return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"'; }
+
+	// atalhos que as expressões entendem
+	var EXPR_TRANSFORM = {
+		'ADBE Anchor Point': 'anchorPoint', 'ADBE Position': 'position', 'ADBE Position_0': 'xPosition', 'ADBE Position_1': 'yPosition',
+		'ADBE Position_2': 'zPosition', 'ADBE Scale': 'scale', 'ADBE Orientation': 'orientation', 'ADBE Rotate X': 'xRotation',
+		'ADBE Rotate Y': 'yRotation', 'ADBE Rotate Z': 'rotation', 'ADBE Opacity': 'opacity'
+	};
+	var EXPR_MASK = { 'ADBE Mask Shape': 'maskPath', 'ADBE Mask Feather': 'maskFeather', 'ADBE Mask Opacity': 'maskOpacity', 'ADBE Mask Offset': 'maskExpansion' };
+	var EXPR_TOP = { 'ADBE Time Remapping': 'timeRemap', 'ADBE Marker': 'marker' };
+	var EXPR_SHAPE = {
+		'ADBE Vector Shape': 'path', 'ADBE Vector Rect Size': 'size', 'ADBE Vector Rect Position': 'position', 'ADBE Vector Rect Roundness': 'roundness',
+		'ADBE Vector Ellipse Size': 'size', 'ADBE Vector Ellipse Position': 'position', 'ADBE Vector Fill Color': 'color', 'ADBE Vector Fill Opacity': 'opacity',
+		'ADBE Vector Stroke Color': 'color', 'ADBE Vector Stroke Width': 'strokeWidth', 'ADBE Vector Stroke Opacity': 'opacity',
+		'ADBE Vector Anchor': 'anchorPoint', 'ADBE Vector Position': 'position', 'ADBE Vector Scale': 'scale', 'ADBE Vector Rotation': 'rotation',
+		'ADBE Vector Group Opacity': 'opacity'
+	};
+
+	// expressão a partir da layer (o texto que vem depois de layer("…"))
+	function exprFromLayer(chain) {
+		var out = '', top = chain[0] ? chain[0].mn : '';
+		for (var i = 0; i < chain.length; i++) {
+			var n = chain[i], up = i ? chain[i - 1].mn : '';
+			if (i === 0) {
+				if (n.mn === 'ADBE Transform Group') { out += '.transform'; continue; }
+				if (n.mn === 'ADBE Text Properties') { out += '.text'; continue; }
+				if (n.mn === 'ADBE Effect Parade' || n.mn === 'ADBE Mask Parade' || n.mn === 'ADBE Root Vectors Group' || n.mn === 'ADBE Layer Overrides') continue;
+				if (EXPR_TOP[n.mn]) { out += '.' + EXPR_TOP[n.mn]; continue; }
+			}
+			if (top === 'ADBE Transform Group' && i === 1 && EXPR_TRANSFORM[n.mn]) { out += '.' + EXPR_TRANSFORM[n.mn]; continue; }
+			if (up === 'ADBE Effect Parade') { out += '.effect(' + q(n.name) + ')'; continue; }
+			if (up === 'ADBE Mask Parade') { out += '.mask(' + q(n.name) + ')'; continue; }
+			if (top === 'ADBE Mask Parade' && i === 2 && EXPR_MASK[n.mn]) { out += '.' + EXPR_MASK[n.mn]; continue; }
+			if (up === 'ADBE Layer Overrides') { out += '.essentialProperty(' + q(n.name) + ')'; continue; }
+			if (n.mn === 'ADBE Text Document' && up === 'ADBE Text Properties') { out += '.sourceText'; continue; }
+			if (up === 'ADBE Root Vectors Group' || up === 'ADBE Vectors Group') { out += '.content(' + q(n.name) + ')'; continue; }
+			if (n.mn === 'ADBE Vectors Group') continue; // content("Grupo").content("Item"): o "Contents" do grupo fica implícito
+			if (n.mn === 'ADBE Vector Transform Group') { out += '.transform'; continue; }
+			if (top === 'ADBE Root Vectors Group' && n.prop && EXPR_SHAPE[n.mn]) { out += '.' + EXPR_SHAPE[n.mn]; continue; }
+			out += '(' + q(n.name) + ')';
+		}
+		return out;
+	}
+
+	// por matchName (vale em qualquer idioma do After Effects); itens de grupos indexados (efeitos, máscaras,
+	// contents…) pelo nome, que é o que você deu a eles
+	function exprByMatchName(chain) {
+		return chain.map(function (n) { return '(' + q(n.indexed ? n.name : n.mn) + ')'; }).join('');
+	}
+	function jsxFromLayer(chain) {
+		return chain.map(function (n) { return '.property(' + q(n.indexed ? n.name : n.mn) + ')'; }).join('');
+	}
+
+	CG.propertyPaths = function (it) {
+		var comp = 'comp(' + q(it.comp.name) + ')', layer = '.layer(' + q(it.layer.name) + ')';
+		var rel = exprFromLayer(it.chain);
+		var mn = exprByMatchName(it.chain);
+		var jsx = jsxFromLayer(it.chain);
+		var last = it.chain[it.chain.length - 1] || {};
+		return {
+			crumb: [it.comp.name, it.layer.name].concat(it.chain.map(function (n) { return n.name; })),
+			name: last.name || it.layer.name,
+			isProp: !!last.prop,
+			exprAbs: comp + layer + rel,
+			exprComp: 'thisComp' + layer + rel,
+			exprLayer: rel ? rel.replace(/^\./, '') : 'thisLayer',
+			exprMatch: comp + layer + mn,
+			jsxAbs: 'app.project.item(' + it.comp.index + ')' + layer + jsx,
+			jsxLayer: 'layer' + jsx
+		};
+	};
+
 	// ====================================================== pseudo effects ==
 	// pseudo effects da captura (um por matchName) e onde cada um está: comp, layer e posição na pilha de efeitos
 	// (o painel usa para salvar o .ffx pelo próprio After Effects)
