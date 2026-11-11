@@ -350,6 +350,10 @@ os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma lin
 
 as expressões usam os atalhos do After Effects (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
 
+**grupos acima** → para cada propriedade, a lista dos grupos acima dela, do pai imediato até a layer, com a expressão que dá o nome de cada um dentro de uma expressão da própria propriedade: `thisProperty.propertyGroup(1).name`, `(2)`… sem `.name`, a expressão chega ao grupo em si. num path dentro de um grupo de outro grupo de outro grupo, o “pai maior” aparece com o número certo (ex.: `thisProperty.propertyGroup(7).name`).
+
+**entre as duas propriedades** → com duas propriedades selecionadas, a expressão para usar em uma e chegar na outra, nos dois sentidos. na mesma layer e no mesmo ramo, sobe até o grupo em comum e desce (`thisProperty.propertyGroup(7)("ADBE Vector Transform Group")("ADBE Vector Group Opacity")`), e por isso continua valendo se a layer for duplicada ou renomeada; em ramos diferentes, parte da layer; em outra layer, `thisComp.layer("…")`; em outra comp, `comp("…")`.
+
 <table>
   <tr>
     <td width="300"><img src="docs/img/07-utilitarios.png" width="280"></td>

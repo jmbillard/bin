@@ -336,6 +336,32 @@
 		return chain.map(function (n) { return '.property(' + q(n.indexed ? n.name : n.mn) + ')'; }).join('');
 	}
 
+	// os grupos acima da propriedade, do pai imediato até a layer: thisProperty.propertyGroup(n)
+	function ancestors(it) {
+		var c = it.chain, out = [];
+		for (var n = 1; n < c.length; n++) {
+			var g = c[c.length - 1 - n];
+			out.push({ n: n, name: g.name, mn: g.mn, expr: 'thisProperty.propertyGroup(' + n + ')' });
+		}
+		out.push({ n: c.length, name: it.layer.name, layer: true, expr: 'thisProperty.propertyGroup(' + c.length + ')' });
+		return out;
+	}
+
+	// mesmo nível? (mesmo nome, matchName e posição no grupo)
+	function sameNode(a, b) { return a && b && a.mn === b.mn && a.name === b.name && a.i === b.i; }
+
+	// expressão usada NA propriedade "from" que chega à propriedade "to"
+	CG.relativePath = function (from, to) {
+		if (from.comp.name !== to.comp.name) return { kind: 'comp', expr: CG.propertyPaths(to).exprAbs };
+		if (from.layer.index !== to.layer.index) return { kind: 'layer', expr: CG.propertyPaths(to).exprComp };
+		var a = from.chain, b = to.chain, k = 0;
+		while (k < a.length && k < b.length && sameNode(a[k], b[k])) k++;
+		if (k === 0) return { kind: 'thisLayer', expr: CG.propertyPaths(to).exprLayer };
+		var up = a.length - k;
+		var down = b.slice(k).map(function (n) { return '(' + q(n.indexed ? n.name : n.mn) + ')'; }).join('');
+		return { kind: 'group', up: up, common: a[k - 1].name, expr: (up ? 'thisProperty.propertyGroup(' + up + ')' : 'thisProperty') + down };
+	};
+
 	CG.propertyPaths = function (it) {
 		var comp = 'comp(' + q(it.comp.name) + ')', layer = '.layer(' + q(it.layer.name) + ')';
 		var rel = exprFromLayer(it.chain);
@@ -351,7 +377,8 @@
 			exprLayer: rel ? rel.replace(/^\./, '') : 'thisLayer',
 			exprMatch: comp + layer + mn,
 			jsxAbs: 'app.project.item(' + it.comp.index + ')' + layer + jsx,
-			jsxLayer: 'layer' + jsx
+			jsxLayer: 'layer' + jsx,
+			ups: ancestors(it)
 		};
 	};
 

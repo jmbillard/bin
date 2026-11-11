@@ -1203,19 +1203,48 @@
 	}
 	function getPaths() {
 		BIN.callHostJSON('bin_propertyPaths').then(function (r) {
-			state.paths = r.items.map(CG.propertyPaths);
-			var box = $('pathOut');
-			box.innerHTML = state.paths.map(function (p, i) {
+			var raw = r.items;
+			state.paths = raw.map(CG.propertyPaths);
+			var copies = state.pathCopies = [];
+			// uma linha: rótulo, código (quebrando entre as partes do caminho) e botão de copiar
+			var row = function (label, code) {
+				copies.push(code);
+				return '<div class="path-row"><span class="path-lab">' + label + '</span><code>' + esc(code).replace(/([.)])/g, '$1<wbr>') + '</code>' +
+					'<button class="icon-btn" data-pc="' + (copies.length - 1) + '" title="' + esc(T('copiar')) + '">' + UI.icon('copy') + '</button></div>';
+			};
+			var html = '';
+			// duas propriedades: como chegar de uma à outra numa expressão
+			var props = state.paths.map(function (p, i) { return { p: p, raw: raw[i] }; }).filter(function (x) { return x.p.isProp; });
+			if (props.length === 2) {
+				var A = props[0], B = props[1];
+				var ab = CG.relativePath(A.raw, B.raw), ba = CG.relativePath(B.raw, A.raw);
+				var how = function (rel) {
+					return rel.kind === 'group' ? T('sobe {0} até “{1}”, o grupo em comum, e desce', rel.up, esc(rel.common))
+						: rel.kind === 'thisLayer' ? T('as duas estão na mesma layer') : rel.kind === 'layer' ? T('outra layer da mesma comp') : T('outra comp');
+				};
+				html += '<div class="path-item path-link"><div class="path-crumb"><b>' + T('entre as duas propriedades') + '</b></div>' +
+					'<div class="path-sec">' + T('na expressão de “{0}”, para chegar em “{1}”', esc(A.p.name), esc(B.p.name)) + '</div>' + row(how(ab), ab.expr) +
+					'<div class="path-sec">' + T('na expressão de “{0}”, para chegar em “{1}”', esc(B.p.name), esc(A.p.name)) + '</div>' + row(how(ba), ba.expr) +
+					'</div>';
+			}
+			html += state.paths.map(function (p) {
 				var crumb = p.crumb.map(esc);
 				crumb[crumb.length - 1] = '<b>' + crumb[crumb.length - 1] + '</b>';
-				return '<div class="path-item"><div class="path-crumb">' + crumb.join('<span class="sep">›</span>') + '</div>' +
+				var out = '<div class="path-item"><div class="path-crumb">' + crumb.join('<span class="sep">›</span>') + '</div>' +
 					pathRows().map(function (sec) {
-						return '<div class="path-sec">' + sec[0] + '</div>' + sec[1].map(function (r) {
-							return '<div class="path-row"><span class="path-lab">' + r[1] + '</span><code>' + esc(p[r[0]]).replace(/([.)])/g, '$1<wbr>') + '</code>' + // quebra entre as partes do caminho
-								'<button class="icon-btn" data-path="' + i + ':' + r[0] + '" title="' + esc(T('copiar')) + '">' + UI.icon('copy') + '</button></div>';
+						return '<div class="path-sec">' + sec[0] + '</div>' + sec[1].map(function (r) { return row(r[1], p[r[0]]); }).join('');
+					}).join('');
+				// dentro da expressão desta propriedade: o nome de cada grupo acima dela
+				if (p.isProp) {
+					out += '<div class="path-sec">' + T('grupos acima (o nome, numa expressão desta propriedade)') + '</div>' +
+						p.ups.map(function (u) {
+							return row('↑' + u.n + ' · ' + esc(u.name) + (u.layer ? ' (' + T('layer') + ')' : ''), u.layer ? 'thisLayer.name' : u.expr + '.name');
 						}).join('');
-					}).join('') + '</div>';
+				}
+				return out + '</div>';
 			}).join('');
+			var box = $('pathOut');
+			box.innerHTML = html;
 			box.classList.remove('hidden');
 		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
 	}
@@ -1381,10 +1410,9 @@
 		$('exprBtn').onclick = getExpressions;
 		$('pathBtn').onclick = getPaths;
 		$('pathOut').addEventListener('click', function (e) {
-			var b = e.target.closest && e.target.closest('[data-path]');
+			var b = e.target.closest && e.target.closest('[data-pc]');
 			if (!b) return;
-			var k = b.dataset.path.split(':');
-			copyText(state.paths[+k[0]][k[1]], 'caminho');
+			copyText(state.pathCopies[+b.dataset.pc], 'caminho');
 		});
 		var drop = $('binDrop');
 		drop.onclick = function () {

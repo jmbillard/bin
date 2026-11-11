@@ -438,6 +438,8 @@ const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c
 				if (k === RAW) return o;
 				if (k === Symbol.unscopables) return undefined;
 				if (k === 'layer') return (n) => wrap(o.layer(n));
+				if (k === 'propertyGroup') return (n) => wrap(o.propertyGroup(n));
+				if (k === 'name') return o.name;
 				if (k === 'effect') return (n) => wrap(o.property('ADBE Effect Parade').property(n));
 				if (k === 'mask') return (n) => wrap(o.property('ADBE Mask Parade').property(n));
 				if (k === 'essentialProperty') return (n) => wrap(o.property('ADBE Layer Overrides').property(n));
@@ -447,10 +449,10 @@ const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c
 			}
 		});
 	};
-	const evalExpr = (expr, layer) => {
+	const evalExpr = (expr, layer, prop) => {
 		const compFn = (n) => wrap(P._items.find((i) => i.constructor.name === 'CompItem' && i.name === n));
-		const r = new Function('comp', 'thisComp', 'thisLayer', 'with (thisLayer) { return ' + expr + '; }')(compFn, wrap(layer.containingComp), wrap(layer));
-		return r[RAW];
+		const r = new Function('comp', 'thisComp', 'thisLayer', 'thisProperty', 'with (thisLayer) { return ' + expr + '; }')(compFn, wrap(layer.containingComp), wrap(layer), prop ? wrap(prop) : null);
+		return typeof r === 'string' ? r : r[RAW];
 	};
 	const evalJsx = (code, layer) => vm.runInContext('(function (layer) { return ' + code + '; })', ctx)(layer);
 
@@ -494,6 +496,46 @@ const bytesOf = (ctx, p) => Uint8Array.from(ctx.__fs.files.get(p).data, (c) => c
 		if (label === 'efeito' && !(p.crumb.join(' › ') === 'ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius' && p.exprLayer === 'effect("Glow")("Glow Radius")')) fails.push('efeito: caminho legível ou relativo diferente');
 	}
 	report(!fails.length, '[caminho da propriedade] cada caminho (4 de expressão, 2 de script) chega à propriedade selecionada', fails.slice(0, 6).join(' | '));
+
+	// grupos dentro de grupos: o nome do "pai maior" e o caminho de uma propriedade selecionada para a outra
+	const ns = comp.layers.addShape();
+	ns.name = 'FORMAS';
+	const gA = ns.property('ADBE Root Vectors Group').addProperty('ADBE Vector Group'); gA.name = 'A';
+	const gB = gA.property('ADBE Vectors Group').addProperty('ADBE Vector Group'); gB.name = 'B';
+	const gC = gB.property('ADBE Vectors Group').addProperty('ADBE Vector Group'); gC.name = 'C';
+	const size = gC.property('ADBE Vectors Group').addProperty('ADBE Vector Shape - Rect').property('ADBE Vector Rect Size');
+	const opA = ns.property('ADBE Root Vectors Group').property('A').property('ADBE Vector Transform Group').property('ADBE Vector Group Opacity');
+	const glowR = ns.property('ADBE Effect Parade').addProperty('ADBE Glo2').property('ADBE Glo2-0002');
+	const other = comp.layer('TITULO_principal').property('ADBE Transform Group').property('ADBE Position');
+	const itemOf = (prop) => {
+		const layer = prop.propertyGroup(prop.propertyDepth);
+		comp._layers.forEach((l) => { l.selected = l === layer; });
+		const walk = (list) => list.forEach((k) => { k.selected = false; if (k._kids) walk(k._kids); });
+		comp._layers.forEach((l) => walk(l._kids));
+		prop.selected = true;
+		return JSON.parse(ctx.bin_propertyPaths()).items[0];
+	};
+	const fails2 = [];
+	const sizeItem = itemOf(size);
+	const ups = CG.propertyPaths(sizeItem).ups;
+	const upA = ups.find((u) => u.name === 'A');
+	const nameA = upA ? evalExpr(upA.expr + '.name', ns, size) : null;
+	if (nameA !== 'A') fails2.push('pai maior: ' + (upA && upA.expr) + ' → ' + nameA);
+	const upLayer = ups[ups.length - 1];
+	if (!(upLayer.layer && evalExpr(upLayer.expr, ns, size) === ns)) fails2.push('↑' + upLayer.n + ' não é a layer');
+	for (const [label, to] of [['opacidade do grupo A', opA], ['glow da mesma layer', glowR], ['outra layer', other]]) {
+		const rel = CG.relativePath(sizeItem, itemOf(to));
+		let got; try { got = evalExpr(rel.expr, ns, size); } catch (e) { got = e.message; }
+		if (got !== to) fails2.push(label + ': ' + rel.expr + ' → ' + (got && got.name || got));
+		const back = CG.relativePath(itemOf(to), sizeItem);
+		const toLayer = to.propertyGroup(to.propertyDepth);
+		try { got = evalExpr(back.expr, toLayer, to); } catch (e) { got = e.message; }
+		if (got !== size) fails2.push(label + ' (volta): ' + back.expr + ' → ' + (got && got.name || got));
+	}
+	const relA = CG.relativePath(sizeItem, itemOf(opA));
+	report(!fails2.length && upA.n === 7 && relA.kind === 'group' && relA.common === 'A' && /^thisProperty\.propertyGroup\(7\)/.test(relA.expr),
+		'[caminho da propriedade] grupos dentro de grupos: o nome do pai maior e de uma propriedade para a outra (nos dois sentidos)',
+		fails2.join(' | ') || ('pai maior: ' + upA.expr + '.name · A: ' + relA.expr));
 }
 
 process.exit(failed ? 1 : 0);

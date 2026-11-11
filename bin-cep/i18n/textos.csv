@@ -134,6 +134,13 @@ por matchName (qualquer idioma do AE),by matchName (any AE language),por matchNa
 script (ExtendScript),script (ExtendScript),script (ExtendScript)
 absoluto (comp pela posição no projeto),absolute (comp by its position in the project),absoluto (comp por su posición en el proyecto)
 copiar,copy,copiar
+"sobe {0} até “{1}”, o grupo em comum, e desce","goes up {0} to “{1}”, the common group, and down","sube {0} hasta “{1}”, el grupo en común, y baja"
+as duas estão na mesma layer,both are on the same layer,las dos están en la misma capa
+outra layer da mesma comp,another layer in the same comp,otra capa de la misma comp
+outra comp,another comp,otra comp
+entre as duas propriedades,between the two properties,entre las dos propiedades
+"na expressão de “{0}”, para chegar em “{1}”","in the expression of “{0}”, to reach “{1}”","en la expresión de “{0}”, para llegar a “{1}”"
+"grupos acima (o nome, numa expressão desta propriedade)","groups above (their name, in an expression on this property)","grupos de arriba (su nombre, en una expresión de esta propiedad)"
 “{0}” tem {1}: grande demais para virar string (o limite é {2}).,“{0}” is {1}: too big to turn into a string (the limit is {2}).,“{0}” tiene {1}: demasiado grande para convertirlo en string (el límite es {2}).
 os arquivos somam {1}: grande demais para virar string (o limite é {2}).,the files add up to {1}: too big to turn into a string (the limit is {2}).,los archivos suman {1}: demasiado grande para convertirlos en string (el límite es {2}).
 arquivos,files,archivos

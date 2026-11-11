@@ -343,6 +343,10 @@ the texts live in [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): one row 
 
 the expressions use After Effects’ shortcuts (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
 
+**groups above** → for each property, the list of groups above it, from the immediate parent up to the layer, with the expression that gives each one’s name inside an expression on the property itself: `thisProperty.propertyGroup(1).name`, `(2)`… without `.name`, the expression reaches the group itself. for a path inside a group inside another group inside another group, the “top parent” shows up with the right number (e.g. `thisProperty.propertyGroup(7).name`).
+
+**between the two properties** → with two properties selected, the expression to use on one to reach the other, both ways. on the same layer and in the same branch, it goes up to the common group and back down (`thisProperty.propertyGroup(7)("ADBE Vector Transform Group")("ADBE Vector Group Opacity")`), so it keeps working if the layer is duplicated or renamed; in different branches, it starts from the layer; on another layer, `thisComp.layer("…")`; in another comp, `comp("…")`.
+
 <table>
   <tr>
     <td width="300"><img src="docs/img/en/07-utilitarios.png" width="280"></td>
