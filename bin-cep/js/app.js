@@ -1194,59 +1194,110 @@
 		$(which + 'Info').textContent = info;
 	}
 
-	// caminho da propriedade: um bloco por propriedade selecionada, cada caminho com seu botão de copiar
-	function pathRows() {
-		return [
-			[T('expressão'), [['exprAbs', T('absoluto (com a comp)')], ['exprComp', T('relativo à comp')], ['exprLayer', T('relativo à layer')], ['exprMatch', T('por matchName (qualquer idioma do AE)')]]],
-			[T('script (ExtendScript)'), [['jsxAbs', T('absoluto (comp pela posição no projeto)')], ['jsxLayer', T('relativo à layer')]]]
-		];
+	// ------------------------------------------- caminho da propriedade --
+	// um card por propriedade: cabeçalho (tipo, nome e caminho em chips), um caminho por vez (formato × escopo,
+	// com cores e botão de copiar), os grupos acima numa escada recolhível e, com duas propriedades, como ir de
+	// uma à outra. A escolha de formato / escopo vale para todos os cards e fica guardada.
+	var PATH_ICON = {
+		'ADBE Effect Parade': 'fx', 'ADBE Root Vectors Group': 'shape', 'ADBE Mask Parade': 'mask', 'ADBE Text Properties': 'text',
+		'ADBE Transform Group': 'move', 'ADBE Layer Overrides': 'egp', 'ADBE Time Remapping': 'clock', 'ADBE Marker': 'marker',
+		'ADBE Camera Options Group': 'camera', 'ADBE Light Options Group': 'light', 'ADBE Audio Group': 'audio'
+	};
+	function pathScopes() {
+		return {
+			expr: [
+				['exprAbs', T('absoluto'), T('com o nome da comp: funciona de qualquer comp do projeto')],
+				['exprComp', T('comp'), T('na mesma comp: thisComp, sem depender do nome dela')],
+				['exprLayer', T('layer'), T('numa expressão da própria layer: o caminho a partir dela')],
+				['exprMatch', 'matchName', T('por matchName: vale em qualquer idioma do After Effects')]
+			],
+			jsx: [
+				['jsxAbs', T('absoluto'), T('a comp pela posição no projeto (muda se itens entrarem antes dela)')],
+				['jsxLayer', T('layer'), T('a partir de uma variável layer no seu script')]
+			]
+		};
 	}
+	function codeHTML(code) { return highlight(code).replace(/([.)])(?![^<]*>)/g, '$1<wbr>'); } // cores do editor; quebra entre as partes
+
 	function getPaths() {
 		BIN.callHostJSON('bin_propertyPaths').then(function (r) {
-			var raw = r.items;
-			state.paths = raw.map(CG.propertyPaths);
-			var copies = state.pathCopies = [];
-			// uma linha: rótulo, código (quebrando entre as partes do caminho) e botão de copiar
-			var row = function (label, code) {
-				copies.push(code);
-				return '<div class="path-row"><span class="path-lab">' + label + '</span><code>' + esc(code).replace(/([.)])/g, '$1<wbr>') + '</code>' +
-					'<button class="icon-btn" data-pc="' + (copies.length - 1) + '" title="' + esc(T('copiar')) + '">' + UI.icon('copy') + '</button></div>';
-			};
-			var html = '';
-			// duas propriedades: como chegar de uma à outra numa expressão
-			var props = state.paths.map(function (p, i) { return { p: p, raw: raw[i] }; }).filter(function (x) { return x.p.isProp; });
-			if (props.length === 2) {
-				var A = props[0], B = props[1];
-				var ab = CG.relativePath(A.raw, B.raw), ba = CG.relativePath(B.raw, A.raw);
-				var how = function (rel) {
-					return rel.kind === 'group' ? T('sobe {0} até “{1}”, o grupo em comum, e desce', rel.up, esc(rel.common))
-						: rel.kind === 'thisLayer' ? T('as duas estão na mesma layer') : rel.kind === 'layer' ? T('outra layer da mesma comp') : T('outra comp');
-				};
-				html += '<div class="path-item path-link"><div class="path-crumb"><b>' + T('entre as duas propriedades') + '</b></div>' +
-					'<div class="path-sec">' + T('na expressão de “{0}”, para chegar em “{1}”', esc(A.p.name), esc(B.p.name)) + '</div>' + row(how(ab), ab.expr) +
-					'<div class="path-sec">' + T('na expressão de “{0}”, para chegar em “{1}”', esc(B.p.name), esc(A.p.name)) + '</div>' + row(how(ba), ba.expr) +
-					'</div>';
-			}
-			html += state.paths.map(function (p) {
-				var crumb = p.crumb.map(esc);
-				crumb[crumb.length - 1] = '<b>' + crumb[crumb.length - 1] + '</b>';
-				var out = '<div class="path-item"><div class="path-crumb">' + crumb.join('<span class="sep">›</span>') + '</div>' +
-					pathRows().map(function (sec) {
-						return '<div class="path-sec">' + sec[0] + '</div>' + sec[1].map(function (r) { return row(r[1], p[r[0]]); }).join('');
-					}).join('');
-				// dentro da expressão desta propriedade: o nome de cada grupo acima dela
-				if (p.isProp) {
-					out += '<div class="path-sec">' + T('grupos acima (o nome, numa expressão desta propriedade)') + '</div>' +
-						p.ups.map(function (u) {
-							return row('↑' + u.n + ' · ' + esc(u.name) + (u.layer ? ' (' + T('layer') + ')' : ''), u.layer ? 'thisLayer.name' : u.expr + '.name');
-						}).join('');
-				}
-				return out + '</div>';
-			}).join('');
-			var box = $('pathOut');
-			box.innerHTML = html;
-			box.classList.remove('hidden');
+			state.pathRaw = r.items;
+			state.paths = r.items.map(CG.propertyPaths);
+			state.pathFlip = false;
+			renderPaths();
 		}).catch(function (e) { UI.toast(esc(BIN.tr(e.message)), 'error'); });
+	}
+
+	function renderPaths() {
+		if (!state.paths) return;
+		var fmt = S.pathFmt === 'jsx' ? 'jsx' : 'expr';
+		var scopes = pathScopes()[fmt];
+		var scope = scopes.filter(function (sc) { return sc[0] === S['pathScope_' + fmt]; })[0] || scopes[0];
+		var copies = state.pathCopies = [];
+		var copyBtn = function (code, cls) {
+			copies.push(code);
+			return '<button class="' + (cls || 'icon-btn') + '" data-pc="' + (copies.length - 1) + '" title="' + esc(T('copiar')) + '">' + UI.icon('copy') + (cls ? '<span>' + T('copiar') + '</span>' : '') + '</button>';
+		};
+		var html = '';
+
+		// formato e escopo (valem para todos os cards)
+		html += '<div class="path-bar"><div class="seg" id="pathFmt">' +
+			'<button data-fmt="expr" class="' + (fmt === 'expr' ? 'on' : '') + '">' + T('expressão') + '</button>' +
+			'<button data-fmt="jsx" class="' + (fmt === 'jsx' ? 'on' : '') + '">script</button></div>' +
+			'<div class="path-scopes">' + scopes.map(function (sc) {
+				return '<button class="path-scope' + (sc[0] === scope[0] ? ' on' : '') + '" data-scope="' + sc[0] + '" title="' + esc(sc[2]) + '">' + esc(sc[1]) + '</button>';
+			}).join('') + '</div></div>';
+
+		// duas propriedades: de uma para a outra
+		var props = state.paths.map(function (p, i) { return { p: p, raw: state.pathRaw[i] }; }).filter(function (x) { return x.p.isProp; });
+		if (props.length === 2) {
+			var A = props[state.pathFlip ? 1 : 0], B = props[state.pathFlip ? 0 : 1];
+			var rel = CG.relativePath(A.raw, B.raw);
+			var how = rel.kind === 'group' ? T('sobe {0} até “{1}”, o grupo em comum, e desce', rel.up, esc(rel.common))
+				: rel.kind === 'thisLayer' ? T('as duas estão na mesma layer') : rel.kind === 'layer' ? T('outra layer da mesma comp') : T('outra comp');
+			html += '<div class="path-card path-link">' +
+				'<div class="path-link-head">' + UI.icon('link') + '<span>' + T('numa expressão em <b>{0}</b>, para chegar em <b>{1}</b>', esc(A.p.name), esc(B.p.name)) + '</span>' +
+				'<button class="icon-btn" id="pathFlip" title="' + esc(T('inverter o sentido')) + '">' + UI.icon('swap') + '</button></div>' +
+				'<div class="path-code"><code>' + codeHTML(rel.expr) + '</code>' + copyBtn(rel.expr) + '</div>' +
+				'<div class="path-hint">' + how + '</div></div>';
+		}
+
+		html += state.paths.map(function (p, k) {
+			var raw = state.pathRaw[k];
+			var icon = PATH_ICON[(raw.chain[0] || {}).mn] || 'attrs';
+			var groups = raw.chain.slice(0, -1).filter(function (n) { return !/Group$|Parade$|^ADBE Layer Overrides$/.test(n.mn) || n.indexed; });
+			var chips = '<span class="pchip pchip-comp">' + UI.icon('monitor') + esc(raw.comp.name) + '</span>' +
+				'<span class="pchip pchip-layer">' + esc(raw.layer.name) + '</span>' +
+				groups.map(function (n) { return '<span class="pchip">' + esc(n.name) + '</span>'; }).join('');
+			var code = p[scope[0]];
+			var out = '<div class="path-card">' +
+				'<div class="path-head"><span class="path-ico">' + UI.icon(icon) + '</span><div class="path-title"><b>' + esc(p.name) + '</b>' +
+				'<div class="path-chips">' + chips + '</div></div></div>' +
+				'<div class="path-code"><code>' + codeHTML(code) + '</code>' + copyBtn(code) + '</div>' +
+				'<div class="path-hint">' + esc(scope[2]) + '</div>';
+			// grupos acima: a escada, recolhida
+			if (p.isProp) {
+				var open = !!(state.pathOpen && state.pathOpen[k]);
+				out += '<div class="path-ups' + (open ? ' open' : '') + '"><button class="path-ups-head" data-ups="' + k + '" title="' + esc(T('grupos acima') + '\n' + T('o nome, numa expressão desta propriedade')) + '">' + UI.icon('chevron', 'chev') +
+					'<span>' + T('grupos acima') + '</span><i>' + p.ups.length + '</i></button>';
+				if (open) {
+					out += '<div class="ladder">' + p.ups.slice().reverse().map(function (u, d) {
+						var structural = !u.layer && /^ADBE (Vectors Group|Root Vectors Group|Effect Parade|Mask Parade|Text Animator Properties|Layer Overrides)$/.test(u.mn);
+						var expr = u.layer ? 'thisLayer.name' : u.expr + '.name';
+						copies.push(expr);
+						return '<button class="rung' + (structural ? ' dim' : '') + (u.layer ? ' top' : '') + '" data-pc="' + (copies.length - 1) + '" title="' + esc(expr) + '">' +
+							'<span class="rung-n">↑' + u.n + '</span><span class="rung-name">' + esc(u.name) + '</span>' +
+							'<code>' + esc(u.layer ? 'thisLayer.name' : 'propertyGroup(' + u.n + ').name') + '</code>' + UI.icon('copy', 'rung-copy') + '</button>';
+					}).join('') + '<div class="rung here"><span class="rung-n">●</span><span class="rung-name">' + esc(p.name) + '</span><code>thisProperty</code></div></div>';
+				}
+				out += '</div>';
+			}
+			return out + '</div>';
+		}).join('');
+
+		var box = $('pathOut');
+		box.innerHTML = html;
+		box.classList.remove('hidden');
 	}
 
 	function getExpressions() {
@@ -1410,9 +1461,17 @@
 		$('exprBtn').onclick = getExpressions;
 		$('pathBtn').onclick = getPaths;
 		$('pathOut').addEventListener('click', function (e) {
-			var b = e.target.closest && e.target.closest('[data-pc]');
-			if (!b) return;
-			copyText(state.pathCopies[+b.dataset.pc], 'caminho');
+			var t = e.target.closest ? e.target : null;
+			if (!t) return;
+			var b = t.closest('[data-pc]');
+			if (b) { copyText(state.pathCopies[+b.dataset.pc], 'caminho'); return; }
+			var f = t.closest('[data-fmt]');
+			if (f) { S.pathFmt = f.dataset.fmt; saveSettings(); renderPaths(); return; }
+			var sc = t.closest('[data-scope]');
+			if (sc) { S['pathScope_' + (S.pathFmt === 'jsx' ? 'jsx' : 'expr')] = sc.dataset.scope; saveSettings(); renderPaths(); return; }
+			if (t.closest('#pathFlip')) { state.pathFlip = !state.pathFlip; renderPaths(); return; }
+			var u = t.closest('[data-ups]');
+			if (u) { state.pathOpen = state.pathOpen || {}; state.pathOpen[u.dataset.ups] = !state.pathOpen[u.dataset.ups]; renderPaths(); }
 		});
 		var drop = $('binDrop');
 		drop.onclick = function () {
@@ -1501,6 +1560,7 @@
 		state.code = null;
 		if (state.m) render();
 		else renderPseudo();
+		renderPaths();
 		renderCode();
 		renderSelection();
 		setTimeout(placeTabInk, 0);

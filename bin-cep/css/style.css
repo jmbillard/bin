@@ -617,17 +617,60 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 
 /* caminho da propriedade */
 .paths { display: flex; flex-direction: column; gap: 10px; align-self: stretch; }
-.path-item { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 10px 6px 8px 12px; display: flex; flex-direction: column; gap: 2px; }
-.path-crumb { font-size: 11.5px; color: var(--muted); line-height: 1.5; padding-right: 6px; margin-bottom: 4px; word-break: break-word; }
-.path-crumb b { color: var(--txt); font-weight: 600; }
-.path-crumb .sep { color: var(--faint); margin: 0 4px; }
-.path-sec { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--faint); margin-top: 6px; }
-.path-row { display: grid; grid-template-columns: 1fr 26px; grid-template-rows: auto auto; column-gap: 4px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
-.path-sec + .path-row { border-top: 0; }
-.path-link .path-sec { text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 600; color: var(--muted); } /* os nomes das propriedades como estão */
-.path-lab { grid-column: 1; font-size: 10.5px; color: var(--muted); }
-.path-row code { grid-column: 1; font: 11px/1.45 var(--mono); color: var(--txt); overflow-wrap: anywhere; user-select: text; }
-.path-row .icon-btn { grid-column: 2; grid-row: 1 / span 2; width: 26px; height: 26px; }
+.path-bar { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.path-scopes { display: flex; flex-wrap: wrap; gap: 6px; }
+.path-scope { border: 1px solid var(--line-2); background: transparent; color: var(--muted); border-radius: 999px; padding: 3px 10px; font-size: 11px; transition: color .15s, background .15s, border-color .15s; }
+.path-scope:hover { color: var(--txt); border-color: var(--faint); }
+.path-scope.on { color: var(--accent); background: var(--accent-soft); border-color: transparent; font-weight: 600; }
+
+.path-card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.path-head { display: flex; gap: 10px; align-items: flex-start; }
+.path-ico { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.path-ico .ico { width: 16px; height: 16px; }
+.path-title { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.path-title > b { font-size: 13px; font-weight: 650; line-height: 1.2; word-break: break-word; }
+.path-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.pchip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: 6px; background: var(--surface-2); color: var(--muted); font-size: 10.5px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pchip .ico { width: 11px; height: 11px; flex: none; }
+.pchip-comp { color: var(--accent); background: var(--accent-soft); }
+.pchip-layer { color: var(--txt); }
+
+.path-code { position: relative; display: flex; align-items: flex-start; gap: 6px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 6px 9px 11px; }
+.path-code code { flex: 1; min-width: 0; font: 11.5px/1.55 var(--mono); color: var(--txt); overflow-wrap: anywhere; user-select: text; }
+.path-code .icon-btn { flex: none; width: 28px; height: 28px; margin-top: -3px; color: var(--accent); }
+.path-hint { font-size: 10.5px; color: var(--faint); line-height: 1.4; margin-top: -2px; }
+
+/* grupos acima: escada recolhível */
+.path-ups { border-top: 1px dashed var(--line); padding-top: 6px; }
+.path-ups-head { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; padding: 4px 0; color: var(--muted); font-size: 11.5px; text-align: left; }
+.path-ups-head:hover { color: var(--txt); }
+.path-ups-head .chev { transform: rotate(-90deg); width: 14px; height: 14px; }
+.path-ups.open .path-ups-head .chev { transform: none; }
+.path-ups-head i { font-style: normal; font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.ladder { position: relative; display: flex; flex-direction: column; margin-top: 4px; }
+.ladder::before { content: ''; position: absolute; left: 21px; top: 12px; bottom: 12px; border-left: 1.5px solid var(--line-2); } /* trilho que liga os níveis */
+.rung { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto 14px; align-items: center; gap: 8px; width: 100%; border: 0; background: none; text-align: left; padding: 4px 6px; border-radius: 7px; color: var(--txt); font-size: 11.5px; }
+button.rung:hover { background: var(--accent-soft); }
+.rung-n { position: relative; z-index: 1; font: 600 10px/1 var(--mono); color: var(--accent); background: var(--surface); box-shadow: inset 0 0 0 1px var(--accent); border-radius: 999px; padding: 4px 0; text-align: center; }
+.rung-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.rung code { font: 10.5px/1 var(--mono); color: var(--faint); white-space: nowrap; }
+.rung .rung-copy { width: 13px; height: 13px; color: var(--faint); opacity: 0; transition: opacity .15s; }
+button.rung:hover .rung-copy { opacity: 1; color: var(--accent); }
+/* os "Contents" que o AE põe entre os grupos: mais baixos, sem código (fica no tooltip) */
+.rung.dim { padding-top: 1px; padding-bottom: 1px; font-size: 10.5px; }
+.rung.dim .rung-name { color: var(--faint); font-weight: 400; }
+.rung.dim .rung-n { color: var(--faint); box-shadow: none; padding: 2px 0; font-weight: 400; }
+.rung.dim code { visibility: hidden; }
+.rung.top .rung-n { color: var(--txt); box-shadow: inset 0 0 0 1px var(--line-2); background: var(--surface-2); }
+.rung.here .rung-n { color: #fff; background: var(--accent); box-shadow: none; }
+.rung.here .rung-name { color: var(--accent); }
+
+/* entre as duas propriedades */
+.path-link { border-color: transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, var(--accent), var(--accent-2)) border-box; border: 1.5px solid transparent; }
+.path-link-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.path-link-head > .ico { flex: none; color: var(--accent); }
+.path-link-head span { flex: 1; min-width: 0; }
+.path-link-head b { color: var(--txt); font-weight: 650; }
 
 /* pseudo effects → .ffx */
 .ffx-tag { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 5px; border-radius: 999px; border: 1px solid var(--warn); background: transparent; color: var(--warn); font: 600 10px/1 var(--mono); }

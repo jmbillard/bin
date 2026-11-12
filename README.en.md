@@ -330,7 +330,7 @@ the texts live in [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): one row 
 
 ## 7 · tools
 
-**property path** → select one or more properties (or groups) in the timeline (an effect parameter, a shape path, the position, a mask, Source Text, an essential property…) and click **get from selection**. for each one, BIN shows the readable path (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) and the paths ready to copy:
+**property path** → select one or more properties (or groups) in the timeline (an effect parameter, a shape path, the position, a mask, Source Text, an essential property…) and click **get from selection**. for each one, BIN shows the readable path (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) and the path ready to copy, with the editor colors. at the top, choose the format (**expression** or **script**) and the scope; the choice applies to every property and is remembered:
 
 | | example |
 |---|---|
@@ -343,7 +343,7 @@ the texts live in [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): one row 
 
 the expressions use After Effects’ shortcuts (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
 
-**groups above** → for each property, the list of groups above it, from the immediate parent up to the layer, with the expression that gives each one’s name inside an expression on the property itself: `thisProperty.propertyGroup(1).name`, `(2)`… without `.name`, the expression reaches the group itself. for a path inside a group inside another group inside another group, the “top parent” shows up with the right number (e.g. `thisProperty.propertyGroup(7).name`).
+**groups above** (collapsed, one click to open) → for each property, a ladder with of groups above it, from the immediate parent up to the layer, with the expression that gives each one’s name inside an expression on the property itself: `thisProperty.propertyGroup(1).name`, `(2)`… without `.name`, the expression reaches the group itself. for a path inside a group inside another group inside another group, the “top parent” shows up with the right number (e.g. `thisProperty.propertyGroup(7).name`).
 
 **between the two properties** → with two properties selected, the expression to use on one to reach the other, both ways. on the same layer and in the same branch, it goes up to the common group and back down (`thisProperty.propertyGroup(7)("ADBE Vector Transform Group")("ADBE Vector Group Opacity")`), so it keeps working if the layer is duplicated or renamed; in different branches, it starts from the layer; on another layer, `thisComp.layer("…")`; in another comp, `comp("…")`.
 

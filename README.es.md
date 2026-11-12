@@ -330,7 +330,7 @@ los textos están en [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): una f
 
 ## 7 · utilidades
 
-**ruta de la propiedad** → selecciona una o más propiedades (o grupos) en la línea de tiempo (un parámetro de efecto, un trazado de forma, la posición, una máscara, el Source Text, una essential property…) y haz clic en **tomar de la selección**. para cada una, BIN muestra la ruta legible (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) y las rutas listas para copiar:
+**ruta de la propiedad** → selecciona una o más propiedades (o grupos) en la línea de tiempo (un parámetro de efecto, un trazado de forma, la posición, una máscara, el Source Text, una essential property…) y haz clic en **tomar de la selección**. para cada una, BIN muestra la ruta legible (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) y la ruta lista para copiar, con los colores del editor. arriba, elige el formato (**expresión** o **script**) y el alcance; la elección vale para todas las propiedades y se recuerda:
 
 | | ejemplo |
 |---|---|
@@ -343,7 +343,7 @@ los textos están en [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): una f
 
 las expresiones usan los atajos de After Effects (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
 
-**grupos de arriba** → para cada propiedad, la lista de grupos que tiene encima, del padre inmediato hasta la capa, con la expresión que da el nombre de cada uno dentro de una expresión de la propia propiedad: `thisProperty.propertyGroup(1).name`, `(2)`… sin `.name`, la expresión llega al grupo en sí. en un trazado dentro de un grupo de otro grupo de otro grupo, el “padre mayor” aparece con el número correcto (p. ej. `thisProperty.propertyGroup(7).name`).
+**grupos de arriba** (recogido, se abre con un clic) → para cada propiedad, una escalera con de grupos que tiene encima, del padre inmediato hasta la capa, con la expresión que da el nombre de cada uno dentro de una expresión de la propia propiedad: `thisProperty.propertyGroup(1).name`, `(2)`… sin `.name`, la expresión llega al grupo en sí. en un trazado dentro de un grupo de otro grupo de otro grupo, el “padre mayor” aparece con el número correcto (p. ej. `thisProperty.propertyGroup(7).name`).
 
 **entre las dos propiedades** → con dos propiedades seleccionadas, la expresión para usar en una y llegar a la otra, en los dos sentidos. en la misma capa y en la misma rama, sube hasta el grupo en común y baja (`thisProperty.propertyGroup(7)("ADBE Vector Transform Group")("ADBE Vector Group Opacity")`), así que sigue valiendo si la capa se duplica o se renombra; en ramas distintas, parte de la capa; en otra capa, `thisComp.layer("…")`; en otra comp, `comp("…")`.
 

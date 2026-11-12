@@ -337,7 +337,7 @@ os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma lin
 
 ## 7 · utilitários
 
-**caminho da propriedade** → selecione uma ou mais propriedades (ou grupos) na timeline (um parâmetro de efeito, um path de shape, a posição, uma máscara, o Source Text, uma essential property…) e clique em **pegar da seleção**. para cada uma, o BIN mostra o caminho legível (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) e os caminhos prontos para copiar:
+**caminho da propriedade** → selecione uma ou mais propriedades (ou grupos) na timeline (um parâmetro de efeito, um path de shape, a posição, uma máscara, o Source Text, uma essential property…) e clique em **pegar da seleção**. para cada uma, o BIN mostra o caminho legível (`ABERTURA_v03 › TITULO_principal › Effects › Glow › Glow Radius`) e o caminho pronto para copiar, com as cores do editor. no topo, escolha o formato (**expressão** ou **script**) e o escopo; a escolha vale para todas as propriedades e fica guardada:
 
 | | exemplo |
 |---|---|
@@ -350,7 +350,7 @@ os textos ficam em [`bin-cep/i18n/textos.csv`](bin-cep/i18n/textos.csv): uma lin
 
 as expressões usam os atalhos do After Effects (`transform.position`, `mask("…").maskPath`, `content("…").content("…").size`, `text.sourceText`, `essentialProperty("…")`).
 
-**grupos acima** → para cada propriedade, a lista dos grupos acima dela, do pai imediato até a layer, com a expressão que dá o nome de cada um dentro de uma expressão da própria propriedade: `thisProperty.propertyGroup(1).name`, `(2)`… sem `.name`, a expressão chega ao grupo em si. num path dentro de um grupo de outro grupo de outro grupo, o “pai maior” aparece com o número certo (ex.: `thisProperty.propertyGroup(7).name`).
+**grupos acima** (recolhido, abre com um clique) → para cada propriedade, uma escada com dos grupos acima dela, do pai imediato até a layer, com a expressão que dá o nome de cada um dentro de uma expressão da própria propriedade: `thisProperty.propertyGroup(1).name`, `(2)`… sem `.name`, a expressão chega ao grupo em si. num path dentro de um grupo de outro grupo de outro grupo, o “pai maior” aparece com o número certo (ex.: `thisProperty.propertyGroup(7).name`).
 
 **entre as duas propriedades** → com duas propriedades selecionadas, a expressão para usar em uma e chegar na outra, nos dois sentidos. na mesma layer e no mesmo ramo, sobe até o grupo em comum e desce (`thisProperty.propertyGroup(7)("ADBE Vector Transform Group")("ADBE Vector Group Opacity")`), e por isso continua valendo se a layer for duplicada ou renomeada; em ramos diferentes, parte da layer; em outra layer, `thisComp.layer("…")`; em outra comp, `comp("…")`.
 

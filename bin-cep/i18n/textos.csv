@@ -127,20 +127,22 @@ ir para a linha {0},go to line {0},ir a la línea {0}
 “{0}” tem mais de 2 MB: grande demais para o editor.,“{0}” is larger than 2 MB: too big for the editor.,“{0}” tiene más de 2 MB: demasiado grande para el editor.
 <b>{0}</b> aberto no editor (só o primeiro de {1} scripts).,<b>{0}</b> opened in the editor (only the first of {1} scripts).,<b>{0}</b> abierto en el editor (solo el primero de {1} scripts).
 <b>{0}</b> aberto no editor.,<b>{0}</b> opened in the editor.,<b>{0}</b> abierto en el editor.
-absoluto (com a comp),absolute (with the comp),absoluta (con la comp)
-relativo à comp,relative to the comp,relativa a la comp
-relativo à layer,relative to the layer,relativa a la capa
-por matchName (qualquer idioma do AE),by matchName (any AE language),por matchName (cualquier idioma de AE)
-script (ExtendScript),script (ExtendScript),script (ExtendScript)
-absoluto (comp pela posição no projeto),absolute (comp by its position in the project),absoluto (comp por su posición en el proyecto)
+absoluto,absolute,absoluto
+com o nome da comp: funciona de qualquer comp do projeto,with the comp name: works from any comp in the project,con el nombre de la comp: funciona desde cualquier comp del proyecto
+"na mesma comp: thisComp, sem depender do nome dela","in the same comp: thisComp, without depending on its name","en la misma comp: thisComp, sin depender de su nombre"
+numa expressão da própria layer: o caminho a partir dela,in an expression on the layer itself: the path from it,en una expresión de la propia capa: la ruta desde ella
+por matchName: vale em qualquer idioma do After Effects,by matchName: works in any After Effects language,por matchName: vale en cualquier idioma de After Effects
+a comp pela posição no projeto (muda se itens entrarem antes dela),the comp by its position in the project (changes if items are added before it),la comp por su posición en el proyecto (cambia si entran elementos antes)
+a partir de uma variável layer no seu script,from a layer variable in your script,desde una variable layer en tu script
 copiar,copy,copiar
 "sobe {0} até “{1}”, o grupo em comum, e desce","goes up {0} to “{1}”, the common group, and down","sube {0} hasta “{1}”, el grupo en común, y baja"
 as duas estão na mesma layer,both are on the same layer,las dos están en la misma capa
 outra layer da mesma comp,another layer in the same comp,otra capa de la misma comp
 outra comp,another comp,otra comp
-entre as duas propriedades,between the two properties,entre las dos propiedades
-"na expressão de “{0}”, para chegar em “{1}”","in the expression of “{0}”, to reach “{1}”","en la expresión de “{0}”, para llegar a “{1}”"
-"grupos acima (o nome, numa expressão desta propriedade)","groups above (their name, in an expression on this property)","grupos de arriba (su nombre, en una expresión de esta propiedad)"
+"numa expressão em <b>{0}</b>, para chegar em <b>{1}</b>","in an expression on <b>{0}</b>, to reach <b>{1}</b>","en una expresión en <b>{0}</b>, para llegar a <b>{1}</b>"
+inverter o sentido,reverse the direction,invertir el sentido
+grupos acima,groups above,grupos de arriba
+"o nome, numa expressão desta propriedade","their name, in an expression on this property","su nombre, en una expresión de esta propiedad"
 “{0}” tem {1}: grande demais para virar string (o limite é {2}).,“{0}” is {1}: too big to turn into a string (the limit is {2}).,“{0}” tiene {1}: demasiado grande para convertirlo en string (el límite es {2}).
 os arquivos somam {1}: grande demais para virar string (o limite é {2}).,the files add up to {1}: too big to turn into a string (the limit is {2}).,los archivos suman {1}: demasiado grande para convertirlos en string (el límite es {2}).
 arquivos,files,archivos
