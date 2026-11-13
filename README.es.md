@@ -94,6 +94,8 @@ abre el panel en `Window` > `Extensions` > `BIN`. se puede acoplar en cualquier 
 
 la captura es de **solo lectura**: nada en el proyecto cambia y el historial de deshacer queda limpio.
 
+el panel se adapta al lugar donde está acoplado: **estrecho** (en el lateral), las pestañas pasan a ser iconos y el chip tiene una fila propia; **ancho y bajo** (abajo), el resumen y el botón principal comparten una fila y las opciones del script empiezan recogidas, para dejar más altura.
+
 <br>
 
 ---

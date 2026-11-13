@@ -94,6 +94,8 @@ abra o painel em `Window` > `Extensions` > `BIN`. ele pode ser encaixado em qual
 
 a captura é **somente leitura**: nada no projeto é alterado e o histórico de undo fica limpo.
 
+o painel se adapta ao lugar onde está encaixado: **estreito** (na lateral), as abas viram ícones e o chip ganha uma linha só dele; **largo e baixo** (embaixo), o resumo e o botão principal ficam na mesma linha e as opções do script começam recolhidas, para sobrar altura.
+
 <br>
 
 ---
@@ -445,7 +447,8 @@ tests/
   cep_bridge.js       ponte com o CEP: recarga do host, teclas reservadas e assinatura da versão
   egp_panel.js        essential graphics no painel: cards, exclusões, avisos e recriação
   pseudo_panel.js     pseudo effects: salvar / escolher o .ffx, script com o .ffx embutido e avisos
-  path_panel.js       caminho da propriedade: blocos, caminhos, copiar e idiomas
+  path_panel.js       caminho da propriedade: cards, formato e escopo, copiar, escada e idiomas
+  layout_sizes.js     layout em painel estreito, padrão e largo: sem rolagem horizontal, chip legível, rodapé
   build_stamp.js      imprime a assinatura da versão (a mesma do tooltip do logo)
   i18n_keys.js        lista os textos do código que precisam estar no textos.csv
   i18n_check.js       traduções: CSV completo, script gerado e painel em inglês e espanhol

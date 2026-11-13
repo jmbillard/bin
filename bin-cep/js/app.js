@@ -168,6 +168,7 @@
 	function showTab(name) {
 		var from = TABS.indexOf(state.tab), to = TABS.indexOf(name);
 		state.tab = name;
+		document.body.setAttribute('data-tab', name); // o rodapé muda com a aba (sem captura, o botão só vale no código)
 		if (S.tab !== name) { S.tab = name; saveSettings(); } // o painel abre na última aba usada
 		each(document.querySelectorAll('.tab'), function (t) { t.classList.toggle('active', t.dataset.tab === name); });
 		each(document.querySelectorAll('.panel'), function (p) {
@@ -354,7 +355,7 @@
 		var chip = $('chip');
 		chip.classList.toggle('stale', stale);
 		$('chipMeta').innerHTML = stale ? txt : esc(chip.dataset.meta || '');
-		UI.setTip(chip, stale ? T('a captura ficou para trás') + '\n' + tip + '\n' + T('clique para capturar de novo') : T('atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects'));
+		UI.setTip(chip, stale ? T('a captura ficou para trás') + '\n' + tip + '\n' + T('clique para capturar de novo') : T('atualizar a captura\nlê de novo a seleção (ou a comp inteira) no After Effects') + (chip.dataset.full ? '\n' + chip.dataset.full.split('\n').map(function (l) { return '• ' + l; }).join('\n') : ''));
 	}
 
 	function setMode(mode) {
@@ -507,9 +508,12 @@
 			$('chipName').textContent = C.layers.map(function (l) { return l.name; }).join(', ');
 			meta = [C.name, plural(st.props, 'prop', 'props')];
 		}
-		if (st.keys) meta.push(plural(st.keys, 'key', 'keys'));
-		if (st.expr) meta.push(T('{0} expr', st.expr));
+		// no chip, só o essencial (cabe sem cortar); nome inteiro e contagens completas ficam na dica
+		var full = meta.slice();
+		if (st.keys) full.push(plural(st.keys, 'key', 'keys'));
+		if (st.expr) full.push(T('{0} expr', st.expr));
 		$('chip').dataset.meta = meta.join(' · ');
+		$('chip').dataset.full = $('chipName').textContent + '\n' + full.join(' · ');
 		$('chipMeta').textContent = meta.join(' · ');
 	}
 
@@ -926,7 +930,8 @@
 		var g = [];
 		for (var i = 1; i <= lines.length; i++) g.push(i);
 		$('gutter').textContent = g.join('\n') + '\n ';
-		$('lineCount').textContent = plural(lines.length, 'linha', 'linhas');
+		// total do script (com as auxiliares recolhidas contadas), igual ao resumo do rodapé
+		$('lineCount').textContent = plural(lines.length + expand(editorText()).extra, 'linha', 'linhas');
 		syncScroll();
 	}
 
@@ -942,13 +947,18 @@
 		paintNow();
 	}
 
+	// opções do script: abertas por padrão, fechadas em painéis baixos (o código ganha o espaço); a escolha fica guardada
+	function optsOpen() { return S.optsOpen === undefined ? global.innerHeight >= 640 : !!S.optsOpen; }
+
 	function renderCode() {
+		$('optsBox').classList.toggle('closed', !optsOpen());
 		$('codeBox').classList.toggle('wrap', S.codeWrap);
 		$('codeEdit').setAttribute('wrap', S.codeWrap ? 'soft' : 'off');
 		if (state.m && !state.ed.edited) setEditor(collapse(state.code || CG.generate(state.m, opts())));
 		else if (!state.m && !state.ed.scratch) { state.ed.scratch = true; setEditor(loadScratch()); }
 		else paintEditor();
 		$('fileName').textContent = fileName();
+		UI.setTip($('fileName'), fileName()); // o nome inteiro, quando não cabe na barra
 		$('codeNote').classList.toggle('hidden', !(state.m && state.ed.edited));
 		// opções de geração: sem captura não existem; com o código editado à mão, não valem mais
 		$('optsBox').classList.toggle('hidden', !state.m);
@@ -1460,6 +1470,7 @@
 	function bindTools() {
 		$('exprBtn').onclick = getExpressions;
 		$('pathBtn').onclick = getPaths;
+		$('optsHead').onclick = function () { S.optsOpen = !optsOpen(); saveSettings(); $('optsBox').classList.toggle('closed', !S.optsOpen); };
 		$('pathOut').addEventListener('click', function (e) {
 			var t = e.target.closest ? e.target : null;
 			if (!t) return;

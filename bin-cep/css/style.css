@@ -578,7 +578,13 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .opt { display: flex; align-items: center; gap: 10px; padding: 7px 0; cursor: pointer; }
 .opt + .opt { border-top: 1px solid var(--line); }
 .opt > span { flex: 1; min-width: 0; }
-.opt small { display: block; color: var(--faint); font-size: 10.5px; }
+.opt small { display: block; color: var(--faint); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opts-head { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; padding: 7px 0; color: var(--muted); font-size: 11px; font-weight: 600; text-align: left; }
+.opts-head:hover { color: var(--txt); }
+.opts-head .chev { width: 14px; height: 14px; color: var(--faint); }
+.opts.closed .opts-head .chev { transform: rotate(-90deg); }
+.opts.closed .opt { display: none; }
+.opts-head + .opt { border-top: 1px solid var(--line); }
 
 .sw {
 	-webkit-appearance: none;
@@ -604,11 +610,12 @@ main { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .seg button.on { background: var(--ink); color: var(--txt); box-shadow: var(--ink-shadow); }
 
 /* --------------------------------------------------------- utilitários */
-.tool { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: flex; gap: 12px; align-items: flex-start; flex: none; }
-.tool-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
-.tool-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.tool-body > b { font-weight: 600; font-size: 12.5px; }
-.tool-body p { margin: -6px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.tool { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; flex: none; }
+.tool-ico { position: absolute; left: 12px; top: 12px; width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.tool-ico .ico { width: 15px; height: 15px; }
+.tool-body { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.tool-body > b { font-weight: 600; font-size: 12.5px; min-height: 28px; padding-left: 38px; display: flex; align-items: center; }
+.tool-body p { margin: -2px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
 
 .drop { align-self: stretch; border: 1.5px dashed var(--line-2); border-radius: var(--radius); padding: 16px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; transition: border-color .2s, background .2s; }
 .drop .ico { width: 20px; height: 20px; color: var(--accent); margin-bottom: 4px; }
@@ -760,7 +767,7 @@ body.is-empty .sum { visibility: hidden; }
 .toast.warn .toast-msg > .ico { color: var(--warn); }
 .toast.error { background: var(--toast-error); }
 .toast.error .toast-msg > .ico { color: var(--bad); }
-.toast-x { border: 0; background: none; color: var(--faint); padding: 0; width: 18px; height: 18px; display: grid; place-items: center; }
+.toast-x { border: 0; background: none; color: var(--faint); padding: 0; width: 24px; height: 24px; margin: -3px -4px 0 0; border-radius: 6px; display: grid; place-items: center; flex: none; }
 .toast-x:hover { color: var(--txt); }
 .toast-x .ico { width: 13px; height: 13px; }
 .toast-list { margin: 0; padding: 0 0 0 40px; color: var(--muted); font-size: 11px; max-height: 110px; overflow: auto; user-select: text; }
@@ -1149,6 +1156,38 @@ button:active > .ico { transition-duration: .1s; }
 ::-webkit-scrollbar-thumb:hover { background: var(--faint) !important; }
 main::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px; z-index: 5; pointer-events: none; background: linear-gradient(to bottom, var(--shade), transparent); opacity: 0; transition: opacity .25s; }
 main.scrolled::before { opacity: 1; }
+
+/* ------------------------------------------------- tamanhos do painel
+   o painel é encaixado em qualquer lugar do After Effects: estreito na lateral, baixo e largo embaixo */
+
+/* sem captura, o botão principal só vale na aba código (executar script) */
+body.is-empty:not([data-tab=code]) #runBtn, body.is-empty:not([data-tab=code]) .sum { display: none; }
+body.is-empty:not([data-tab=code]) .foot { border-top-color: transparent; padding-top: 0; padding-bottom: 8px; }
+
+/* estreito: o chip ganha uma linha só dele (nome e "atualizar para…" continuam visíveis) */
+@media (max-width: 360px) {
+	.top { flex-wrap: wrap; row-gap: 8px; }
+	.top .logo { order: 1; }
+	.top .logo-name { order: 2; }
+	.top .chip { order: 9; flex: 1 0 100%; }
+	body:not(.is-empty) .top::after { content: ''; order: 2; flex: 1; } /* empurra ajuda / idioma / tema para a direita */
+	.top .icon-btn { order: 3; }
+	.mode-seg button { padding: 5px 4px; font-size: 10.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; }
+	.mode-seg button .ico { display: none; }
+	.comp-head small, .comp-head .cnt > i:last-child, .layer-head .cnt .faint, .layer-row .lt { display: none; }
+	.card-head b { white-space: normal; }
+	#fileName { display: none; } /* viraria "c…": o nome aparece ao exportar */
+	.comp-head .cnt { display: none; } /* o nome da comp primeiro; as contagens estão no chip e no rodapé */
+	.rung code { display: none; } /* a expressão fica na dica e é copiada no clique */
+	.rung { grid-template-columns: 32px minmax(0, 1fr) 14px; }
+}
+
+/* largo: resumo e botão principal na mesma linha (sobra altura para o conteúdo) */
+@media (min-width: 560px) {
+	.foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 14px; row-gap: 8px; padding-top: 10px; padding-bottom: 12px; }
+	.foot .toast { grid-column: 1 / -1; }
+	.foot .cta { min-width: 240px; width: auto; padding-left: 28px; padding-right: 28px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation: none !important; transition: none !important; }

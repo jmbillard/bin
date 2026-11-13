@@ -237,7 +237,7 @@
 		document.addEventListener('mouseout', function (e) {
 			if (!e.relatedTarget || !findTarget(e.relatedTarget)) hide();
 		});
-		['mousedown', 'wheel', 'keydown', 'dragstart'].forEach(function (ev) {
+		['mousedown', 'wheel', 'keydown', 'input', 'dragstart'].forEach(function (ev) {
 			document.addEventListener(ev, function () { hide(); warm = false; }, true);
 		});
 		global.addEventListener('blur', hide);
@@ -248,6 +248,9 @@
 			var el = findTarget(e.target);
 			var kb = false;
 			try { kb = e.target.matches(':focus-visible'); } catch (err) { kb = UI.keyboardNav; }
+			// campos de texto são sempre :focus-visible: a dica só aparece se o foco veio do teclado (Tab),
+			// senão clicar no filtro abriria a dica em cima dos resultados
+			if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) kb = !!UI.keyboardNav;
 			if (el && kb) show(el);
 		});
 		document.addEventListener('focusout', hide);

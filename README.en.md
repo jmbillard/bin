@@ -94,6 +94,8 @@ open the panel at `Window` > `Extensions` > `BIN`. it can be docked anywhere in 
 
 capturing is **read-only**: nothing in the project changes and the undo history stays clean.
 
+the panel adapts to where it is docked: **narrow** (on the side), the tabs become icons and the chip gets a row of its own; **wide and short** (at the bottom), the summary and the main button share one row and the script options start collapsed, to leave more height.
+
 <br>
 
 ---

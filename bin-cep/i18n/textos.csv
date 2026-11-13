@@ -274,6 +274,7 @@ comp inteira,whole comp,comp entera
 ou digite um script na aba código,or type a script in the code tab,o escribe un script en la pestaña código
 código editado à mão: mudanças nas propriedades e nas opções não chegam mais aqui.,hand-edited code: changes to properties and options no longer reach it.,código editado a mano: los cambios en las propiedades y opciones ya no llegan aquí.
 descartar edições,discard edits,descartar ediciones
+opções do script,script options,opciones del script
 cria a comp e as precomps no projeto,creates the comp and the precomps in the project,crea la comp y las precomps en el proyecto
 desmarque uma precomp para usar a que já existe,uncheck a precomp to use the one that already exists,desmarca una precomp para usar la que ya existe
 recriar em,recreate in,recrear en
@@ -321,6 +322,7 @@ copiar o código,copy the code,copiar el código
 pacote para documentação\nsalva um .json para o app de documentação de templates (docs-app),documentation pack\nsaves a .json for the template documentation app (docs-app),paquete de documentación\nguarda un .json para la app de documentación de plantillas (docs-app)
 exportar .jsx\nsalva o script para rodar em File › Scripts,export .jsx\nsaves the script to run from File › Scripts,exportar .jsx\nguarda el script para ejecutarlo desde File › Scripts
 // digite um script do After Effects (ExtendScript)\n// ou arraste um arquivo .jsx para cá\n// e execute com Ctrl/⌘ + Enter,// type an After Effects script (ExtendScript)\n// or drag a .jsx file here\n// and run it with Ctrl/⌘ + Enter,// escribe un script de After Effects (ExtendScript)\n// o arrastra un archivo .jsx aquí\n// y ejecútalo con Ctrl/⌘ + Enter
+opções do script\nclique para abrir ou fechar,script options\nclick to open or close,opciones del script\nclic para abrir o cerrar
 pegar da seleção\nselecione uma ou mais propriedades (ou grupos) na timeline,get from selection\nselect one or more properties (or groups) in the timeline,tomar de la selección\nselecciona una o más propiedades (o grupos) en la línea de tiempo
 exportar,export,exportar
 recriar\nroda o script dentro de um único undo,recreate\nruns the script inside a single undo,recrear\nejecuta el script dentro de un solo deshacer
